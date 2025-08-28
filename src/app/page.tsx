@@ -16,7 +16,7 @@ export default function Home() {
         </p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 md:items-start gap-12 mb-12">
         <div className="flex flex-col space-y-6">
           <h2 className="text-2xl font-semibold">Live Now</h2>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg group">
@@ -52,9 +52,11 @@ export default function Home() {
             </Button>
           </div>
         </div>
-        <div className="flex flex-col space-y-6">
+        <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
-          <Feed layout="list" postCount={4} />
+          <div className="flex-grow">
+            <Feed layout="list" postCount={4} />
+          </div>
         </div>
       </div>
 
