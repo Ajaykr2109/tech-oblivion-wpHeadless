@@ -7,7 +7,7 @@ import { Marquee } from "@/components/marquee";
 export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
-      <section className="text-center py-12">
+      <section className="text-center pt-8 pb-12">
         <h1 className="text-4xl md:text-5xl font-bold">
           Welcome to tech.oblivion
         </h1>
