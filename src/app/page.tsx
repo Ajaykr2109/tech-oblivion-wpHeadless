@@ -18,9 +18,10 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 md:items-start gap-12 mb-12">
         <div className="flex flex-col space-y-6">
+          <h2 className="text-2xl font-semibold">Recent Updates</h2>
           <div className="border rounded-lg p-2 h-10 overflow-hidden flex items-center">
             <span className="text-sm font-semibold bg-primary text-primary-foreground rounded-md px-2 py-1 mr-4 shrink-0">
-              Live Updates
+              Live
             </span>
             <Marquee>
               <span>LATEST: The future of AI in software development is here...</span>
@@ -44,7 +45,7 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-col space-y-6 h-full">
-          <h2 className="text-2xl font-semibold">Recent Updates</h2>
+          <h2 className="text-2xl font-semibold">Recent Posts</h2>
           <div className="flex-grow">
             <Feed layout="list" postCount={4} />
           </div>
