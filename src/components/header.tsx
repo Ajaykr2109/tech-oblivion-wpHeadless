@@ -29,7 +29,7 @@ export function Header() {
         <nav className="hidden items-center gap-4 text-sm md:flex">
           {navLinks.map((link) => (
             <Link
-              key={link.href}
+              key={link.label}
               href={link.href}
               className="text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -61,7 +61,7 @@ export function Header() {
                 </Link>
                 {navLinks.map((link) => (
                   <Link
-                    key={link.href}
+                    key={link.label}
                     href={link.href}
                     className="text-muted-foreground hover:text-foreground"
                   >
