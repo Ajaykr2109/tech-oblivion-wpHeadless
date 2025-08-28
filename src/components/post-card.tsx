@@ -30,7 +30,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
   if (layout === 'list') {
     return (
       <article aria-labelledby={`post-title-${post.id}`}>
-        <Card className="flex flex-row overflow-hidden transition-shadow hover:shadow-lg items-center">
+        <Card className="flex flex-row overflow-hidden transition-shadow duration-300 hover:shadow-lg items-center">
           <div className="relative aspect-square h-24 w-24 flex-shrink-0">
              <Image
               src={post.imageUrl}
@@ -66,7 +66,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
 
   return (
     <article aria-labelledby={`post-title-${post.id}`}>
-      <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg">
+      <Card className="flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg">
         <CardHeader className="p-0">
           <div className="relative aspect-[3/2] w-full">
             <Image

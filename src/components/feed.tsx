@@ -72,12 +72,9 @@ export function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPosts(mockPosts.slice(0, postCount));
-      setLoading(false);
-    }, 1500); // Simulate network delay
-
-    return () => clearTimeout(timer);
+    // Removed the timer to load posts instantly
+    setPosts(mockPosts.slice(0, postCount));
+    setLoading(false);
   }, [postCount]);
 
   const wrapperClass = cn(
@@ -86,12 +83,17 @@ export function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
   );
 
 
+  if (loading) {
+    return (
+      <div className={wrapperClass}>
+        {Array.from({ length: postCount }).map((_, i) => <PostCardSkeleton key={i} />)}
+      </div>
+    );
+  }
+
   return (
     <div className={wrapperClass}>
-      {loading &&
-        Array.from({ length: postCount }).map((_, i) => <PostCardSkeleton key={i} />)}
-      {!loading &&
-        posts.map((post) => <PostCard key={post.id} post={post} layout={layout} />)}
+      {posts.map((post) => <PostCard key={post.id} post={post} layout={layout} />)}
     </div>
   );
 }
