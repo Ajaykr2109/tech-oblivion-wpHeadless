@@ -16,7 +16,7 @@ export default function Home() {
         </p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 md:items-start gap-12 mb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:items-start gap-12 mb-12">
         <div className="flex flex-col space-y-6">
           <h2 className="text-2xl font-semibold">Recent Updates</h2>
           <div className="border rounded-lg p-2 h-10 overflow-hidden flex items-center">

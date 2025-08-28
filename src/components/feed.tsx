@@ -79,7 +79,7 @@ export function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
 
   const wrapperClass = cn(
     "grid gap-6",
-    layout === 'grid' ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+    layout === 'grid' ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
   );
 
 
