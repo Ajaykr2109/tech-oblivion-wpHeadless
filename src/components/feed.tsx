@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { PostCard, type Post } from "./post-card";
 import { PostCardSkeleton } from "./post-card-skeleton";
+import { cn } from "@/lib/utils";
 
 const mockPosts: Post[] = [
   {
@@ -61,25 +62,36 @@ const mockPosts: Post[] = [
   },
 ];
 
-export function Feed() {
+type FeedProps = {
+  layout?: 'grid' | 'list';
+  postCount?: number;
+};
+
+export function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPosts(mockPosts);
+      setPosts(mockPosts.slice(0, postCount));
       setLoading(false);
-    }, 2000); // Simulate network delay
+    }, 1500); // Simulate network delay
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [postCount]);
+
+  const wrapperClass = cn(
+    "grid gap-6",
+    layout === 'grid' ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+  );
+
 
   return (
-    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+    <div className={wrapperClass}>
       {loading &&
-        Array.from({ length: 6 }).map((_, i) => <PostCardSkeleton key={i} />)}
+        Array.from({ length: postCount }).map((_, i) => <PostCardSkeleton key={i} />)}
       {!loading &&
-        posts.map((post) => <PostCard key={post.id} post={post} />)}
+        posts.map((post) => <PostCard key={post.id} post={post} layout={layout} />)}
     </div>
   );
 }

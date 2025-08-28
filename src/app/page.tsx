@@ -2,6 +2,7 @@ import { Feed } from "@/components/feed";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { PlayCircle, Rss, BookOpen, Send } from "lucide-react";
+import { Marquee } from "@/components/marquee";
 
 export default function Home() {
   return (
@@ -15,7 +16,7 @@ export default function Home() {
         </p>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
         <div className="flex flex-col space-y-6">
           <h2 className="text-2xl font-semibold">Live Now</h2>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg group">
@@ -29,6 +30,14 @@ export default function Home() {
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <PlayCircle className="h-16 w-16 text-white/80" />
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/60 backdrop-blur-sm overflow-hidden">
+              <Marquee>
+                <span>LATEST: The future of AI in software development is here...</span>
+                <span className="mx-4">&bull;</span>
+                <span>Tune in for our deep dive into Quantum Computing...</span>
+                <span className="mx-4">&bull;</span>
+              </Marquee>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -45,9 +54,14 @@ export default function Home() {
         </div>
         <div className="flex flex-col space-y-6">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
-          <Feed />
+          <Feed layout="list" postCount={4} />
         </div>
       </div>
+
+      <section>
+        <h2 className="text-3xl font-bold text-center mb-8">Most Popular Posts</h2>
+        <Feed layout="grid" postCount={6} />
+      </section>
     </div>
   );
 }
