@@ -52,7 +52,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="py-4">
+      <section className="py-8">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button variant="outline" size="lg">
             <Send className="mr-2 h-4 w-4" /> Join Discord
@@ -66,7 +66,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section>
+      <section className="pt-4 pb-8">
         <h2 className="text-3xl font-bold text-center mb-8">Most Popular Posts</h2>
         <Feed layout="grid" postCount={6} />
       </section>
