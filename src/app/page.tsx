@@ -1,3 +1,9 @@
+import { Feed } from "@/components/feed";
+
 export default function Home() {
-  return <></>;
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <Feed />
+    </div>
+  );
 }
