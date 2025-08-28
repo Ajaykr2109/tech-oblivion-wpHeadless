@@ -18,7 +18,15 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 md:items-start gap-12 mb-12">
         <div className="flex flex-col space-y-6">
-          <h2 className="text-2xl font-semibold">Live Now</h2>
+          <h2 className="text-2xl font-semibold">Live Updates</h2>
+          <div className="border rounded-lg p-2 h-10 overflow-hidden">
+            <Marquee>
+              <span>LATEST: The future of AI in software development is here...</span>
+              <span className="mx-4">&bull;</span>
+              <span>Tune in for our deep dive into Quantum Computing...</span>
+              <span className="mx-4">&bull;</span>
+            </Marquee>
+          </div>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg group">
             <Image
               src="https://picsum.photos/1280/720"
@@ -30,14 +38,6 @@ export default function Home() {
             />
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <PlayCircle className="h-16 w-16 text-white/80" />
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 h-10 bg-black/60 backdrop-blur-sm overflow-hidden">
-              <Marquee>
-                <span>LATEST: The future of AI in software development is here...</span>
-                <span className="mx-4">&bull;</span>
-                <span>Tune in for our deep dive into Quantum Computing...</span>
-                <span className="mx-4">&bull;</span>
-              </Marquee>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
