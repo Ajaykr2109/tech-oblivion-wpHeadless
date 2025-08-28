@@ -40,17 +40,6 @@ export default function Home() {
               <PlayCircle className="h-16 w-16 text-white/80" />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Button variant="outline">
-              <Send className="mr-2 h-4 w-4" /> Join Discord
-            </Button>
-            <Button variant="outline">
-              <BookOpen className="mr-2 h-4 w-4" /> Read Blog
-            </Button>
-            <Button variant="outline">
-              <Rss className="mr-2 h-4 w-4" /> YouTube Channel
-            </Button>
-          </div>
         </div>
         <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
@@ -59,6 +48,20 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <section className="py-8">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Button variant="outline" size="lg">
+            <Send className="mr-2 h-4 w-4" /> Join Discord
+          </Button>
+          <Button variant="outline" size="lg">
+            <BookOpen className="mr-2 h-4 w-4" /> Read Blog
+          </Button>
+          <Button variant="outline" size="lg">
+            <Rss className="mr-2 h-4 w-4" /> YouTube Channel
+          </Button>
+        </div>
+      </section>
 
       <section>
         <h2 className="text-3xl font-bold text-center mb-8">Most Popular Posts</h2>
