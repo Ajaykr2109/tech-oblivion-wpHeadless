@@ -22,7 +22,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 font-bold">
             <Code2 className="h-6 w-6 text-primary" />
             <span className="hidden font-bold sm:inline-block">
-              Tech Oblivion
+              tech.oblivion
             </span>
           </Link>
         </div>
@@ -57,7 +57,7 @@ export function Header() {
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Code2 className="h-6 w-6 text-primary" />
-                  <span>Tech Oblivion</span>
+                  <span>tech.oblivion</span>
                 </Link>
                 {navLinks.map((link) => (
                   <Link

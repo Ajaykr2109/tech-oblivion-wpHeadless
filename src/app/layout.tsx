@@ -5,8 +5,8 @@ import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Tech Oblivion Client',
-  description: 'Welcome to Tech Oblivion',
+  title: 'tech.oblivion Client',
+  description: 'Welcome to tech.oblivion',
 };
 
 export default function RootLayout({
