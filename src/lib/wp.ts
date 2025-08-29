@@ -19,6 +19,8 @@ export type PostSummary = {
   title: string
   excerptHtml?: string
   featuredImage?: string | null
+  authorName?: string | null
+  authorAvatar?: string | null
   date: string
 }
 
@@ -40,7 +42,18 @@ function proxiedMediaUrl(src: string | null | undefined) {
   try {
     const u = new URL(src)
     // Keep path + search so we preserve filenames and query strings if any
-    return `/api/wp/media${u.pathname}${u.search}`
+    const WP = process.env.WP_URL ?? ''
+    try {
+      const wpOrigin = WP ? new URL(WP).origin : ''
+      if (wpOrigin && u.origin === wpOrigin) {
+        return `/api/wp/media${u.pathname}${u.search}`
+      }
+    } catch (e) {
+      // fallthrough - treat as non-WP origin
+    }
+    // For remote origins (gravatar, cdn, etc.) encode full URL so the media proxy
+    // can fetch the correct upstream absolute URL without leaking origins to the client.
+    return `/api/wp/media/absolute/${encodeURIComponent(src)}`
   } catch (e) {
     // If it's not a valid absolute URL, leave it alone
     return src
@@ -60,6 +73,12 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   const res = await fetch(url.toString(), {
     // ISR: revalidate list every 60s (tweak as you like)
     next: { revalidate: 60 },
+    // include polite headers so upstream doesn't block anonymous requests
+    headers: {
+      'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)',
+      'Referer': WP,
+      'Accept': 'application/json',
+    },
   })
 
   if (!res.ok) {
@@ -87,6 +106,9 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
       excerptHtml: p.excerpt.rendered,
       // rewrite featured image to our media proxy so the browser never calls WP origin
       featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
+      authorName: p._embedded?.author?.[0]?.name ?? null,
+      // proxify author avatar too (may be gravatar or remote host)
+      authorAvatar: proxiedMediaUrl(p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null),
       date: p.date,
     })),
     total,
@@ -102,7 +124,7 @@ export async function getPostBySlug(slug: string) {
   url.searchParams.set('slug', slug)
   url.searchParams.set('_embed', '1')
 
-  const res = await fetch(url.toString(), { next: { revalidate: 60 } })
+  const res = await fetch(url.toString(), { next: { revalidate: 60 }, headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' } })
   if (!res.ok) {
     const body = await res.text()
     logWPError('getPostBySlug', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
@@ -127,4 +149,31 @@ export async function getPostBySlug(slug: string) {
     featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
     date: p.date,
   }
+}
+
+export async function getPageContent(slug: string) {
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) throw new Error('WP_URL env required')
+
+  const url = new URL(`/wp-json/wp/v2/pages`, WP)
+  url.searchParams.set('slug', slug)
+  url.searchParams.set('_embed', '0')
+
+  const res = await fetch(url.toString(), { next: { revalidate: 60 }, headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' } })
+  if (!res.ok) {
+    const body = await res.text()
+    logWPError('getPageContent', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
+    throw new Error(`WP page ${res.status}: ${body}`)
+  }
+
+  let arr = [] as any[]
+  try {
+    arr = (await res.json()) as any[]
+  } catch (e: any) {
+    logWPError('getPageContent-json', { statusText: String(e), body: undefined })
+    throw e
+  }
+  const p = arr[0]
+  if (!p) return null
+  return { id: p.id, slug: p.slug, contentHtml: p.content?.rendered ?? '' }
 }

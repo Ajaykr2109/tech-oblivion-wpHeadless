@@ -67,3 +67,16 @@ export function sanitizeWP(html: string) {
     },
   })
 }
+
+export function renderUpdatesSummary(html: string, maxWords = 50) {
+  const cleaned = sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} })
+  // Split into sentences by full-stop and trim
+  const sentences = cleaned.split('.')
+    .map(s => s.trim())
+    .filter(Boolean)
+  // join with bullet and ensure maxWords
+  const joined = sentences.join(' • ')
+  const words = joined.split(/\s+/).filter(Boolean)
+  if (words.length <= maxWords) return joined
+  return words.slice(0, maxWords).join(' ') + '...'
+}
