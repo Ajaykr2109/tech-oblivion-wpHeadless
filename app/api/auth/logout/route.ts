@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+// cookies import removed (unused)
 
 export async function POST() {
   const isProd = process.env.NODE_ENV === 'production'

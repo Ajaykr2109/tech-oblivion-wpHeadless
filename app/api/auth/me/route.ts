@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+// cookies import removed (unused)
 import { verifySession } from '../../../../src/lib/jwt'
 
 export async function GET(req: Request) {

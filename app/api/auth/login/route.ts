@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+// cookies import removed (unused)
 import { z } from 'zod'
 import { signSession } from '../../../../src/lib/jwt'
 import { logWPError } from '../../../../src/lib/log'

@@ -12,6 +12,24 @@ export type WPPost = {
   _embedded?: any
 }
 
+export type PostSummary = {
+  id: number
+  slug: string
+  title: string
+  excerptHtml?: string
+  featuredImage?: string | null
+  date: string
+}
+
+export type PostDetail = {
+  id: number
+  slug: string
+  title: string
+  contentHtml: string
+  featuredImage?: string | null
+  date: string
+}
+
 function mediaUrl(p: WPPost) {
   return p._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null
 }

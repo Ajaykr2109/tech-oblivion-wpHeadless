@@ -2,13 +2,14 @@ import { revalidateTag } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
-  let body: any = {}
-  try { body = await req.json() } catch (e) { /* ignore */ }
+  let body: unknown = {}
+  try { body = await req.json() } catch (_e: unknown) { /* ignore */ }
   const url = new URL(req.url)
-  const secret = url.searchParams.get('secret') || body?.secret
+  const b = body as Record<string, any>
+  const secret = url.searchParams.get('secret') || b?.secret
   if (secret !== process.env.NEXT_REVALIDATE_SECRET) return new Response('Forbidden', { status: 403 })
 
-  const { slug, all } = body || {}
+  const { slug, all } = b || {}
   const revalidated: string[] = []
 
   try {
@@ -32,7 +33,8 @@ export async function POST(req: Request) {
     revalidated.push('/blogs')
     if (slug) revalidated.push(`/blogs/${slug}`)
     return NextResponse.json({ revalidated, now: Date.now() }, { status: 200 })
-  } catch (e: any) {
-    return NextResponse.json({ message: e?.message || 'fail' }, { status: 500 })
+  } catch (e: unknown) {
+    const msg = (e && typeof e === 'object' && 'message' in e) ? (e as any).message : String(e)
+    return NextResponse.json({ message: msg || 'fail' }, { status: 500 })
   }
 }

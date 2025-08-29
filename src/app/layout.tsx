@@ -20,13 +20,14 @@ export default async function RootLayout({
 }>) {
   // Ensure a CSRF token cookie exists (double-submit pattern).
   try {
-    const cookieStore = (await cookies()) as any
-    const existing = cookieStore.get('csrf')
+    const cookieStore = await cookies()
+    const existing = (cookieStore as any).get?.('csrf')
     if (!existing) {
-      const token = (globalThis.crypto && (globalThis.crypto as any).randomUUID) ? (globalThis.crypto as any).randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)
-      cookieStore.set({ name: 'csrf', value: token, path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24 * 7 })
+      const hasRandomUUID = typeof (globalThis.crypto as any)?.randomUUID === 'function'
+      const token = hasRandomUUID ? (globalThis.crypto as any).randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)
+      ;(cookieStore as any)?.set?.({ name: 'csrf', value: token, path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24 * 7 })
     }
-  } catch (e) {
+  } catch (_e: unknown) {
     // no-op in environments where cookies can't be set server-side
   }
   return (
