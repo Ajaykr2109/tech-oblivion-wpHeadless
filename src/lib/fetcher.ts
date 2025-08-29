@@ -6,7 +6,17 @@ export type APIError = { status: number; message: string; details?: unknown }
 const WP_URL = process.env.WP_URL ?? ''
 
 export async function apiFetch<T = unknown>(path: string, opts?: { method?: string; body?: unknown; headers?: Record<string,string>; credentials?: RequestCredentials }) : Promise<T> {
-  const url = path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}${path}`
+  let url = path
+  if (!path.startsWith('http')) {
+    if (typeof window !== 'undefined') {
+      // In the browser, use relative URLs to avoid cross-origin issues in dev
+      url = path
+    } else {
+      // On the server, build an absolute URL
+      const base = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+      url = `${base}${path}`
+    }
+  }
   const res = await fetch(url, {
     method: opts?.method ?? 'GET',
     headers: {

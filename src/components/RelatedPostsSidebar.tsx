@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { apiFetch } from '@/lib/fetcher'; // Adjust the import path as necessary
+// Use browser fetch directly to avoid any base URL issues in client
 
 interface Term {
   id: number;
@@ -59,7 +59,9 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
 
   url = `${url}?${params.toString()}`;
 
-  const data = await apiFetch<RelatedPost[]>(url);
+  const resp = await fetch(url, { headers: { Accept: 'application/json' } })
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+  const data = (await resp.json()) as RelatedPost[]
 
         // Filter out the current post just in case
         const filteredData = data.filter((post: RelatedPost) => post.id !== currentPostId);

@@ -16,20 +16,7 @@ export const allowedAttributes: any = {
 export function sanitizeWP(html: string) {
   const WP = process.env.WP_URL ?? ''
 
-  function rewriteIfWP(src?: string) {
-    if (!src) return src
-    if (!WP) return src
-    try {
-      const u = new URL(src)
-      const wpHost = new URL(WP).host
-      if (u.host === wpHost) {
-        return `/api/wp/media${u.pathname}${u.search}`
-      }
-      return src
-    } catch (e) {
-      return src
-    }
-  }
+  const rewriteIfWP = (src?: string) => src
 
   return sanitizeHtml(html, {
     allowedTags,
@@ -47,10 +34,7 @@ export function sanitizeWP(html: string) {
         tagName: 'img',
         attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
       }),
-      iframe: (tag: any, attribs: any) => ({
-        tagName: 'iframe',
-        attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
-      }),
+  iframe: (tag: any, attribs: any) => ({ tagName: 'iframe', attribs }),
     },
   // Post-process style attributes embedded in CSS text (if any) to rewrite url(...) references
   textFilter: (text: string) => {
