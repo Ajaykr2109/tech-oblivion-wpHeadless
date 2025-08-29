@@ -1,33 +1,36 @@
 import React from 'react'
+import Link from 'next/link'
 import { getPosts, PostSummary } from '@/lib/wp'
 import { sanitizeWP } from '@/lib/sanitize'
 
-export default async function BlogPage() {
+export const dynamic = 'force-static'
+
+export default async function BlogIndexPage() {
   let posts: PostSummary[] = []
   try {
-    const res = await getPosts()
+    const res = await getPosts({ page: 1, perPage: 9 })
     posts = res.items || []
-  } catch (err: unknown) {
-    // During build/prerender WP may be unavailable; fall back to empty list so build can succeed.
+  } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Blog fetch failed during prerender:', err)
     posts = []
   }
 
   return (
-    <section className="prose mx-auto py-10">
-      <h1>Blog</h1>
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-3xl font-bold mb-6">Articles</h1>
       {posts.length === 0 ? (
         <div>No posts available.</div>
       ) : (
-        <ul>
-          {posts.map((p) => (
-            <li key={p.id}>
-              <a href={`/blog/${p.slug}`} dangerouslySetInnerHTML={{ __html: sanitizeWP(p.title) }} /> <small>{p.date}</small>
-            </li>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <Link key={post.id} href={`/blog/${post.slug}`} className="block border rounded-lg p-4 hover:shadow">
+              <h2 className="font-semibold mb-2" dangerouslySetInnerHTML={{ __html: sanitizeWP(post.title) }} />
+              <div className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: post.excerptHtml || '' }} />
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
-    </section>
+    </div>
   )
 }

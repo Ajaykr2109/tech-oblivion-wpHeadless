@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/fetcher'; // Adjust the import path as necessary
@@ -58,7 +59,7 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
 
         url = `${url}&${params.toString()}`;
 
-        const data = await apiFetch(url);
+  const data = await apiFetch<RelatedPost[]>(url);
 
         // Filter out the current post just in case
         const filteredData = data.filter((post: RelatedPost) => post.id !== currentPostId);

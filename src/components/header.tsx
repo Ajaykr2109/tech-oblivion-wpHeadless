@@ -10,11 +10,10 @@ import { ThemeToggle } from "./theme-toggle";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 
 const navLinks = [
-  { href: "/", label: "Search" },
   { href: "/", label: "Home" },
-  { href: "#", label: "Articles" },
-  { href: "#", label: "About" },
-  { href: "#", label: "Contact" },
+  { href: "/blog", label: "Articles" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 interface User {
@@ -128,12 +127,6 @@ export function Header() {
                   <span>tech.oblivion</span>
                 </Link>
                 {navLinks.map((link) => (
-                  // Add a conditional rendering for the "Search" link
-                  link.label === "Search" ? (
-                    // Render the Search component here within the SheetContent
-                    <div key={link.label} className="px-2">
-                    </div>
-                  ) : (
                   <Link
                     key={link.label}
                     href={link.href}
@@ -141,7 +134,6 @@ export function Header() {
                   >
                     {link.label}
                   </Link>
-                  )
                 ))}
                 {!isLoading && (
                   <>

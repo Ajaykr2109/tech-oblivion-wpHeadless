@@ -1,5 +1,13 @@
 import { logWPError } from './log'
 
+// Centralized caching knobs
+const DEFAULT_TTL = Number(process.env.WP_CACHE_TTL || 300) // seconds
+const TAGS = {
+  posts: 'wp:posts',
+  post: (slug: string|number) => `wp:post:${slug}`,
+  page: (slug: string|number) => `wp:page:${slug}`,
+}
+
 // NOTE: do not read WP_URL at module load time. Read it at runtime inside each
 // function so build-time imports won't crash when envs aren't present.
 
@@ -71,8 +79,8 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   if (search) url.searchParams.set('search', search)
 
   const res = await fetch(url.toString(), {
-    // ISR: revalidate list every 60s (tweak as you like)
-    next: { revalidate: 60 },
+    // ISR w/ tags so we can surgically revalidate from /api/revalidate
+    next: { revalidate: DEFAULT_TTL, tags: [TAGS.posts] },
     // include polite headers so upstream doesn't block anonymous requests
     headers: {
       'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)',
@@ -124,7 +132,10 @@ export async function getPostBySlug(slug: string) {
   url.searchParams.set('slug', slug)
   url.searchParams.set('_embed', '1')
 
-  const res = await fetch(url.toString(), { next: { revalidate: 60 }, headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' } })
+  const res = await fetch(url.toString(), {
+    next: { revalidate: DEFAULT_TTL, tags: [TAGS.posts, TAGS.post(slug)] },
+    headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' }
+  })
   if (!res.ok) {
     const body = await res.text()
     logWPError('getPostBySlug', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
@@ -159,7 +170,10 @@ export async function getPageContent(slug: string) {
   url.searchParams.set('slug', slug)
   url.searchParams.set('_embed', '0')
 
-  const res = await fetch(url.toString(), { next: { revalidate: 60 }, headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' } })
+  const res = await fetch(url.toString(), {
+    next: { revalidate: DEFAULT_TTL, tags: [TAGS.page(slug)] },
+    headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' }
+  })
   if (!res.ok) {
     const body = await res.text()
     logWPError('getPageContent', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })

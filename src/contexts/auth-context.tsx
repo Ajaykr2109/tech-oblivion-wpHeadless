@@ -20,9 +20,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function useAuth() {
+  // Soft guard: return a no-op context if not wrapped to avoid runtime crashes
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    return {
+      user: null,
+      isLoading: false,
+      login: async () => {},
+      logout: async () => {},
+      checkAuth: async () => {},
+    }
   }
   return context
 }

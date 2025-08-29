@@ -2,10 +2,22 @@
 import { z } from 'zod'
 import { signSession } from '../../../../src/lib/jwt'
 import { logWPError } from '../../../../src/lib/log'
+import { validateCsrf, validateCsrfFromRequest } from '../../../../src/lib/csrf'
 
 const schema = z.object({ identifier: z.string().min(1), password: z.string().min(1) })
 
 export async function POST(req: Request) {
+  // CSRF double-submit protection
+  const csrfHeader = req.headers.get('x-csrf-token') || undefined
+  // Validate via cookies() or directly from request headers; accept either for robustness
+  const ok = validateCsrf(csrfHeader) || validateCsrfFromRequest(req, csrfHeader)
+  if (!ok) {
+    console.warn('CSRF validation failed', {
+      hasHeader: Boolean(csrfHeader),
+      hasCookieHeader: Boolean(req.headers.get('cookie')),
+    })
+    return new Response(JSON.stringify({ error: 'Invalid CSRF' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+  }
   const body = await req.json()
   const { identifier, password } = schema.parse(body)
   let data: any
@@ -13,13 +25,18 @@ export async function POST(req: Request) {
   try {
     // Direct fetch to WordPress JWT endpoint
     const wpUrl = process.env.WP_URL || 'https://techoblivion.in'
+    // Add a timeout to avoid hanging requests
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
     const response = await fetch(`${wpUrl}/wp-json/jwt-auth/v1/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'tech-oblivion-fe/1.0',
       },
       body: JSON.stringify({ username: identifier, password }),
-    })
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout))
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))

@@ -22,3 +22,17 @@ export function validateCsrf(headerToken?: string) {
   if (!headerToken) return false
   return cookie.value === headerToken
 }
+
+export function validateCsrfFromRequest(req: Request, headerToken?: string) {
+  try {
+    const raw = req.headers.get('cookie') || ''
+    if (!raw || !headerToken) return false
+    const parts = raw.split(';').map(p => p.trim())
+    const match = parts.find(p => p.startsWith(`${CSRF_COOKIE}=`))
+    if (!match) return false
+    const value = match.substring(CSRF_COOKIE.length + 1)
+    return value === headerToken
+  } catch {
+    return false
+  }
+}

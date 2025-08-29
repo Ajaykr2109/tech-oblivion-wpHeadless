@@ -5,6 +5,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [csrf, setCsrf] = useState('')
 
   useEffect(() => {
     // Check if user is already logged in
@@ -23,6 +24,23 @@ export default function LoginPage() {
       }
     }
 
+    // Ensure CSRF token exists
+    const ensureCsrf = async () => {
+      try {
+        const existing = getCsrfCookie()
+        if (existing) {
+          setCsrf(existing)
+          return
+        }
+        const res = await fetch('/api/csrf')
+        if (res.ok) {
+          const j = await res.json()
+          setCsrf(j.token)
+        }
+      } catch {}
+    }
+
+    ensureCsrf()
     checkAuth()
   }, [])
 
@@ -39,7 +57,7 @@ export default function LoginPage() {
         method: 'POST', 
         headers: { 
           'content-type': 'application/json', 
-          'x-csrf-token': getCsrfCookie() 
+          'x-csrf-token': csrf || getCsrfCookie() 
         }, 
         body: JSON.stringify({ 
           identifier: data.identifier, 

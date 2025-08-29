@@ -1,3 +1,31 @@
+## Caching & Revalidation
+
+- WordPress data fetches use Next.js ISR with tags for targeted revalidation.
+- TTL can be tuned via `WP_CACHE_TTL` (seconds), default 300.
+- Tags used:
+  - List: `wp:posts`
+  - Post: `wp:post:{slug}`
+  - Page: `wp:page:{slug}`
+
+Trigger revalidation (server-to-server or webhook):
+
+POST /api/revalidate?secret=YOUR_SECRET
+{
+  "slug": "post-slug"   // optional, revalidates that post detail
+}
+
+POST /api/revalidate?secret=YOUR_SECRET
+{
+  "page": "about"       // optional, revalidates that page detail
+}
+
+POST /api/revalidate?secret=YOUR_SECRET
+{
+  "all": true            // optional, refreshes the homepage & list
+}
+
+For advanced in-process caching of custom loaders, use `src/lib/serverCache.ts`.
+
 This project implements a Next.js App Router frontend that proxies WordPress auth via API routes.
 
 ## Api Routes
