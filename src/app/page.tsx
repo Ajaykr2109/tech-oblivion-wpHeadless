@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 import { PlayCircle, Rss, BookOpen, Send } from "lucide-react";
 import { Marquee } from "@/components/marquee";
+import { parseStringPromise } from 'xml2js';
 
 export default async function Home() {
   const summary = 'Latest updates from our blog.'
@@ -12,20 +13,20 @@ export default async function Home() {
   // Fetch the latest video from the YouTube RSS feed
   let latestVideoEmbedUrl = null;
   try {
-    // NOTE: You might need to install xml2js if you haven't already: npm install xml2js
-    const rssResponse = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UC_f3tV18-R4k5E9l3i6x8A'); // Replace with the actual channel ID
-    const rssText = await rssResponse.text();
-    const parser = require('xml2js').parseStringPromise;
-    const rssParsed = await parser(rssText);
+    const rssResponse = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UC_f3tV18-R4k5E9l3i6x8A'); 
+    if (rssResponse.ok) {
+      const rssText = await rssResponse.text();
+      const rssParsed = await parseStringPromise(rssText);
 
-    if (rssParsed.feed.entry && rssParsed.feed.entry.length > 0) {
-      const latestVideo = rssParsed.feed.entry[0];
-      // Extract the video ID from the link tag
-      const videoUrl = latestVideo.link[0].$.href;
-      const videoIdMatch = videoUrl.match(/v=(.*?)$/);
-      if (videoIdMatch && videoIdMatch[1]) {
-        // Use the video URL for the link
- latestVideoEmbedUrl = `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+      if (rssParsed?.feed?.entry && rssParsed.feed.entry.length > 0) {
+        const latestVideo = rssParsed.feed.entry[0];
+        // Extract the video ID from the link tag
+        const videoUrl = latestVideo.link[0].$.href;
+        const videoIdMatch = videoUrl.match(/v=(.*?)$/);
+        if (videoIdMatch && videoIdMatch[1]) {
+          // Use the video URL for the link
+          latestVideoEmbedUrl = `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+        }
       }
     }
   } catch (error) {
@@ -49,21 +50,21 @@ export default async function Home() {
             </Marquee>
           </div>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg group">
- {latestVideoEmbedUrl ? (
- <iframe
- src={latestVideoEmbedUrl}
- title="Latest YouTube Video"
- frameBorder="0"
- allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
- allowFullScreen
- className="w-full h-full"
- ></iframe>
- ) : (
+            {latestVideoEmbedUrl ? (
+              <iframe
+                src={latestVideoEmbedUrl}
+                title="Latest YouTube Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full"
+              ></iframe>
+            ) : (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
- <PlayCircle className="h-16 w-16 text-white/80" />
-              </div>            </a>
- )
- }          </div>
+                <PlayCircle className="h-16 w-16 text-white/80" />
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, Code2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,16 +10,50 @@ import { ThemeToggle } from "./theme-toggle";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 
 const navLinks = [
-  { href: "#", label: "Home" },
+  { href: "/", label: "Home" },
   { href: "#", label: "Articles" },
   { href: "#", label: "About" },
   { href: "#", label: "Contact" },
 ];
 
+interface User {
+  id: string
+  username: string
+  email: string
+  displayName: string
+}
+
 export function Header() {
-  // Placeholder for logged in state and user name
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState("John Doe");
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -44,27 +78,30 @@ export function Header() {
           ))}
         </nav>
         <div className="flex flex-1 items-center justify-end gap-2">
-          {isLoggedIn ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost">
-                  {userName}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Link href="/dashboard">Dashboard</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  {/* Replace with actual logout functionality */}
-                  <button onClick={() => setIsLoggedIn(false)}>Logout</button>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
+          {!isLoading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost">
+                      {user.username}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Link href="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <button onClick={handleLogout}>Logout</button>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link href="/login">
+                  <Button variant="ghost">Login</Button>
+                </Link>
+              )}
+            </>
           )}
           <ThemeToggle />
           <Sheet>
@@ -96,6 +133,27 @@ export function Header() {
                     {link.label}
                   </Link>
                 ))}
+                {!isLoading && (
+                  <>
+                    {user ? (
+                      <>
+                        <div className="text-muted-foreground">
+                          Welcome, {user.username}
+                        </div>
+                        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+                          Dashboard
+                        </Link>
+                        <button onClick={handleLogout} className="text-left text-muted-foreground hover:text-foreground">
+                          Logout
+                        </button>
+                      </>
+                    ) : (
+                      <Link href="/login" className="text-muted-foreground hover:text-foreground">
+                        Login
+                      </Link>
+                    )}
+                  </>
+                )}
               </nav>
             </SheetContent>
           </Sheet>

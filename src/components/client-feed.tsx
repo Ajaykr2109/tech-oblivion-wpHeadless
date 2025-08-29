@@ -13,6 +13,7 @@ type Post = {
   imageUrl: string
   imageHint: string
   excerpt: string
+  slug: string
 }
 
 export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' | 'grid', perPage?: number }) {
@@ -34,6 +35,7 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
         imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
         imageHint: post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered,
         excerpt: post.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0,240),
+        slug: post.slug,
       }))
       if (p === 1) setPosts(mapped)
       else setPosts(prev => [...prev, ...mapped])

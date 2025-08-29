@@ -17,6 +17,7 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
     imageUrl: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
     imageHint: p._embedded?.['wp:featuredmedia']?.[0]?.alt_text || p.title.rendered,
     excerpt: p.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0, 240),
+    slug: p.slug,
   }))
 
   const wrapperClass = cn(
