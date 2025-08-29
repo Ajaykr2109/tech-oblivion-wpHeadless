@@ -10,6 +10,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 
 const navLinks = [
+  { href: "/", label: "Search" },
   { href: "/", label: "Home" },
   { href: "#", label: "Articles" },
   { href: "#", label: "About" },
@@ -17,7 +18,6 @@ const navLinks = [
 ];
 
 interface User {
-  id: string
   username: string
   email: string
   displayName: string
@@ -56,8 +56,8 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <header className="w-full py-4">
+      <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <Code2 className="h-6 w-6 text-primary" />
@@ -66,7 +66,8 @@ export function Header() {
             </span>
           </Link>
         </div>
-        <nav className="hidden items-center gap-4 text-sm md:flex">
+
+        <nav className="hidden md:flex items-center gap-6 text-sm">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -77,7 +78,8 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex flex-1 items-center justify-end gap-2">
+
+        <div className="flex items-center gap-4">
           {!isLoading && (
             <>
               {user ? (
@@ -103,15 +105,16 @@ export function Header() {
               )}
             </>
           )}
+
           <ThemeToggle />
-          <Sheet>
+           <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
                 aria-label="Toggle Navigation"
-              >
+>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -125,6 +128,12 @@ export function Header() {
                   <span>tech.oblivion</span>
                 </Link>
                 {navLinks.map((link) => (
+                  // Add a conditional rendering for the "Search" link
+                  link.label === "Search" ? (
+                    // Render the Search component here within the SheetContent
+                    <div key={link.label} className="px-2">
+                    </div>
+                  ) : (
                   <Link
                     key={link.label}
                     href={link.href}
@@ -132,6 +141,7 @@ export function Header() {
                   >
                     {link.label}
                   </Link>
+                  )
                 ))}
                 {!isLoading && (
                   <>

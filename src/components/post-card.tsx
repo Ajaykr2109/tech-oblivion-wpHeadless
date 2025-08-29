@@ -33,7 +33,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
     return (
       <article aria-labelledby={`post-title-${post.id}`}>
         <Link href={`/blog/${post.slug}`} className="block">
-          <Card className="flex flex-row overflow-hidden transition-shadow duration-300 hover:shadow-lg items-center cursor-pointer">
+          <Card className="flex flex-row overflow-hidden border-none shadow-none items-center cursor-pointer hover:bg-gray-50">
             <div className="relative aspect-square h-24 w-24 flex-shrink-0">
                <Image
                 src={post.imageUrl}
@@ -71,7 +71,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
   return (
     <article aria-labelledby={`post-title-${post.id}`}>
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <Card className="flex h-full flex-col overflow-hidden transition-shadow duration-300 hover:shadow-lg cursor-pointer">
+        <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50">
           <CardHeader className="p-0">
             <div className="relative aspect-[3/2] w-full">
               <Image
