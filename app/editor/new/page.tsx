@@ -1,15 +1,18 @@
 
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
 const EditorToolbar = () => (
     <div className="flex items-center gap-1 border-b p-2 flex-wrap">
@@ -21,7 +24,7 @@ const EditorToolbar = () => (
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Bold</p>
+            <p>Bold (Ctrl+B)</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -31,7 +34,7 @@ const EditorToolbar = () => (
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Italic</p>
+            <p>Italic (Ctrl+I)</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -103,7 +106,7 @@ const EditorToolbar = () => (
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Link</p>
+            <p>Link (Ctrl+K)</p>
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -130,16 +133,51 @@ const EditorToolbar = () => (
     </div>
   );
 
+const SeoPreview = ({ title, description, slug }: { title: string, description: string, slug: string }) => {
+    const siteUrl = "https://tech.oblivion"; // This could be fetched from settings
+    const fullUrl = `${siteUrl}/blog/${slug || 'new-post-slug'}`;
+
+    return (
+        <div className="p-4 border rounded-lg bg-background/50">
+            <h3 className="text-blue-600 text-lg truncate">{title || "Meta Title Preview"}</h3>
+            <p className="text-green-700 text-sm truncate">{fullUrl}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">{description || "This is how your meta description will appear in search results."}</p>
+        </div>
+    );
+};
 
 export default function EditorNewPage() {
+  const [post, setPost] = useState({
+    title: "",
+    content: "",
+    tags: "",
+    category: "",
+    status: "Draft",
+    seoTitle: "",
+    seoDescription: "",
+    focusKeyword: "",
+    slug: "",
+  });
+
+  const [wordCount, setWordCount] = useState(0);
+  const [readingTime, setReadingTime] = useState(0);
+
+  useEffect(() => {
+    const words = post.content.trim().split(/\s+/).filter(Boolean);
+    const count = words.length;
+    setWordCount(count);
+    setReadingTime(Math.ceil(count / 225));
+  }, [post.content]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setPost(prev => ({ ...prev, [name]: value }));
+  };
+  
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Create New Post</h1>
-        <div className="flex gap-2">
-          <Button variant="outline">Save Draft</Button>
-          <Button>Publish</Button>
-        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -151,6 +189,9 @@ export default function EditorNewPage() {
                   <Label htmlFor="title" className="sr-only">Title</Label>
                   <Input 
                     id="title" 
+                    name="title"
+                    value={post.title}
+                    onChange={handleInputChange}
                     placeholder="Post Title" 
                     className="text-2xl font-bold h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none" 
                   />
@@ -160,26 +201,43 @@ export default function EditorNewPage() {
                   <Label htmlFor="content" className="sr-only">Body</Label>
                   <Textarea 
                     id="content" 
+                    name="content"
+                    value={post.content}
+                    onChange={handleInputChange}
                     rows={20} 
-                    placeholder="Write your post content here..."
+                    placeholder="Start with an engaging intro to hook your readers..."
                     className="border-none focus-visible:ring-0 shadow-none text-base p-4"
                   />
                 </div>
               </div>
             </CardContent>
+            <CardFooter className="p-2 border-t text-sm text-muted-foreground">
+                <p>{wordCount} words</p>
+                <Separator orientation="vertical" className="h-4 mx-2" />
+                <p>{readingTime} min read</p>
+            </CardFooter>
           </Card>
         </div>
         
-        <aside className="lg:col-span-4 space-y-6">
-          <Accordion type="multiple" defaultValue={['publish', 'seo']} className="w-full">
-            <AccordionItem value="publish">
-              <AccordionTrigger className="font-semibold">Publish</AccordionTrigger>
-              <AccordionContent>
-                <Card>
-                  <CardContent className="p-4 space-y-4">
+        <aside className="lg:col-span-4 space-y-6 lg:sticky top-20 self-start">
+           <div className="space-y-6">
+             <div className="p-4 bg-card rounded-lg border sticky top-20 z-10">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Actions</h2>
+                    <div className="flex gap-2">
+                        <Button variant="outline">Save Draft</Button>
+                        <Button>Publish</Button>
+                    </div>
+                </div>
+            </div>
+            <Accordion type="multiple" defaultValue={['publish', 'seo']} className="w-full">
+              <AccordionItem value="publish">
+                <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">Publish</AccordionTrigger>
+                <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                  <div className="p-4 space-y-4">
                     <div>
                       <Label htmlFor="status">Status</Label>
-                      <Select defaultValue="Draft">
+                      <Select value={post.status} onValueChange={(value) => setPost(p => ({...p, status: value}))}>
                         <SelectTrigger id="status">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -190,101 +248,93 @@ export default function EditorNewPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button className="w-full">Publish</Button>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
-            
-            <AccordionItem value="taxonomy">
-              <AccordionTrigger className="font-semibold">Categories & Tags</AccordionTrigger>
-              <AccordionContent>
-                <Card>
-                  <CardContent className="p-4 grid gap-4">
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="taxonomy">
+                <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">Categories & Tags</AccordionTrigger>
+                <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                  <div className="p-4 grid gap-4">
                      <div>
                       <Label htmlFor="category">Category</Label>
-                      <Input id="category" placeholder="e.g., Technology" />
+                      <Input id="category" name="category" value={post.category} onChange={handleInputChange} placeholder="e.g., Technology" />
                     </div>
                     <div>
                       <Label htmlFor="tags">Tags</Label>
-                      <Input id="tags" placeholder="Comma-separated tags" />
+                      <Input id="tags" name="tags" value={post.tags} onChange={handleInputChange} placeholder="Comma-separated tags" />
                        <div className="flex flex-wrap gap-2 mt-2">
                         {/* Example tags would appear here as they are added */}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <AccordionItem value="image">
-              <AccordionTrigger className="font-semibold">Featured Image</AccordionTrigger>
-              <AccordionContent>
-                <Card>
-                  <CardContent className="p-4">
+              <AccordionItem value="image">
+                <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">Featured Image</AccordionTrigger>
+                <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                  <div className="p-4">
                     <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary">
                       <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">Click or drag to upload</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <AccordionItem value="seo">
-              <AccordionTrigger className="font-semibold">SEO Settings</AccordionTrigger>
-              <AccordionContent>
-                <Card>
-                  <CardContent className="p-4 grid gap-4">
+              <AccordionItem value="seo">
+                <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">SEO Settings</AccordionTrigger>
+                <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                  <div className="p-4 grid gap-4">
+                    <SeoPreview title={post.seoTitle} description={post.seoDescription} slug={post.slug} />
                     <div>
                       <Label htmlFor="seoTitle">Meta Title</Label>
-                      <Input id="seoTitle" placeholder="Title for search engines" />
+                      <Input id="seoTitle" name="seoTitle" value={post.seoTitle} onChange={handleInputChange} placeholder="Title for search engines" />
                     </div>
                     <div>
                       <Label htmlFor="seoDescription">Meta Description</Label>
-                      <Textarea id="seoDescription" rows={3} placeholder="Description for search engines" />
+                      <Textarea id="seoDescription" name="seoDescription" value={post.seoDescription} onChange={handleInputChange} rows={3} placeholder="Description for search engines" />
                     </div>
                     <div>
                       <Label htmlFor="focusKeyword">Focus Keyword</Label>
-                      <Input id="focusKeyword" placeholder="Main keyword for this post" />
+                      <Input id="focusKeyword" name="focusKeyword" value={post.focusKeyword} onChange={handleInputChange} placeholder="Main keyword for this post" />
                     </div>
-                  </CardContent>
-                </Card>
-              </AccordionContent>
-            </AccordionItem>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <AccordionItem value="linking">
-               <AccordionTrigger className="font-semibold">Auto Internal Linking</AccordionTrigger>
-                <AccordionContent>
-                    <Card>
-                        <CardContent className="p-4 space-y-2">
-                             <Label htmlFor="linkingKeywords">Focus Linking Keywords</Label>
-                              <Textarea id="linkingKeywords" rows={4} placeholder="Enter keywords, one per line, to find linking opportunities." />
-                              <Button variant="outline" className="w-full"><Bot className="mr-2 h-4 w-4" /> Generate Link Suggestions</Button>
-                        </CardContent>
-                    </Card>
-                </AccordionContent>
-            </AccordionItem>
-            
-            <AccordionItem value="checklist">
-               <AccordionTrigger className="font-semibold">SEO Checklist</AccordionTrigger>
-                <AccordionContent>
-                     <Alert>
-                      <Info className="h-4 w-4" />
-                      <AlertTitle>Pre-Publish Checks</AlertTitle>
-                      <AlertDescription>
-                          <ul className="list-disc pl-4 text-xs space-y-1 mt-2">
-                              <li><strong>Title Length:</strong> 50-60 characters recommended.</li>
-                              <li><strong>Meta Description:</strong> 150-160 characters recommended.</li>
-                              <li><strong>Focus Keyword:</strong> Included in title, meta, and first paragraph.</li>
-                              <li><strong>Featured Image:</strong> Set and has alt text.</li>
-                              <li><strong>Internal Links:</strong> At least 1-2 relevant internal links.</li>
-                          </ul>
-                      </AlertDescription>
-                    </Alert>
-                </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              <AccordionItem value="linking">
+                 <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">Auto Internal Linking</AccordionTrigger>
+                  <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                      <div className="p-4 space-y-2">
+                           <Label htmlFor="linkingKeywords">Focus Linking Keywords</Label>
+                            <Textarea id="linkingKeywords" rows={4} placeholder="Enter keywords, one per line, to find linking opportunities." />
+                            <Button variant="outline" className="w-full"><Bot className="mr-2 h-4 w-4" /> Generate Link Suggestions</Button>
+                      </div>
+                  </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="checklist">
+                 <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">SEO Checklist</AccordionTrigger>
+                  <AccordionContent className="bg-card rounded-b-lg border border-t-0">
+                       <Alert className="m-4">
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Pre-Publish Checks</AlertTitle>
+                        <AlertDescription>
+                            <ul className="list-disc pl-4 text-xs space-y-1 mt-2">
+                                <li><strong>Title Length:</strong> 50-60 characters recommended.</li>
+                                <li><strong>Meta Description:</strong> 150-160 characters recommended.</li>
+                                <li><strong>Focus Keyword:</strong> Included in title, meta, and first paragraph.</li>
+                                <li><strong>Featured Image:</strong> Set and has alt text.</li>
+                                <li><strong>Internal Links:</strong> At least 1-2 relevant internal links.</li>
+                            </ul>
+                        </AlertDescription>
+                      </Alert>
+                  </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+           </div>
         </aside>
       </div>
     </div>
