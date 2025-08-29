@@ -1,8 +1,7 @@
 import Feed from "@/components/feed";
 import { ClientFeed } from '@/components/client-feed'
-import { getPosts } from '@/lib/wordpress-client'
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import Image from 'next/image';
 import { PlayCircle, Rss, BookOpen, Send } from "lucide-react";
 import { Marquee } from "@/components/marquee";
 
@@ -10,8 +9,28 @@ export default async function Home() {
   const summary = 'Latest updates from our blog.'
 
   // get first recent post for hero image
-  const recent = await getPosts({ page: 1, per_page: 1 })
-  const heroImage = recent.posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico'
+  // Fetch the latest video from the YouTube RSS feed
+  let latestVideoEmbedUrl = null;
+  try {
+    // NOTE: You might need to install xml2js if you haven't already: npm install xml2js
+    const rssResponse = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UC_f3tV18-R4k5E9l3i6x8A'); // Replace with the actual channel ID
+    const rssText = await rssResponse.text();
+    const parser = require('xml2js').parseStringPromise;
+    const rssParsed = await parser(rssText);
+
+    if (rssParsed.feed.entry && rssParsed.feed.entry.length > 0) {
+      const latestVideo = rssParsed.feed.entry[0];
+      // Extract the video ID from the link tag
+      const videoUrl = latestVideo.link[0].$.href;
+      const videoIdMatch = videoUrl.match(/v=(.*?)$/);
+      if (videoIdMatch && videoIdMatch[1]) {
+        // Use the video URL for the link
+ latestVideoEmbedUrl = `https://www.youtube.com/embed/${videoIdMatch[1]}`;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching YouTube RSS feed:", error);
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -30,11 +49,21 @@ export default async function Home() {
             </Marquee>
           </div>
           <div className="relative aspect-video w-full overflow-hidden rounded-lg group">
-            <Image src={heroImage} alt="Hero" width={1280} height={720} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <PlayCircle className="h-16 w-16 text-white/80" />
-            </div>
-          </div>
+ {latestVideoEmbedUrl ? (
+ <iframe
+ src={latestVideoEmbedUrl}
+ title="Latest YouTube Video"
+ frameBorder="0"
+ allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+ allowFullScreen
+ className="w-full h-full"
+ ></iframe>
+ ) : (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+ <PlayCircle className="h-16 w-16 text-white/80" />
+              </div>            </a>
+ )
+ }          </div>
         </div>
         <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
@@ -46,9 +75,9 @@ export default async function Home() {
 
       <section className="py-8">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button variant="outline" size="lg"><Send className="mr-2 h-4 w-4" /> Join Discord</Button>
-          <Button variant="outline" size="lg"><BookOpen className="mr-2 h-4 w-4" /> Read Blog</Button>
-          <Button variant="outline" size="lg"><Rss className="mr-2 h-4 w-4" /> YouTube Channel</Button>
+          <Button variant="outline" size="lg" asChild><a href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer"><Send className="mr-2 h-4 w-4" /> Join Discord</a></Button>
+          <Button variant="outline" size="lg" asChild><a href="/blog"><BookOpen className="mr-2 h-4 w-4" /> Read Blog</a></Button>
+          <Button variant="outline" size="lg" asChild><a href="https://www.youtube.com/@tech.oblivion" target="_blank" rel="noopener noreferrer"><Rss className="mr-2 h-4 w-4" /> YouTube Channel</a></Button>
         </div>
       </section>
 
