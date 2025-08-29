@@ -1,5 +1,5 @@
 import { revalidateTag } from 'next/cache'
-import { NextResponse } from 'next/server'
+// import { NextResponse } from 'next/server' // Unused import
 
 export async function POST(req: Request) {
   let body: unknown = {}
@@ -25,16 +25,16 @@ export async function POST(req: Request) {
         revalidateTag(`wp:post:${slug}`)
         revalidated.push(`/blogs/${slug}`)
       }
-      return NextResponse.json({ revalidated, now: Date.now() }, { status: 200 })
+      return new Response(JSON.stringify({ revalidated, now: Date.now() }), { status: 200, headers: { 'Content-Type': 'application/json' } })
     }
 
     // Fallback: return the list for an external revalidator to act on
     revalidated.push('/')
     revalidated.push('/blogs')
     if (slug) revalidated.push(`/blogs/${slug}`)
-    return NextResponse.json({ revalidated, now: Date.now() }, { status: 200 })
+  return new Response(JSON.stringify({ revalidated, now: Date.now() }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch (e: unknown) {
     const msg = (e && typeof e === 'object' && 'message' in e) ? (e as any).message : String(e)
-    return NextResponse.json({ message: msg || 'fail' }, { status: 500 })
+  return new Response(JSON.stringify({ message: msg || 'fail', error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }

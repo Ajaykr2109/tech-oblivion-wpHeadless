@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   try {
     const user = await verifySession(token)
     return new Response(JSON.stringify({ user }), { status: 200 })
-  } catch (e) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
   }
 }
