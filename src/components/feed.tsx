@@ -1,6 +1,7 @@
+
 import { cn } from "@/lib/utils";
 import { PostCard } from "./post-card";
-import { getPosts as getWPPosts } from "@/lib/wp";
+import { dummyPosts } from "@/data/dummy-posts";
 
 type FeedProps = {
   layout?: 'grid' | 'list';
@@ -8,22 +9,8 @@ type FeedProps = {
 };
 
 export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
-  let data: Awaited<ReturnType<typeof getWPPosts>> | null = null
-  try {
-    data = await getWPPosts({ page: 1, perPage: postCount })
-  } catch (e) {
-    console.error('[Feed] failed to load posts', e)
-  }
-  const posts = (data?.items || []).map(p => ({
-    id: String(p.id),
-    title: p.title,
-    author: p.authorName || 'Tech Oblivion',
-    avatar: p.authorAvatar || '/favicon.ico',
-    imageUrl: p.featuredImage || '/favicon.ico',
-    imageHint: p.title,
-    excerpt: (p.excerptHtml || '').replace(/<[^>]+>/g, '').slice(0, 240),
-    slug: p.slug,
-  }))
+  // Using dummy data for frontend design
+  const posts = dummyPosts.slice(0, postCount);
 
   const wrapperClass = cn(
     "grid gap-6",
