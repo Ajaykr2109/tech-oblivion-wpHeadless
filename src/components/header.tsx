@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "./ui/dropdown-menu";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Articles" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/profile", label: "Profile" },
 ];
 
 interface User {
@@ -75,6 +76,37 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0">
+                  More <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Admin</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem asChild><Link href="/admin">Dashboard</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/posts">Posts</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/users">Users</Link></DropdownMenuItem>
+                       <DropdownMenuItem asChild><Link href="/admin/comments">Comments</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/admin/settings">Settings</Link></DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                 <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem asChild><Link href="/dashboard">My Account</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/dashboard/posts">My Posts</Link></DropdownMenuItem>
+                      <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </nav>
 
         <div className="flex items-center gap-4">
@@ -133,6 +165,8 @@ export function Header() {
                     {link.label}
                   </Link>
                 ))}
+                 <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
+                 <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
                 {!isLoading && (
                   <>
                     {user ? (
