@@ -1,7 +1,7 @@
 // Direct WordPress REST API client (temporary - bypasses proxy)
 // This makes direct calls from browser to WordPress
 
-const WP_BASE_URL = 'http://example.com';
+const WP_BASE_URL = 'https://techoblivion.in';
 const WP_API_BASE = `${WP_BASE_URL}/wp-json/wp/v2`;
 
 export interface WordPressPost {
