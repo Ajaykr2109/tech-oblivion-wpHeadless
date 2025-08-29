@@ -3,11 +3,79 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Upload, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Upload, X, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code } from "lucide-react";
+
+const EditorToolbar = () => (
+  <div className="flex items-center gap-1 border-b p-2">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <Bold className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Bold</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <Italic className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Italic</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <Code className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Code</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <LinkIcon className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Link</p>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <List className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Bulleted List</p>
+        </TooltipContent>
+      </Tooltip>
+       <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Numbered List</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  </div>
+);
 
 export default async function EditorEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,7 +104,7 @@ export default async function EditorEditPage({ params }: { params: Promise<{ id:
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-9 space-y-6">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-0">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="title" className="sr-only">Title</Label>
@@ -44,17 +112,18 @@ export default async function EditorEditPage({ params }: { params: Promise<{ id:
                     id="title" 
                     defaultValue={post.title} 
                     placeholder="Post Title" 
-                    className="text-2xl font-bold h-auto p-2 border-none focus-visible:ring-0 shadow-none" 
+                    className="text-2xl font-bold h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none" 
                   />
                 </div>
+                 <EditorToolbar />
                 <div>
                   <Label htmlFor="content" className="sr-only">Body</Label>
                   <Textarea 
                     id="content" 
                     defaultValue={post.content} 
                     rows={25} 
-                    placeholder="Write your post content here... use markdown for formatting."
-                    className="border-none focus-visible:ring-0 shadow-none text-base"
+                    placeholder="Write your post content here..."
+                    className="border-none focus-visible:ring-0 shadow-none text-base p-4"
                   />
                 </div>
               </div>
