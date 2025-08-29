@@ -7,74 +7,127 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus } from "lucide-react";
 
 const EditorToolbar = () => (
-  <div className="flex items-center gap-1 border-b p-2">
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Bold className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Bold</p>
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Italic className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Italic</p>
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Code className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Code</p>
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <LinkIcon className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Link</p>
-        </TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <List className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Bulleted List</p>
-        </TooltipContent>
-      </Tooltip>
-       <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Numbered List</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  </div>
-);
+    <div className="flex items-center gap-1 border-b p-2 flex-wrap">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Bold className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Bold</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Italic className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Italic</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Strikethrough className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Strikethrough</p>
+          </TooltipContent>
+        </Tooltip>
+        <Separator orientation="vertical" className="h-6 mx-1" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+                <Type className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Heading</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <List className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Bulleted List</p>
+          </TooltipContent>
+        </Tooltip>
+         <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <ListOrdered className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Numbered List</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Quote className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Blockquote</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Minus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Horizontal Rule</p>
+          </TooltipContent>
+        </Tooltip>
+         <Separator orientation="vertical" className="h-6 mx-1" />
+         <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <LinkIcon className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Link</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Image</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Code className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Code Block</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 
 
 export default function EditorNewPage() {
@@ -194,3 +247,5 @@ export default function EditorNewPage() {
     </div>
   )
 }
+
+    
