@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import { fetchAllCategories, buildCategoryTree, type WpCategory, fetchAllTags } from '@/lib/taxonomy-client'
 
 const EditorToolbar = () => (
     <div className="flex items-center gap-1 border-b p-2 flex-wrap">
@@ -161,6 +162,11 @@ export default function EditorNewPage() {
 
   const [wordCount, setWordCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<WpCategory[]>([])
+  const [categoryTree, setCategoryTree] = useState<any[]>([])
+  const [tagsList, setTagsList] = useState<string[]>([])
 
   useEffect(() => {
     const words = post.content.trim().split(/\s+/).filter(Boolean);
@@ -169,20 +175,81 @@ export default function EditorNewPage() {
     setReadingTime(Math.ceil(count / 225));
   }, [post.content]);
 
+  useEffect(() => {
+    // Load taxonomies
+    (async () => {
+      try {
+        const cats = await fetchAllCategories()
+        setCategories(cats)
+        setCategoryTree(buildCategoryTree(cats))
+      } catch (e) {
+        console.error('Failed to load categories', e)
+      }
+      try {
+        const tags = await fetchAllTags()
+        setTagsList(tags.map(t => t.name))
+      } catch (e) {
+        console.error('Failed to load tags', e)
+      }
+    })()
+  }, [])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setPost(prev => ({ ...prev, [name]: value }));
   };
+
+  function toWpStatus(ui: string, override?: 'draft'|'publish'|'pending') {
+    if (override) return override
+    const l = (ui || '').toLowerCase()
+    if (l.includes('publish')) return 'publish'
+    if (l.includes('pending')) return 'pending'
+    return 'draft'
+  }
+
+  async function createPost(statusOverride?: 'draft'|'publish'|'pending') {
+    setSaving(true); setError(null)
+    try {
+  const body: any = {
+        title: post.title?.trim() || 'Untitled',
+        content: post.content || '',
+        status: toWpStatus(post.status, statusOverride),
+        slug: post.slug?.trim() || undefined,
+      }
+  if (post.category) body.categories = [Number(post.category)].filter(Boolean)
+  if (post.tags) body.tags = post.tags.split(',').map(s => s.trim()).filter(Boolean)
+      const res = await fetch('/api/wp/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const t = await res.text()
+        throw new Error(`Failed to save (${res.status}): ${t.slice(0,200)}`)
+      }
+      const created = await res.json()
+      const id = created?.id || created?.data?.id
+      if (id) {
+        window.location.href = `/editor/${id}`
+      } else {
+        // Fallback to success toast
+        alert('Post saved successfully')
+      }
+    } catch (e: any) {
+      setError(e.message || 'Failed to save')
+    } finally { setSaving(false) }
+  }
   
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Create New Post</h1>
         <div className="flex gap-2">
-          <Button variant="outline">Save Draft</Button>
-          <Button>Publish</Button>
+      <Button variant="outline" disabled={saving} onClick={() => createPost('draft')}>{saving ? 'Saving…' : 'Save Draft'}</Button>
+      <Button disabled={saving} onClick={() => createPost('publish')}>{saving ? 'Saving…' : 'Publish'}</Button>
         </div>
       </div>
+    {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
@@ -243,9 +310,9 @@ export default function EditorNewPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                     <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
-                        <Button className="w-full">Publish</Button>
-                     </div>
+              <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
+                <Button className="w-full" disabled={saving} onClick={() => createPost(toWpStatus(post.status) as any)}>{saving ? 'Saving…' : 'Publish'}</Button>
+              </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -254,9 +321,19 @@ export default function EditorNewPage() {
                 <AccordionTrigger className="font-semibold px-4 py-3 bg-card rounded-t-lg border">Categories & Tags</AccordionTrigger>
                 <AccordionContent className="bg-card rounded-b-lg border border-t-0">
                   <div className="p-4 grid gap-4">
-                     <div>
+                    <div>
                       <Label htmlFor="category">Category</Label>
-                      <Input id="category" name="category" value={post.category} onChange={handleInputChange} placeholder="e.g., Technology" />
+                      <Select value={post.category} onValueChange={(value) => setPost(p => ({...p, category: value}))}>
+                        <SelectTrigger id="category">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categoryTree.map((node) => (
+                            <CategoryOptions key={node.id} node={node} level={0} />
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">Supports parent → child hierarchy like WordPress</p>
                     </div>
                     <div>
                       <Label htmlFor="tags">Tags</Label>
@@ -336,5 +413,17 @@ export default function EditorNewPage() {
         </aside>
       </div>
     </div>
+  )
+}
+
+function CategoryOptions({ node, level }: { node: any; level: number }) {
+  const pad = '—'.repeat(level)
+  return (
+    <>
+      <SelectItem value={String(node.id)}>{pad ? `${pad} ` : ''}{node.name}</SelectItem>
+      {node.children?.map((child: any) => (
+        <CategoryOptions key={child.id} node={child} level={level + 1} />
+      ))}
+    </>
   )
 }

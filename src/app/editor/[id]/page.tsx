@@ -166,6 +166,8 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
   
   const [wordCount, setWordCount] = useState(0);
   const [readingTime, setReadingTime] = useState(0);
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const words = post.content.trim().split(/\s+/).filter(Boolean);
@@ -179,15 +181,41 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
     setPost(prev => ({ ...prev, [name]: value }));
   };
 
+  async function updatePost() {
+    setSaving(true); setError(null)
+    try {
+      const body = {
+        title: post.title?.trim() || undefined,
+        content: post.content || undefined,
+        // Map UI status to WP status
+        status: (post.status || '').toLowerCase().includes('publish') ? 'publish' : ((post.status || '').toLowerCase().includes('pending') ? 'pending' : 'draft'),
+        slug: post.slug?.trim() || undefined,
+      }
+      const res = await fetch(`/api/wp/posts?id=${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const t = await res.text()
+        throw new Error(`Failed to update (${res.status}): ${t.slice(0,200)}`)
+      }
+      alert('Post updated')
+    } catch (e: any) {
+      setError(e.message || 'Failed to update')
+    } finally { setSaving(false) }
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Edit Post</h1>
         <div className="flex gap-2">
           <Button variant="outline">Preview</Button>
-          <Button>Update Post</Button>
+      <Button disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update Post'}</Button>
         </div>
       </div>
+    {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
@@ -248,9 +276,9 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
                         </SelectContent>
                       </Select>
                     </div>
-                     <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
-                        <Button className="w-full">Update</Button>
-                     </div>
+              <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
+                <Button className="w-full" disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update'}</Button>
+              </div>
                   </div>
                 </AccordionContent>
               </AccordionItem>

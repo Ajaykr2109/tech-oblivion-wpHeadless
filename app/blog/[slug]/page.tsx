@@ -17,15 +17,15 @@ import { sanitizeWP } from '@/lib/sanitize'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-    const { slug } = await params
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+    const { slug } = params
     const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post not found' }
   return { title: post.seo?.title || post.title, description: post.seo?.description }
 }
 
-export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = await params
+export default async function PostPage({ params }: { params: { slug: string } }) {
+    const { slug } = params
     const post = await getPostBySlug(slug)
   if (!post) notFound()
 
@@ -47,14 +47,24 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     return { level, text, slug }
   })
 
-  const highlightedContent = safeHtml.replace(/<pre><code class=\"language-([a-z0-9_-]+)\">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
+        const highlightedContent = safeHtml.replace(/<pre><code class="language-([a-z0-9_-]+)">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
     try {
       const highlighted = hljs.highlight(code, { language: lang }).value
-      return `<pre><code class=\"hljs language-${lang}\">${highlighted}</code></pre>`
+            return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
     } catch {
       return match
     }
   })
+
+    // Inject IDs into h2/h3 so the TOC anchors work
+    const contentWithHeadingIds = highlightedContent.replace(/<h([23])(\s[^>]*)?>([\s\S]*?)<\/h\1>/gi, (m, level, attrs = '', inner) => {
+        // If an id already exists, keep it
+        if (/\sid=/i.test(attrs)) return m
+        const text = inner.replace(/<[^>]+>/g, '').toLowerCase()
+        const slug = text.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        const attrsOut = attrs ? `${attrs} id="${slug}"` : ` id="${slug}"`
+        return `<h${level}${attrsOut}>${inner}</h${level}>`
+    })
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
@@ -84,20 +94,37 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
     {post.featuredImage && (
           <div className="relative w-full max-w-4xl mx-auto mb-12">
-             <Image
-        src={post.featuredImage}
-        alt={post.title}
-              width={1024}
-              height={576}
-              className="rounded-lg object-cover w-full shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-shadow duration-300"
-              priority
-        data-ai-hint={'featured image'}
-            />
+             <div className="flex justify-center mb-12">
+              <Image
+                src={post.featuredImage}
+                alt={post.title}
+                width={500}
+                height={500}
+                className="rounded-lg object-cover max-w-[250px] sm:max-w-[300px] md:max-w-[400px] w-full h-auto shadow-md hover:shadow-lg"
+                quality={70}
+              />
+            </div>
           </div>
         )}
 
+                {/* Mobile TOC */}
+                {tableOfContents.length > 0 && (
+                    <div className="lg:hidden p-4 mb-6 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
+                        <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
+                        <ul className="space-y-2">
+                            {tableOfContents.map((item) => (
+                                <li key={item.slug} className={`text-sm level-${item.level} ${item.level > 2 ? 'pl-4' : ''}`}>
+                                    <a href={`#${item.slug}`} className="text-muted-foreground hover:text-foreground hover:underline break-words">
+                                        {item.text}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <aside className="lg:col-span-3 lg:sticky top-8 self-start hidden lg:block">
+            <aside className="lg:col-span-2 lg:sticky top-8 self-start hidden lg:block">
                  {tableOfContents.length > 0 && (
                     <div className="p-4 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
                     <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
@@ -114,14 +141,14 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
                 )}
             </aside>
 
-            <article className="lg:col-span-6">
+        <article className="lg:col-span-8 min-w-0">
                 <div
-                    className="prose dark:prose-invert max-w-none mx-auto [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
-                    dangerouslySetInnerHTML={{ __html: highlightedContent }}
+            className="wp-content prose prose-lg dark:prose-invert max-w-none lg:max-w-[75ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
+                    dangerouslySetInnerHTML={{ __html: contentWithHeadingIds }}
                 />
             </article>
 
-            <aside className="lg:col-span-3 lg:sticky top-8 self-start">
+            <aside className="lg:col-span-2 lg:sticky top-8 self-start">
                 <div className="bg-card p-6 rounded-lg shadow-lg">
                     <RelatedPostsSidebar
                       currentPostId={Number(post.id)}

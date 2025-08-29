@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { PostCard } from './post-card'
 import { cn } from '@/lib/utils'
-import { getPosts, type WordPressPost } from '@/lib/wordpress-client'
+// Use internal API to avoid direct browser calls to WordPress
+import type { WordPressPost } from '@/lib/wordpress-client'
 
 type Post = {
   id: string
@@ -26,8 +27,11 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
   async function loadPage(p: number) {
     setLoading(true)
     try {
-      const data = await getPosts({ page: p, per_page: perPage })
-      const mapped = data.posts.map((post: WordPressPost) => ({
+      const params = new URLSearchParams({ page: String(p), per_page: String(perPage), _embed: '1' })
+      const res = await fetch(`/api/wp/posts?${params.toString()}`)
+      if (!res.ok) throw new Error(`Failed to load posts: ${res.status}`)
+      const posts: WordPressPost[] = await res.json()
+      const mapped = posts.map((post: WordPressPost) => ({
         id: String(post.id),
         title: post.title.rendered,
         author: 'Tech Oblivion',

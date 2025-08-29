@@ -29,6 +29,7 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
   currentPostId,
 }) => {
   const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
+  const [heading, setHeading] = useState<'Related Posts' | 'Recent Posts'>('Related Posts');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +67,21 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
         // Filter out the current post just in case
         const filteredData = data.filter((post: RelatedPost) => post.id !== currentPostId);
 
-        setRelatedPosts(filteredData);
+        if (filteredData.length === 0) {
+          // Fallback: fetch recent posts in chronological order
+          const recentResp = await fetch(`/api/wp/posts?per_page=5&_embed=1`, { headers: { Accept: 'application/json' } })
+          if (recentResp.ok) {
+            const recent = (await recentResp.json()) as any[]
+            const simplified = recent.map(p => ({ id: p.id, slug: p.slug, title: { rendered: p.title?.rendered || '' } }))
+            setRelatedPosts(simplified)
+            setHeading('Recent Posts')
+          } else {
+            setRelatedPosts([])
+          }
+        } else {
+          setRelatedPosts(filteredData);
+          setHeading('Related Posts')
+        }
       } catch (err: any) {
         console.error('Error fetching related posts:', err);
         setError('Failed to load related posts.');
@@ -87,12 +102,12 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
   }
 
   if (relatedPosts.length === 0) {
-    return null; // Don't display the sidebar if no related posts are found
+    return null; // Nothing to show (also covers fallback failure)
   }
 
   return (
     <div className="w-full lg:w-64 lg:sticky lg:top-20 lg:self-start mt-8 lg:mt-0">
-      <h3 className="text-lg font-semibold mb-4 border-b pb-2">Related Posts</h3>
+  <h3 className="text-lg font-semibold mb-4 border-b pb-2">{heading}</h3>
       <ul>
         {relatedPosts.map((post) => (
           <li key={post.id} className="mb-3 last:mb-0">

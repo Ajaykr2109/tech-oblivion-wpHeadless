@@ -11,6 +11,8 @@ export type SessionClaims = {
   roles: string[]
   displayName?: string
   wpUserId?: number
+  // Server-only: WordPress JWT token for privileged proxy calls
+  wpToken?: string
 }
 
 export async function signSession(claims: SessionClaims, maxAgeSec = 60 * 60 * 24 * 7) {

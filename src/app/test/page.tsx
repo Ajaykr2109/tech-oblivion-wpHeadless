@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { getPosts, type WordPressPost } from '@/lib/wordpress-client';
+import { useEffect, useState } from 'react'
+import type { WordPressPost } from '@/lib/wordpress-client'
 
 export default function TestPage() {
   const [posts, setPosts] = useState<WordPressPost[]>([]);
@@ -11,16 +11,18 @@ export default function TestPage() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        setLoading(true);
-        const result = await getPosts({ per_page: 3 });
-        setPosts(result.posts);
-        setError(null);
+        setLoading(true)
+        const res = await fetch('/api/wp/posts?per_page=3&_embed=1')
+        if (!res.ok) throw new Error(`Failed: ${res.status}`)
+        const items: WordPressPost[] = await res.json()
+        setPosts(items)
+        setError(null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch posts');
+        setError(err instanceof Error ? err.message : 'Failed to fetch posts')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
     fetchPosts();
   }, []);

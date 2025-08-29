@@ -4,8 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function CategoryPage({ params }: { params: { slug: string } }) {
+  const { slug } = params
   
   return (
     <div className="container mx-auto px-4 py-12">

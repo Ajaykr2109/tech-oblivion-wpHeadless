@@ -19,9 +19,11 @@ const navLinks = [
 ];
 
 interface User {
+  id?: number | string
   username: string
   email: string
   displayName: string
+  roles?: string[]
 }
 
 export function Header() {
@@ -67,7 +69,7 @@ export function Header() {
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm">
+  <nav className="hidden md:flex items-center gap-6 text-sm">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -84,28 +86,32 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>Admin</DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem asChild><Link href="/admin">Dashboard</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="/admin/posts">Posts</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="/admin/users">Users</Link></DropdownMenuItem>
-                       <DropdownMenuItem asChild><Link href="/admin/comments">Comments</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="/admin/settings">Settings</Link></DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
-                 <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
-                  <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem asChild><Link href="/dashboard">My Account</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="/dashboard/posts">My Posts</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuPortal>
-                </DropdownMenuSub>
+                {!!user?.roles?.some(r => ['administrator','editor'].includes(r)) && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Admin</DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem asChild><Link href="/admin">Dashboard</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/admin/posts">Posts</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/admin/users">Users</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/admin/comments">Comments</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/admin/settings">Settings</Link></DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                )}
+                {!!user?.roles?.some(r => ['subscriber','contributor','author','editor','administrator'].includes(r)) && (
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem asChild><Link href="/dashboard">My Account</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/dashboard/posts">My Posts</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
         </nav>
@@ -166,8 +172,12 @@ export function Header() {
                     {link.label}
                   </Link>
                 ))}
-                 <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
-                 <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
+                 {!!user?.roles?.some(r => ['administrator','editor'].includes(r)) && (
+                   <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
+                 )}
+                 {!!user?.roles?.some(r => ['subscriber','contributor','author','editor','administrator'].includes(r)) && (
+                   <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
+                 )}
                 {!isLoading && (
                   <>
                     {user ? (
