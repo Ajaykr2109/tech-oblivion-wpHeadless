@@ -81,6 +81,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  .dark .focus-visible\:ring-ring {
+    --tw-ring-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)), 0 0 15px 0px hsl(var(--ring) / 0.5);
+  }
 }
 
 body {

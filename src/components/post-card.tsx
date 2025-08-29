@@ -34,7 +34,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
     return (
       <article aria-labelledby={`post-title-${post.id}`}>
         <Link href={`/blog/${post.slug}`} className="block">
-          <Card className="flex flex-col sm:flex-row overflow-hidden border-none shadow-none items-start cursor-pointer hover:bg-gray-50/5 dark:hover:bg-gray-800/20 p-2 rounded-lg">
+          <Card className="flex flex-col sm:flex-row overflow-hidden border-none shadow-none items-start cursor-pointer hover:bg-gray-50/5 dark:hover:bg-gray-800/20 p-2 rounded-lg transition-all duration-300 hover:-translate-y-1">
             <div className="relative aspect-video sm:aspect-square h-24 w-full sm:w-24 flex-shrink-0">
               <ClientImage
                 src={post.imageUrl}
@@ -80,7 +80,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
   return (
     <article aria-labelledby={`post-title-${post.id}`}>
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/20 p-2 rounded-lg transition-colors">
+        <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/20 p-2 rounded-lg transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="p-0">
             <div className="relative aspect-[3/2] w-full">
               <ClientImage
