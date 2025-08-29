@@ -5,10 +5,10 @@ import { sanitizeWP } from '@/lib/sanitize'
 export default async function BlogPage() {
   let posts: any[] = []
   try {
-    posts = await getPosts(10)
+    const res = await getPosts()
+    posts = res.items || []
   } catch (err) {
     // During build/prerender WP may be unavailable; fall back to empty list so build can succeed.
-    // Log to server console for diagnostics.
     // eslint-disable-next-line no-console
     console.error('Blog fetch failed during prerender:', err)
     posts = []
@@ -23,7 +23,7 @@ export default async function BlogPage() {
         <ul>
           {posts.map((p: any) => (
             <li key={p.id}>
-              <a href={`/blog/${p.slug}`} dangerouslySetInnerHTML={{ __html: sanitizeWP(p.title.rendered) }} /> <small>{p.date}</small>
+              <a href={`/blog/${p.slug}`} dangerouslySetInnerHTML={{ __html: sanitizeWP(p.title) }} /> <small>{p.date}</small>
             </li>
           ))}
         </ul>
