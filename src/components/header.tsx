@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Menu, Code2 } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -59,8 +59,7 @@ export function Header() {
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2 font-bold">
-            <Code2 className="h-6 w-6 text-primary" />
-            <span className="hidden font-bold sm:inline-block">
+            <span className="font-bold">
               tech.oblivion
             </span>
           </Link>
@@ -123,7 +122,6 @@ export function Header() {
                   href="/"
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
-                  <Code2 className="h-6 w-6 text-primary" />
                   <span>tech.oblivion</span>
                 </Link>
                 {navLinks.map((link) => (
