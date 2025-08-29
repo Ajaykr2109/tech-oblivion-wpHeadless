@@ -10,19 +10,19 @@
     --card-foreground: 240 10% 3.9%; /* Dark Gray */
     --popover: 0 0% 100%; /* White */
     --popover-foreground: 240 10% 3.9%; /* Dark Gray */
-    --primary: 210 70% 50%; /* A subtle blue similar to Firebase */
+    --primary: 260 70% 55%; /* Deep Purple */
     --primary-foreground: 0 0% 98%; /* White */
-    --secondary: 220 14.3% 95.9%; /* Light Gray */
+    --secondary: 240 5% 96%; /* Lighter Gray */
     --secondary-foreground: 240 5.9% 10%; /* Dark Gray */
-    --muted: 220 14.3% 95.9%; /* Light Gray */
+    --muted: 240 5% 96%; /* Lighter Gray */
     --muted-foreground: 240 3.8% 46.1%; /* Medium Gray */
-    --accent: 210 70% 50%; /* Use the primary accent color */
-    --accent-foreground: 0 0% 98%; /* White */
+    --accent: 240 5% 96%; /* Lighter Gray */
+    --accent-foreground: 240 5.9% 10%; /* Dark Gray */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 14.3% 91.5%; /* Light Gray Border */
-    --input: 220 14.3% 91.5%; /* Light Gray Input Border */
-    --ring: 210 70% 50%; /* Ring color matching primary */
+    --border: 240 5% 90%; /* Softer border for inputs/fallbacks */
+    --input: 240 5% 90%;
+    --ring: 260 80% 75%; /* Brighter Purple for glow/focus */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -51,8 +51,8 @@
     --secondary-foreground: 0 0% 98%;
     --muted: 240 4% 12%;
     --muted-foreground: 240 4% 60%;
-    --accent: 260 70% 65%; /* Deep Purple */
-    --accent-foreground: 0 0% 100%;
+    --accent: 240 4% 12%; /* Dark grey */
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 4% 15%;
@@ -81,7 +81,7 @@
   body {
     @apply bg-background text-foreground;
   }
-  .dark .focus-visible\:ring-ring {
+  .focus-visible\:ring-ring {
     --tw-ring-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)), 0 0 15px 0px hsl(var(--ring) / 0.5);
     box-shadow: var(--tw-ring-shadow);
   }
