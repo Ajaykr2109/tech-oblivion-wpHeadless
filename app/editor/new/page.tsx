@@ -8,7 +8,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 
 const EditorToolbar = () => (
     <div className="flex items-center gap-1 border-b p-2 flex-wrap">
@@ -241,6 +242,43 @@ export default function EditorNewPage() {
                   </div>
               </AccordionContent>
             </AccordionItem>
+
+             <AccordionItem value="linking">
+              <AccordionTrigger className="p-4 bg-card rounded-t-lg border mt-4">Auto Internal Linking</AccordionTrigger>
+              <AccordionContent className="p-4 bg-card rounded-b-lg border border-t-0">
+                <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="linkingKeywords">Focus Keywords & Phrases</Label>
+                      <Textarea id="linkingKeywords" rows={3} placeholder="Enter keywords, one per line, to find linking opportunities." />
+                      <p className="text-xs text-muted-foreground mt-1">The AI will find mentions of these phrases in your text and suggest relevant internal links.</p>
+                    </div>
+                    <Button variant="outline" className="w-full"><Bot className="mr-2 h-4 w-4" /> Generate Link Suggestions</Button>
+                    <div className="mt-2 p-2 border-t border-dashed">
+                      <p className="text-sm text-center text-muted-foreground">Suggestions will appear here.</p>
+                    </div>
+                  </div>
+              </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="checklist">
+                <AccordionTrigger className="p-4 bg-card rounded-t-lg border mt-4">SEO Checklist</AccordionTrigger>
+                <AccordionContent className="p-4 bg-card rounded-b-lg border border-t-0">
+                    <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertTitle>Pre-Publish Checks</AlertTitle>
+                        <AlertDescription>
+                            <ul className="list-disc pl-4 text-xs space-y-1 mt-2">
+                                <li><strong>Title Length:</strong> 50-60 characters recommended.</li>
+                                <li><strong>Meta Description:</strong> 150-160 characters recommended.</li>
+                                <li><strong>Focus Keyword:</strong> Included in title, meta, and first paragraph.</li>
+                                <li><strong>Featured Image:</strong> Set and has alt text.</li>
+                                <li><strong>Internal Links:</strong> At least 1-2 relevant internal links.</li>
+                            </ul>
+                        </AlertDescription>
+                    </Alert>
+                </AccordionContent>
+            </AccordionItem>
+
           </Accordion>
         </div>
       </div>
