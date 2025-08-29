@@ -1,10 +1,9 @@
-import { z } from 'zod'
-
 export type APIError = { status: number; message: string; details?: unknown }
 
-const WP_URL = process.env.WP_URL
-
-if (!WP_URL) throw new Error('WP_URL env required')
+// Don't throw at module load time; some build steps import this file when
+// environment variables may not be present. Validate WP_URL at runtime in
+// `wpFetch` so build-time data collection doesn't crash.
+const WP_URL = process.env.WP_URL ?? ''
 
 export async function apiFetch<T = unknown>(path: string, opts?: { method?: string; body?: unknown; headers?: Record<string,string>; credentials?: RequestCredentials }) : Promise<T> {
   const url = path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}${path}`
@@ -33,6 +32,7 @@ export async function apiFetch<T = unknown>(path: string, opts?: { method?: stri
 }
 
 export const wpFetch = async <T = unknown>(wpPath: string, opts?: { method?: string; body?: unknown; cookie?: string }) => {
+  if (!WP_URL) throw new Error('WP_URL env required')
   const url = wpPath.startsWith('http') ? wpPath : `${WP_URL.replace(/\/$/, '')}/${wpPath.replace(/^\//, '')}`
   const headers: Record<string,string> = { 'content-type': 'application/json' }
   if (opts?.cookie) headers['cookie'] = opts.cookie
