@@ -1,5 +1,13 @@
 This project implements a Next.js App Router frontend that proxies WordPress auth via API routes.
 
+## Api Routes
+
+* `/wp-json/wp/v2/posts` → All published posts (title, content, excerpt, etc.).
+* `/wp-json/wp/v2/pages` → All public pages.
+* `/wp-json/wp/v2/media` → Media library info (URLs, captions).
+* `/wp-json/wp/v2/categories`, `/tags` → Taxonomies.
+* `/wp-json/wp/v2/users`
+
 ## Key features:
 
 - Proxy auth: POST /api/auth/login, /api/auth/register, /api/auth/logout, GET /api/auth/me
@@ -17,12 +25,15 @@ This project implements a Next.js App Router frontend that proxies WordPress aut
 5. After verifying via WP email link, login should succeed and set HttpOnly cookie. Visiting `/dashboard` should show the user.
 
 ## Instant cache purge / webhook
+
 1. Configure your WordPress site (or a webhook plugin) to POST to the revalidation endpoint when a post is published/updated.
-  - Endpoint: https://your-site.com/api/revalidate?secret=change-me-long-random
-  - Body: { "slug": "the-post-slug" }
-  - To revalidate lists instead, send { "all": true } or call the endpoint with ?secret=...&all=true
+
+- Endpoint: https://your-site.com/api/revalidate?secret=change-me-long-random
+- Body: { "slug": "the-post-slug" }
+- To revalidate lists instead, send { "all": true } or call the endpoint with ?secret=...&all=true
 
 ## CI / developer checks
+
 - Add these to CI for a cheap safety net:
   - npm run typecheck
   - npm run build
@@ -30,6 +41,7 @@ This project implements a Next.js App Router frontend that proxies WordPress aut
 
 Deployment & secrets
 --------------------
+
 When you deploy to production, do NOT keep production secrets in `.env.local` inside the repo. Use your host's environment variable/secret manager (Vercel, Netlify, AWS/GCP/Azure, etc.). Required production env vars:
 
 - `WP_URL` (your WordPress URL)
@@ -49,7 +61,8 @@ openssl rand -hex 48
 ```
 
 Local pre-deploy env check
--------------------------
+--------------------------
+
 Add this to CI to fail fast if required production env vars are missing:
 
 ```bash
@@ -57,8 +70,6 @@ npm run check-env
 ```
 
 This runs a tiny validator that ensures required env keys are present when `NODE_ENV=production`.
-
-
 
 ## WordPress → Next.js Revalidation
 
@@ -92,7 +103,6 @@ curl -X POST https://<frontend>/api/revalidate \
   -H "Content-Type: application/json" \
   -d '{"slug":"hello-world","secret":"<NEXT_REVALIDATE_SECRET>"}' -i
 ```
-
 
 # Firebase Studio
 

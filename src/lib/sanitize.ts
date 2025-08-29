@@ -11,6 +11,23 @@ export const allowedAttributes: any = {
 }
 
 export function sanitizeWP(html: string) {
+  const WP = process.env.WP_URL ?? ''
+
+  function rewriteIfWP(src?: string) {
+    if (!src) return src
+    if (!WP) return src
+    try {
+      const u = new URL(src)
+      const wpHost = new URL(WP).host
+      if (u.host === wpHost) {
+        return `/api/wp/media${u.pathname}${u.search}`
+      }
+      return src
+    } catch (e) {
+      return src
+    }
+  }
+
   return sanitizeHtml(html, {
     allowedTags,
     allowedAttributes,
@@ -23,6 +40,30 @@ export function sanitizeWP(html: string) {
         tagName: 'a',
         attribs: { ...attribs, rel: 'noopener noreferrer' }
       }),
+      img: (tag: any, attribs: any) => ({
+        tagName: 'img',
+        attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
+      }),
+      iframe: (tag: any, attribs: any) => ({
+        tagName: 'iframe',
+        attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
+      }),
+    },
+    // Post-process style attributes to rewrite url(...) references if they point to WP
+    textFilter: (text: string) => {
+      if (!WP) return text
+      return text.replace(/url\(([^)]+)\)/g, (m, g1) => {
+        const raw = g1.trim().replace(/^['"]|['"]$/g, '')
+        try {
+          const u = new URL(raw)
+          if (u.host === new URL(WP).host) {
+            return `url(/api/wp/media${u.pathname}${u.search})`
+          }
+          return `url(${raw})`
+        } catch (e) {
+          return `url(${raw})`
+        }
+      })
     },
   })
 }

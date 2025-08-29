@@ -1,6 +1,7 @@
 import { logWPError } from './log'
 
-const WP = process.env.WP_URL!
+// NOTE: do not read WP_URL at module load time. Read it at runtime inside each
+// function so build-time imports won't crash when envs aren't present.
 
 export type WPPost = {
   id: number
@@ -30,12 +31,27 @@ export type PostDetail = {
   date: string
 }
 
-function mediaUrl(p: WPPost) {
+function _rawMediaUrl(p: WPPost) {
   return p._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null
 }
 
+function proxiedMediaUrl(src: string | null | undefined) {
+  if (!src) return null
+  try {
+    const u = new URL(src)
+    // Keep path + search so we preserve filenames and query strings if any
+    return `/api/wp/media${u.pathname}${u.search}`
+  } catch (e) {
+    // If it's not a valid absolute URL, leave it alone
+    return src
+  }
+}
+
 export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
-  const url = new URL(`${WP}/wp-json/wp/v2/posts`)
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) throw new Error('WP_URL env required')
+
+  const url = new URL('/wp-json/wp/v2/posts', WP)
   url.searchParams.set('_embed', '1')
   url.searchParams.set('page', String(page))
   url.searchParams.set('per_page', String(perPage))
@@ -49,7 +65,7 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   if (!res.ok) {
     const body = await res.text()
     // Log upstream diagnostic for debugging (truncated body)
-  logWPError('getPosts', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
+    logWPError('getPosts', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
     throw new Error(`WP posts ${res.status}: ${body}`)
   }
 
@@ -59,7 +75,7 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   try {
     items = (await res.json()) as WPPost[]
   } catch (e: any) {
-  logWPError('getPosts-json', { statusText: String(e), body: undefined })
+    logWPError('getPosts-json', { statusText: String(e), body: undefined })
     throw e
   }
 
@@ -69,7 +85,8 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
       slug: p.slug,
       title: p.title.rendered,
       excerptHtml: p.excerpt.rendered,
-      featuredImage: mediaUrl(p),
+      // rewrite featured image to our media proxy so the browser never calls WP origin
+      featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
       date: p.date,
     })),
     total,
@@ -78,11 +95,17 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
 }
 
 export async function getPostBySlug(slug: string) {
-  const url = `${WP}/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&_embed=1`
-  const res = await fetch(url, { next: { revalidate: 60 } })
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) throw new Error('WP_URL env required')
+
+  const url = new URL('/wp-json/wp/v2/posts', WP)
+  url.searchParams.set('slug', slug)
+  url.searchParams.set('_embed', '1')
+
+  const res = await fetch(url.toString(), { next: { revalidate: 60 } })
   if (!res.ok) {
     const body = await res.text()
-  logWPError('getPostBySlug', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
+    logWPError('getPostBySlug', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
     throw new Error(`WP post ${res.status}: ${body}`)
   }
 
@@ -90,7 +113,7 @@ export async function getPostBySlug(slug: string) {
   try {
     arr = (await res.json()) as WPPost[]
   } catch (e: any) {
-  logWPError('getPostBySlug-json', { statusText: String(e), body: undefined })
+    logWPError('getPostBySlug-json', { statusText: String(e), body: undefined })
     throw e
   }
   const p = arr[0]
@@ -101,7 +124,7 @@ export async function getPostBySlug(slug: string) {
     slug: p.slug,
     title: p.title.rendered,
     contentHtml: p.content.rendered,
-    featuredImage: mediaUrl(p),
+    featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
     date: p.date,
   }
 }
