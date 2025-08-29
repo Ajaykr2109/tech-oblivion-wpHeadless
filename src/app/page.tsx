@@ -62,6 +62,11 @@ export default async function Home() {
               </div>
             )}
           </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <Button variant="outline" size="lg" asChild><a href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer"><Send className="mr-2 h-4 w-4" /> Join Discord</a></Button>
+            <Button variant="outline" size="lg" asChild><a href="/blog"><BookOpen className="mr-2 h-4 w-4" /> Read Blog</a></Button>
+            <Button variant="outline" size="lg" asChild><a href="https://www.youtube.com/@tech.oblivion" target="_blank" rel="noopener noreferrer"><Rss className="mr-2 h-4 w-4" /> YouTube Channel</a></Button>
+          </div>
         </div>
         <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
@@ -70,16 +75,6 @@ export default async function Home() {
           </div>
         </div>
       </div>
-
-      <section className="py-8">
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button variant="outline" size="lg" asChild><a href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer"><Send className="mr-2 h-4 w-4" /> Join Discord</a></Button>
-          <Button variant="outline" size="lg" asChild><a href="/blog"><BookOpen className="mr-2 h-4 w-4" /> Read Blog</a></Button>
-          <Button variant="outline" size="lg" asChild><a href="https://www.youtube.com/@tech.oblivion" target="_blank" rel="noopener noreferrer"><Rss className="mr-2 h-4 w-4" /> YouTube Channel</a></Button>
-        </div>
-      </section>
-
-  {/* Reduce duplicate data fetching; keep homepage light */}
     </div>
   )
 }
