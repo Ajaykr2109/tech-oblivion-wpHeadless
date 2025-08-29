@@ -1,3 +1,4 @@
+
 import React from 'react'
 import { Metadata } from 'next'
 import Image from 'next/image'
@@ -9,9 +10,9 @@ import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { sanitizeWP } from '@/lib/sanitize'
 import { getSettings } from '@/lib/settings'
 import { getPostBySlug } from '@/lib/wp'
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   try {
-    const { slug } = await params
+    const { slug } = params
     const [post, settings] = await Promise.all([getPostBySlug(slug), getSettings()])
     if (!post) return { title: slug }
     const desc = (post.seo?.description || post.contentHtml?.replace(/<[^>]+>/g, '').slice(0, 160) || undefined)
@@ -39,12 +40,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   } catch (err: any) {
     console.error('generateMetadata error:', err)
-    const { slug } = await params
+    const { slug } = params
     return { title: slug }
   }
 }
 
-export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PostPage({ params }: { params: { slug: string } }) {
   // Initialize highlight.js server-side
   // This ensures that code blocks are highlighted on initial render
   hljs.configure({ ignoreUnescapedHTML: true }) // Optional: configure to ignore HTML in code blocks
@@ -52,7 +53,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   let post: any = null
 
   try {
-    const { slug } = await params
+    const { slug } = params
     post = await getPostBySlug(slug)
   } catch (err: any) {
     console.error('Error fetching post:', err)
