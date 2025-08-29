@@ -25,9 +25,15 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="font-semibold mb-4">Connect</h3>
             <div className="flex justify-center md:justify-start space-x-4">
-              <a href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Send /></a>
-              <a href="https://www.youtube.com/@tech.oblivion" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground"><Rss /></a>
-              <a href="/blog" className="text-muted-foreground hover:text-foreground"><BookOpen /></a>
+              <a aria-label="Join our Discord" href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-1">
+                <Send className="h-4 w-4" /> <span className="sr-only">Discord</span>
+              </a>
+              <a aria-label="Subscribe to our channel" href="https://www.youtube.com/@tech.oblivion" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-1">
+                <Rss className="h-4 w-4" /> <span className="sr-only">YouTube</span>
+              </a>
+              <a aria-label="Read our blog" href="/blog" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-1">
+                <BookOpen className="h-4 w-4" /> <span className="sr-only">Blog</span>
+              </a>
             </div>
           </div>
         </div>

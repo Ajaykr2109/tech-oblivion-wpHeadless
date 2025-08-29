@@ -118,18 +118,18 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           {error && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-4" role="alert" aria-live="assertive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           <form className="space-y-6" onSubmit={onSubmit}>
             <div className="space-y-2">
               <Label htmlFor="identifier">Username or Email</Label>
-              <Input id="identifier" name="identifier" type="text" placeholder="your.username@example.com" required />
+              <Input id="identifier" name="identifier" type="text" placeholder="you@example.com or username" autoComplete="username" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input id="password" name="password" type="password" autoComplete="current-password" required />
             </div>
             <div className="flex items-center justify-between">
               <div className="text-sm">
@@ -138,8 +138,8 @@ export default function LoginPage() {
                 </Link>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
+            <Button type="submit" className="w-full" disabled={isLoading} aria-busy={isLoading}>
+              {isLoading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
            <div className="mt-4 text-center text-sm">

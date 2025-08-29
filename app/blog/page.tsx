@@ -1,6 +1,7 @@
 
-import React from 'react'
+import React, { Suspense } from 'react'
 import Feed from '@/components/feed'
+import FeedSkeleton from '@/components/feed-skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
@@ -50,7 +51,10 @@ export default async function BlogIndexPage() {
         </CardContent>
       </Card>
       
-      <Feed layout="grid" postCount={6} />
+      <Suspense fallback={<FeedSkeleton layout="grid" count={6} />}>
+        {/* Server component fetch with skeleton fallback */}
+        <Feed layout="grid" postCount={6} />
+      </Suspense>
       
     </div>
   )

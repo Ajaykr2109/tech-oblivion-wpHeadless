@@ -22,8 +22,10 @@ export default async function RootLayout({
       <body className={`${inter.variable} font-body antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="flex min-h-screen flex-col">
+            {/* Skip link for keyboard users */}
+            <a href="#main-content" className="skip-link">Skip to content</a>
             <Header />
-            <main className="flex-grow">{children}</main>
+            <main id="main-content" className="flex-grow">{children}</main>
             <Footer />
           </div>
           <Toaster />

@@ -69,19 +69,20 @@ export function Header() {
           </Link>
         </div>
 
-  <nav className="hidden md:flex items-center gap-6 text-sm">
+  <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="text-muted-foreground transition-colors hover:text-foreground"
+              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              aria-current={typeof window !== 'undefined' && window.location?.pathname === link.href ? 'page' : undefined}
             >
               {link.label}
             </Link>
           ))}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0">
+                <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-haspopup="menu" aria-expanded={undefined}>
                   More <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -122,7 +123,7 @@ export function Header() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">
+                    <Button variant="ghost" aria-label="User menu">
                       {user.username}
                     </Button>
                   </DropdownMenuTrigger>
@@ -150,7 +151,7 @@ export function Header() {
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
-                aria-label="Toggle Navigation"
+                aria-label="Toggle navigation"
 >
                 <Menu className="h-5 w-5" />
               </Button>

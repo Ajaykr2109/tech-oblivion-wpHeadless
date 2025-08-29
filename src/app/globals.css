@@ -84,6 +84,10 @@ body {
   word-break: normal;
   overflow-wrap: anywhere;
   white-space: normal;
+  /* Keep comfortable line length */
+  max-width: 75ch;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Extra polish for markdown-like content */
@@ -118,4 +122,35 @@ body {
 .wp-content h2[id],
 .wp-content h3[id] {
   scroll-margin-top: 6rem;
+}
+
+/* Better focus styles for links/buttons */
+a:focus-visible,
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)),
+    0 0 10px 0 hsl(var(--ring) / 0.4);
+  border-radius: 0.375rem;
+}
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 0.75rem;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+  border-radius: 0.375rem;
+  z-index: 1000;
 }
