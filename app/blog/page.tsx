@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 
 export const dynamic = 'force-static'
 
@@ -21,37 +22,36 @@ export default async function BlogIndexPage() {
         </p>
       </div>
 
-      <div className="mb-8 p-4 border rounded-lg bg-card/50">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
-          <div className="lg:col-span-2">
-            <div className="relative">
+      <Card className="mb-8">
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+            <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search articles..." className="pl-10" />
+              <Input placeholder="Search articles by keyword..." className="pl-10" />
             </div>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="ai">AI</SelectItem>
+                <SelectItem value="web-dev">Web Development</SelectItem>
+                <SelectItem value="react">React</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="latest">Latest</SelectItem>
+                <SelectItem value="popular">Popular</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="ai">AI</SelectItem>
-              <SelectItem value="web-dev">Web Development</SelectItem>
-              <SelectItem value="react">React</SelectItem>
-            </SelectContent>
-          </Select>
-           <Select>
-            <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="latest">Latest</SelectItem>
-              <SelectItem value="popular">Popular</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button className="w-full">Search</Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
       <Feed layout="grid" postCount={6} />
       
