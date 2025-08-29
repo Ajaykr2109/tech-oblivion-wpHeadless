@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Note: allowedDevOrigins is a future/experimental setting; omit to avoid invalid config in this Next version.
 };
 
 export default nextConfig;
