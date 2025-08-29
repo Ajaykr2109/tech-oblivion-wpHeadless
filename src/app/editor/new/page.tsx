@@ -13,7 +13,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { fetchAllCategories, buildCategoryTree, type WpCategory, fetchAllTags } from '@/lib/taxonomy-client'
+import { fetchAllCategories, buildCategoryTree, type WpCategory, fetchAllTags, createCategory } from '@/lib/taxonomy-client'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 const EditorToolbar = () => (
     <div className="flex items-center gap-1 border-b p-2 flex-wrap">
@@ -167,6 +168,10 @@ export default function EditorNewPage() {
   const [categories, setCategories] = useState<WpCategory[]>([])
   const [categoryTree, setCategoryTree] = useState<any[]>([])
   const [tagsList, setTagsList] = useState<string[]>([])
+  const [catDialogOpen, setCatDialogOpen] = useState(false)
+  const [newCat, setNewCat] = useState<{ name: string; slug: string; parent: string }>({ name: '', slug: '', parent: '' })
+  const [creatingCat, setCreatingCat] = useState(false)
+  const [catError, setCatError] = useState<string | null>(null)
 
   useEffect(() => {
     const words = post.content.trim().split(/\s+/).filter(Boolean);
@@ -198,6 +203,35 @@ export default function EditorNewPage() {
     const { name, value } = e.target;
     setPost(prev => ({ ...prev, [name]: value }));
   };
+
+  async function refreshCategories(selectId?: number) {
+    try {
+      const cats = await fetchAllCategories()
+      setCategories(cats)
+      const tree = buildCategoryTree(cats)
+      setCategoryTree(tree)
+      if (selectId) setPost(p => ({ ...p, category: String(selectId) }))
+    } catch (e) {
+      console.error('Failed to refresh categories', e)
+    }
+  }
+
+  async function onCreateCategory() {
+    setCreatingCat(true); setCatError(null)
+    try {
+      if (!newCat.name.trim()) throw new Error('Name is required')
+      const payload: any = { name: newCat.name.trim() }
+      if (newCat.slug.trim()) payload.slug = newCat.slug.trim()
+      if (newCat.parent) payload.parent = Number(newCat.parent)
+      const res = await createCategory(payload)
+      const id = res?.id
+      await refreshCategories(id)
+      setCatDialogOpen(false)
+      setNewCat({ name: '', slug: '', parent: '' })
+    } catch (e: any) {
+      setCatError(e.message || 'Failed to create category')
+    } finally { setCreatingCat(false) }
+  }
 
   function toWpStatus(ui: string, override?: 'draft'|'publish'|'pending') {
     if (override) return override
@@ -323,16 +357,62 @@ export default function EditorNewPage() {
                   <div className="p-4 grid gap-4">
                     <div>
                       <Label htmlFor="category">Category</Label>
+                      <div className="flex items-center gap-2">
                       <Select value={post.category} onValueChange={(value) => setPost(p => ({...p, category: value}))}>
                         <SelectTrigger id="category">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categoryTree.map((node) => (
-                            <CategoryOptions key={node.id} node={node} level={0} />
-                          ))}
+                          {categoryTree.length === 0 ? (
+                            <SelectItem value="" disabled>No categories yet</SelectItem>
+                          ) : (
+                            categoryTree.map((node) => (
+                              <CategoryOptions key={node.id} node={node} level={0} />
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
+                        <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button type="button" variant="outline" size="sm">New Category</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Create Category</DialogTitle>
+                              <DialogDescription>Add a new category. You can assign a parent for hierarchy.</DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-3 py-2">
+                              <div>
+                                <Label htmlFor="newCatName">Name</Label>
+                                <Input id="newCatName" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder="e.g., Technology" />
+                              </div>
+                              <div>
+                                <Label htmlFor="newCatSlug">Slug (optional)</Label>
+                                <Input id="newCatSlug" value={newCat.slug} onChange={(e) => setNewCat({ ...newCat, slug: e.target.value })} placeholder="technology" />
+                              </div>
+                              <div>
+                                <Label htmlFor="newCatParent">Parent (optional)</Label>
+                                <Select value={newCat.parent} onValueChange={(v) => setNewCat({ ...newCat, parent: v })}>
+                                  <SelectTrigger id="newCatParent">
+                                    <SelectValue placeholder="None" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">None</SelectItem>
+                                    {categoryTree.map((node) => (
+                                      <CategoryOptions key={node.id} node={node} level={0} />
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {catError && <p className="text-sm text-red-600" role="alert">{catError}</p>}
+                            </div>
+                            <DialogFooter>
+                              <Button type="button" variant="outline" onClick={() => setCatDialogOpen(false)}>Cancel</Button>
+                              <Button type="button" onClick={onCreateCategory} disabled={creatingCat}>{creatingCat ? 'Creating…' : 'Create'}</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">Supports parent → child hierarchy like WordPress</p>
                     </div>
                     <div>
@@ -341,6 +421,9 @@ export default function EditorNewPage() {
                        <div className="flex flex-wrap gap-2 mt-2">
                         {/* Example tags would appear here as they are added */}
                       </div>
+                      {tagsList.length === 0 && (
+                        <p className="text-xs text-muted-foreground">No tag suggestions yet.</p>
+                      )}
                     </div>
                   </div>
                 </AccordionContent>

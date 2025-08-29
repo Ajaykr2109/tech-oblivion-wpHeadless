@@ -8,6 +8,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    return [
+      { source: '/editor/new', destination: '/editor/new', permanent: false },
+      { source: '/editor/:id', destination: '/editor/:id', permanent: false },
+    ]
+  },
   images: {
     remotePatterns: [
       {

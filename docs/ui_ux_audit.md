@@ -50,3 +50,22 @@ Notes:
 
 - All changes are non-breaking UI polish and accessibility enhancements.
 - No client-to-WordPress direct calls were introduced; architecture remains secure.
+
+## 2025-08-30 (Homepage layout refinement)
+
+- File: `src/app/page.tsx`
+  - Reduced top padding and tightened vertical rhythm so Featured content is above the fold.
+  - Switched to `grid grid-cols-1 md:grid-cols-2 items-start gap-8` to keep Recent Updates and Recent Posts aligned without stretching.
+  - Wrapped Feed with a `.feed-conditional-4` container so the 4th item can be conditionally revealed by CSS.
+  - Kept default posts at 3 visible; 4th appears when viewport height allows.
+
+- File: `src/app/globals.css`
+  - Added cross-browser CSS: hide Feed’s 4th card by default; reveal it via `@media (min-height: 820px)`.
+  - Chosen to avoid JS measurements and sticky/overflow quirks in Safari and Edge.
+  - Uses standard selectors and media queries for consistent behavior across Chrome/Firefox/Safari/Edge.
+
+  ## 2025-08-30 (Blog rendering updates)
+
+  - Cached Table of Contents: Built once per post (in-memory) using `src/lib/toc.ts`; skipped entirely when empty.
+  - Auto-linking: Implemented `autoLinkFirst` to link only the first occurrence and avoid duplicates; no JS at runtime in client—applied server-side at render.
+  - Maintained typography rhythm using existing prose classes; avoided extra heading stylization beyond scale/margins.

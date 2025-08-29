@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { getPostBySlug } from '@/lib/wp'
+import { getOrBuildToc } from '@/lib/toc'
+import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
@@ -29,8 +31,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
     const post = await getPostBySlug(slug)
   if (!post) notFound()
 
-  const rawHtml = post.contentHtml || ''
-  const safeHtml = sanitizeWP(rawHtml)
+    const rawHtml = post.contentHtml || ''
+    const safeHtml = sanitizeWP(rawHtml)
 
   // Simple reading time based on words/minute
   const wordsPerMinute = 225
@@ -38,14 +40,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / wordsPerMinute))
   const readingTime = `${readingTimeMinutes} min read`
 
-  // Lightweight TOC: grab h2/h3 tags
-  const tocMatches = Array.from(safeHtml.matchAll(/<h([23])[^>]*>(.*?)<\/h\1>/gi))
-  const tableOfContents = tocMatches.map((m) => {
-    const level = Number(m[1])
-    const text = m[2].replace(/<[^>]+>/g, '')
-    const slug = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    return { level, text, slug }
-  })
+    // Cached TOC (server memory) – skip entirely if empty
+    const tableOfContents = await getOrBuildToc(Number(post.id), safeHtml)
 
         const highlightedContent = safeHtml.replace(/<pre><code class="language-([a-z0-9_-]+)">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
     try {
@@ -56,7 +52,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
     }
   })
 
-    // Inject IDs into h2/h3 so the TOC anchors work
+        // Inject IDs into h2/h3 so the TOC anchors work
     const contentWithHeadingIds = highlightedContent.replace(/<h([23])(\s[^>]*)?>([\s\S]*?)<\/h\1>/gi, (m, level, attrs = '', inner) => {
         // If an id already exists, keep it
         if (/\sid=/i.test(attrs)) return m
@@ -65,6 +61,10 @@ export default async function PostPage({ params }: { params: { slug: string } })
         const attrsOut = attrs ? `${attrs} id="${slug}"` : ` id="${slug}"`
         return `<h${level}${attrsOut}>${inner}</h${level}>`
     })
+
+    // Auto-linking: only first occurrence per target; keep minimal list for now
+    const autoLinkTargets: AutoLinkTarget[] = [] // populate from settings if available
+    const contentLinked = autoLinkFirst(contentWithHeadingIds, autoLinkTargets)
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
@@ -144,7 +144,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         <article className="lg:col-span-8 min-w-0">
                 <div
             className="wp-content prose prose-lg dark:prose-invert max-w-none lg:max-w-[75ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
-                    dangerouslySetInnerHTML={{ __html: contentWithHeadingIds }}
+                    dangerouslySetInnerHTML={{ __html: contentLinked }}
                 />
             </article>
 
