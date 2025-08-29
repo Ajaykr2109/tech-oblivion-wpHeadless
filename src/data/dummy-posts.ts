@@ -8,6 +8,7 @@ export type Post = {
   imageHint: string;
   excerpt: string;
   slug: string;
+  date: string;
 };
 
 export const dummyPosts: Post[] = [
@@ -20,6 +21,7 @@ export const dummyPosts: Post[] = [
     imageHint: "AI technology",
     excerpt: "Discover how artificial intelligence is revolutionizing the way we build and interact with websites.",
     slug: "future-of-ai-in-web-dev",
+    date: "2024-07-28",
   },
   {
     id: "2",
@@ -30,6 +32,7 @@ export const dummyPosts: Post[] = [
     imageHint: "server code",
     excerpt: "Exploring the latest advancements in React and how server components are changing the game.",
     slug: "react-server-components-deep-dive",
+    date: "2024-07-27",
   },
   {
     id: "3",
@@ -40,6 +43,7 @@ export const dummyPosts: Post[] = [
     imageHint: "modern design",
     excerpt: "Tips and tricks for leveraging Tailwind CSS to create beautiful and responsive user interfaces.",
     slug: "mastering-tailwind-css",
+    date: "2024-07-26",
   },
   {
     id: "4",
@@ -50,6 +54,7 @@ export const dummyPosts: Post[] = [
     imageHint: "web framework",
     excerpt: "A comprehensive guide to setting up your first project with the latest version of Next.js.",
     slug: "getting-started-with-nextjs-14",
+    date: "2024-07-25",
   },
   {
     id: "5",
@@ -60,6 +65,7 @@ export const dummyPosts: Post[] = [
     imageHint: "AI development",
     excerpt: "An overview of Genkit and how it simplifies building powerful, production-ready AI apps.",
     slug: "rise-of-genkit",
+    date: "2024-07-24",
   },
   {
     id: "6",
@@ -70,5 +76,6 @@ export const dummyPosts: Post[] = [
     imageHint: "website performance",
     excerpt: "Practical advice for improving your website's performance and user experience metrics.",
     slug: "optimizing-core-web-vitals",
+    date: "2024-07-23",
   },
 ];

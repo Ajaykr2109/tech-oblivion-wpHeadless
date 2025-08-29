@@ -20,6 +20,7 @@ export type Post = {
   imageHint: string;
   excerpt: string;
   slug: string;
+  date: string;
 };
 
 type PostCardProps = {
@@ -33,13 +34,13 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
     return (
       <article aria-labelledby={`post-title-${post.id}`}>
         <Link href={`/blog/${post.slug}`} className="block">
-          <Card className="flex flex-row overflow-hidden border-none shadow-none items-center cursor-pointer hover:bg-gray-50">
+          <Card className="flex flex-row overflow-hidden border-none shadow-none items-start cursor-pointer hover:bg-gray-50/5 dark:hover:bg-gray-800/20 p-2 rounded-lg">
             <div className="relative aspect-square h-24 w-24 flex-shrink-0">
               <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
                 fill
-                className="object-cover"
+                className="object-cover rounded-md"
                 sizes="96px"
                 loading="lazy"
                 data-ai-hint={post.imageHint}
@@ -49,18 +50,14 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
                <CardTitle id={`post-title-${post.id}`} className="text-md leading-tight">
                 {post.title}
               </CardTitle>
+               <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                {post.excerpt}
+              </p>
               <div className="flex items-center space-x-2 mt-2">
-                <Avatar className="h-6 w-6">
-                <AvatarImage src={post.avatar} alt={post.author} />
-                <AvatarFallback>
-                  {post.author
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs font-medium text-muted-foreground">{post.author}</p>
-            </div>
+                 <p className="text-xs font-medium text-muted-foreground">
+                  {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
           </div>
         </Card>
         </Link>
@@ -71,27 +68,27 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
   return (
     <article aria-labelledby={`post-title-${post.id}`}>
       <Link href={`/blog/${post.slug}`} className="block h-full">
-        <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50">
+        <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/20 p-2 rounded-lg transition-colors">
           <CardHeader className="p-0">
             <div className="relative aspect-[3/2] w-full">
               <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
                 fill
-                className="object-cover"
+                className="object-cover rounded-md"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 loading="lazy"
                 data-ai-hint={post.imageHint}
               />
             </div>
           </CardHeader>
-          <CardContent className="flex-grow p-6">
+          <CardContent className="flex-grow p-4">
             <CardTitle id={`post-title-${post.id}`} className="text-xl">
               {post.title}
             </CardTitle>
             <CardDescription className="mt-2">{post.excerpt}</CardDescription>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="p-4">
             <div className="flex items-center space-x-3">
               <Avatar>
                 <AvatarImage src={post.avatar} alt={post.author} />
@@ -104,6 +101,9 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
               </Avatar>
               <div>
                 <p className="text-sm font-medium leading-none">{post.author}</p>
+                <p className="text-xs text-muted-foreground">
+                   {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
               </div>
             </div>
           </CardFooter>
