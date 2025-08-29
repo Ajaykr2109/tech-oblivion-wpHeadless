@@ -59,7 +59,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   // Calculate reading time from dummy content
   const wordsPerMinute = 225;
   const wordCount = dummyContentHtml.replace(/<[^>]+>/g, '').split(/\s+/).length;
-  const readingTimeMinutes = Math.ceil(wordCount / wordsPerMinute);
+  const readingTimeMinutes = Math.ceil(wordCount / wordCount);
   const readingTime = `${readingTimeMinutes} min read`;
 
   // Dummy Table of Contents

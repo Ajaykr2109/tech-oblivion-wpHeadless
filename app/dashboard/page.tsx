@@ -1,6 +1,8 @@
 
 import React from 'react'
 import Link from 'next/link'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default async function DashboardPage() {
   // Dummy user data for design purposes, replacing the authentication check.
@@ -13,54 +15,52 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Display Name</label>
-            <p className="mt-1 text-sm text-gray-900">{user.displayName}</p>
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">Welcome back, {user.displayName}!</p>
+      </div>
+      
+      <Card className="bg-card/50">
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+          <CardDescription>Your personal and account details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Display Name</p>
+              <p>{user.displayName}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Username</p>
+              <p>{user.username}</p>
+            </div>
+             <div>
+              <p className="text-sm font-medium text-muted-foreground">Email</p>
+              <p>{user.email}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">User ID</p>
+              <p>{user.id}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Roles</p>
+              <p className="capitalize">{(user.roles || []).join(', ') || 'Subscriber'}</p>
+            </div>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <p className="mt-1 text-sm text-gray-900">{user.username}</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <p className="mt-1 text-sm text-gray-900">{user.email}</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">User ID</label>
-            <p className="mt-1 text-sm text-gray-900">{user.id}</p>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Roles</label>
-            <p className="mt-1 text-sm text-gray-900">{(user.roles || []).join(', ') || 'subscriber'}</p>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="mt-6 flex space-x-3">
-          <Link
-            href="/"
-            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 text-center"
-          >
-            Back to Home
-          </Link>
-          
-          <form action="/api/auth/logout" method="POST" className="flex-1">
-            <button
-              type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition duration-200"
-            >
-              Logout
-            </button>
-          </form>
-        </div>
+      <div className="mt-8 flex flex-col sm:flex-row gap-4">
+        <Button asChild>
+            <Link href="/">Back to Home</Link>
+        </Button>
+        <form action="/api/auth/logout" method="POST">
+            <Button type="submit" variant="destructive">
+            Logout
+            </Button>
+        </form>
       </div>
     </div>
   )

@@ -1,5 +1,12 @@
+
 "use client"
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -96,74 +103,53 @@ export default function LoginPage() {
   // Show loading while checking if user is already authenticated
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-lg">Checking authentication...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <div>
-            <h1 className="text-center text-3xl font-extrabold text-gray-900">
-              Sign in to your account
-            </h1>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Enter your WordPress credentials
-            </p>
-          </div>
-          
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Sign in to your account</CardTitle>
+          <CardDescription>Enter your WordPress credentials to continue.</CardDescription>
+        </CardHeader>
+        <CardContent>
           {error && (
-            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
-            </div>
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-          
-          <form className="mt-8 space-y-6" onSubmit={onSubmit}>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-                  Username or Email
-                </label>
-                <input
-                  id="identifier"
-                  name="identifier"
-                  type="text"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your username or email"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your password"
-                />
+          <form className="space-y-6" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="identifier">Username or Email</Label>
+              <Input id="identifier" name="identifier" type="text" placeholder="your.username@example.com" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm">
+                <Link href="/forgot-password" className="underline text-muted-foreground hover:text-foreground">
+                  Forgot your password?
+                </Link>
               </div>
             </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Button>
           </form>
-        </div>
-      </div>
+           <div className="mt-4 text-center text-sm">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="underline">
+              Sign up
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
