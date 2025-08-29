@@ -22,7 +22,7 @@ export default async function BlogIndexPage() {
       </div>
 
       <div className="mb-8 p-4 border rounded-lg bg-card/50">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -31,12 +31,23 @@ export default async function BlogIndexPage() {
           </div>
           <Select>
             <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
+              <SelectValue placeholder="Filter by category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="latest">Latest</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-              <SelectItem value="popular">Popular</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="ai">AI</SelectItem>
+              <SelectItem value="web-dev">Web Development</SelectItem>
+              <SelectItem value="react">React</SelectItem>
+            </SelectContent>
+          </Select>
+           <Select>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by author" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Authors</SelectItem>
+              <SelectItem value="jane-doe">Jane Doe</SelectItem>
+              <SelectItem value="john-smith">John Smith</SelectItem>
             </SelectContent>
           </Select>
           <Button className="w-full">Apply Filters</Button>
