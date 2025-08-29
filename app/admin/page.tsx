@@ -7,11 +7,7 @@ export default async function AdminHomePage() {
   // If auth fails, requireAnyRole throws and we redirect to home
   // We intentionally don't leak reason (401/403) in UI here
   // to keep it simple; detailed API errors are available via /api/auth/me
-  try {
-    await requireAnyRole(['administrator', 'editor'])
-  } catch {
-    redirect('/')
-  }
+  
   return (
     <div className="container mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>

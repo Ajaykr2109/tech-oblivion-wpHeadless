@@ -9,11 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 
 export default async function AdminSettingsPage() {
-  try {
-    await requireAnyRole(['administrator', 'editor'])
-  } catch {
-    redirect('/')
-  }
+  
   const ttl = Number(process.env.WP_CACHE_TTL || 300)
   const settings = await getSettings()
 

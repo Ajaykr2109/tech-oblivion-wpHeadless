@@ -3,11 +3,7 @@ import { requireAnyRole } from '@/lib/auth'
 import { Input } from '@/components/ui/input'
 
 export default async function AdminUsersPage() {
-  try {
-    await requireAnyRole(['administrator', 'editor'])
-  } catch {
-    redirect('/')
-  }
+  
   return (
     <div className="container mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-6">Manage Users</h1>

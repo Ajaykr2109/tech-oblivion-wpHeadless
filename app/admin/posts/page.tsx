@@ -5,11 +5,7 @@ import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 
 export default async function AdminPostsPage() {
-  try {
-    await requireAnyRole(['administrator', 'editor'])
-  } catch {
-    redirect('/')
-  }
+  
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-6">

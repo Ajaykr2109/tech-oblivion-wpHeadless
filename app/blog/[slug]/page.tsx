@@ -2,11 +2,14 @@
 import React from 'react'
 import { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { dummyPosts } from '@/data/dummy-posts'
+import { Button } from '@/components/ui/button'
+import { Edit } from 'lucide-react'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
@@ -41,7 +44,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
     greet('World');
     </code></pre>
     <h3>Further Details</h3>
-    <p>Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.</p>
+    <p>Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himaenaeos.</p>
     <ul>
       <li>First list item</li>
       <li>Second list item</li>
@@ -74,7 +77,14 @@ export default async function PostPage({ params }: { params: { slug: string } })
       <div className="flex flex-col lg:flex-row gap-8">
         <article className="w-full lg:w-3/4 max-w-4xl lg:mx-0 mx-auto bg-card p-6 md:p-8 rounded-lg shadow-lg">
           <header className="mb-8">
-            <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+            <div className="flex justify-between items-start">
+              <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+              <Button variant="outline" asChild>
+                <Link href={`/editor/${post.id}`}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Link>
+              </Button>
+            </div>
             {post.imageUrl && (
               <div className="relative w-full max-w-2xl mx-auto mb-6">
                  <Image
