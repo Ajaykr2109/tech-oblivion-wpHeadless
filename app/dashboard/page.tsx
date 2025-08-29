@@ -1,17 +1,16 @@
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+
 import React from 'react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const host = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const cookie = (await headers()).get('cookie') || ''
-  const res = await fetch(`${host}/api/auth/me`, { headers: { cookie }, cache: 'no-store' })
-  if (res.status === 401) {
-    redirect(`/login?next=/dashboard`)
-  }
-  const json = await res.json()
-  const user = json.user ?? json
+  // Dummy user data for design purposes, replacing the authentication check.
+  const user = {
+    displayName: "Jane Doe",
+    username: "janedoe",
+    email: "jane.doe@example.com",
+    id: "12345",
+    roles: ["subscriber", "editor"],
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
@@ -21,7 +20,7 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">Display Name</label>
-            <p className="mt-1 text-sm text-gray-900">{user.displayName || user.display_name}</p>
+            <p className="mt-1 text-sm text-gray-900">{user.displayName}</p>
           </div>
           
           <div>
