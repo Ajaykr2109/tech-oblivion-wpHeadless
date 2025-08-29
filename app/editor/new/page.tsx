@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 
 const EditorToolbar = () => (
@@ -133,7 +133,7 @@ const EditorToolbar = () => (
 
 export default function EditorNewPage() {
   return (
-    <div className="container mx-auto px-4 py-12 max-w-5xl">
+    <div className="container mx-auto px-4 py-12">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Create New Post</h1>
         <div className="flex gap-2">
@@ -142,119 +142,134 @@ export default function EditorNewPage() {
         </div>
       </div>
       
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="p-0">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="sr-only">Title</Label>
-                <Input 
-                  id="title" 
-                  placeholder="Post Title" 
-                  className="text-2xl font-bold h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none" 
-                />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 space-y-6">
+          <Card>
+            <CardContent className="p-0">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title" className="sr-only">Title</Label>
+                  <Input 
+                    id="title" 
+                    placeholder="Post Title" 
+                    className="text-2xl font-bold h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none" 
+                  />
+                </div>
+                <EditorToolbar />
+                <div>
+                  <Label htmlFor="content" className="sr-only">Body</Label>
+                  <Textarea 
+                    id="content" 
+                    rows={20} 
+                    placeholder="Write your post content here..."
+                    className="border-none focus-visible:ring-0 shadow-none text-base p-4"
+                  />
+                </div>
               </div>
-              <EditorToolbar />
-              <div>
-                <Label htmlFor="content" className="sr-only">Body</Label>
-                <Textarea 
-                  id="content" 
-                  rows={20} 
-                  placeholder="Write your post content here..."
-                  className="border-none focus-visible:ring-0 shadow-none text-base p-4"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
         
-        <Tabs defaultValue="publishing" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="publishing">Publishing</TabsTrigger>
-            <TabsTrigger value="taxonomy">Categories & Tags</TabsTrigger>
-            <TabsTrigger value="image">Featured Image</TabsTrigger>
-            <TabsTrigger value="seo">SEO</TabsTrigger>
-            <TabsTrigger value="checklist">Checklist</TabsTrigger>
-          </TabsList>
+        <aside className="lg:col-span-4 space-y-6">
+          <Accordion type="multiple" defaultValue={['publish', 'seo']} className="w-full">
+            <AccordionItem value="publish">
+              <AccordionTrigger className="font-semibold">Publish</AccordionTrigger>
+              <AccordionContent>
+                <Card>
+                  <CardContent className="p-4 space-y-4">
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select defaultValue="Draft">
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Published">Published</SelectItem>
+                          <SelectItem value="Draft">Draft</SelectItem>
+                          <SelectItem value="Pending Review">Pending Review</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full">Publish</Button>
+                  </CardContent>
+                </Card>
+              </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="taxonomy">
+              <AccordionTrigger className="font-semibold">Categories & Tags</AccordionTrigger>
+              <AccordionContent>
+                <Card>
+                  <CardContent className="p-4 grid gap-4">
+                     <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Input id="category" placeholder="e.g., Technology" />
+                    </div>
+                    <div>
+                      <Label htmlFor="tags">Tags</Label>
+                      <Input id="tags" placeholder="Comma-separated tags" />
+                       <div className="flex flex-wrap gap-2 mt-2">
+                        {/* Example tags would appear here as they are added */}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          <TabsContent value="publishing">
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                 <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select defaultValue="Draft">
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Published">Published</SelectItem>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Pending Review">Pending Review</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button className="w-full">Publish</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <AccordionItem value="image">
+              <AccordionTrigger className="font-semibold">Featured Image</AccordionTrigger>
+              <AccordionContent>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary">
+                      <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <p className="mt-2 text-sm text-muted-foreground">Click or drag to upload</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          <TabsContent value="taxonomy">
-            <Card>
-              <CardContent className="p-6 grid md:grid-cols-2 gap-6">
-                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" placeholder="e.g., Technology" />
-                </div>
-                <div>
-                  <Label htmlFor="tags">Tags</Label>
-                  <Input id="tags" placeholder="Comma-separated tags" />
-                   <div className="flex flex-wrap gap-2 mt-2">
-                    {/* Example tags would appear here as they are added */}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <AccordionItem value="seo">
+              <AccordionTrigger className="font-semibold">SEO Settings</AccordionTrigger>
+              <AccordionContent>
+                <Card>
+                  <CardContent className="p-4 grid gap-4">
+                    <div>
+                      <Label htmlFor="seoTitle">Meta Title</Label>
+                      <Input id="seoTitle" placeholder="Title for search engines" />
+                    </div>
+                    <div>
+                      <Label htmlFor="seoDescription">Meta Description</Label>
+                      <Textarea id="seoDescription" rows={3} placeholder="Description for search engines" />
+                    </div>
+                    <div>
+                      <Label htmlFor="focusKeyword">Focus Keyword</Label>
+                      <Input id="focusKeyword" placeholder="Main keyword for this post" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          <TabsContent value="image">
-            <Card>
-              <CardContent className="p-6">
-                <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">Click or drag to upload</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="seo">
-            <Card>
-              <CardContent className="p-6 grid md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <Label htmlFor="seoTitle">Meta Title</Label>
-                  <Input id="seoTitle" placeholder="Title for search engines" />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="seoDescription">Meta Description</Label>
-                  <Textarea id="seoDescription" rows={3} placeholder="Description for search engines" />
-                </div>
-                <div>
-                  <Label htmlFor="focusKeyword">Focus Keyword</Label>
-                  <Input id="focusKeyword" placeholder="Main keyword for this post" />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="linkingKeywords">Auto-Linking Keywords</Label>
-                  <Textarea id="linkingKeywords" rows={3} placeholder="Enter keywords, one per line, to find linking opportunities." />
-                  <Button variant="outline" className="w-full"><Bot className="mr-2 h-4 w-4" /> Generate Link Suggestions</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="checklist">
-            <Card>
-              <CardContent className="p-6">
-                  <Alert>
+            <AccordionItem value="linking">
+               <AccordionTrigger className="font-semibold">Auto Internal Linking</AccordionTrigger>
+                <AccordionContent>
+                    <Card>
+                        <CardContent className="p-4 space-y-2">
+                             <Label htmlFor="linkingKeywords">Focus Linking Keywords</Label>
+                              <Textarea id="linkingKeywords" rows={4} placeholder="Enter keywords, one per line, to find linking opportunities." />
+                              <Button variant="outline" className="w-full"><Bot className="mr-2 h-4 w-4" /> Generate Link Suggestions</Button>
+                        </CardContent>
+                    </Card>
+                </AccordionContent>
+            </AccordionItem>
+            
+            <AccordionItem value="checklist">
+               <AccordionTrigger className="font-semibold">SEO Checklist</AccordionTrigger>
+                <AccordionContent>
+                     <Alert>
                       <Info className="h-4 w-4" />
                       <AlertTitle>Pre-Publish Checks</AlertTitle>
                       <AlertDescription>
@@ -266,13 +281,14 @@ export default function EditorNewPage() {
                               <li><strong>Internal Links:</strong> At least 1-2 relevant internal links.</li>
                           </ul>
                       </AlertDescription>
-                  </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-        </Tabs>
+                    </Alert>
+                </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </aside>
       </div>
     </div>
   )
 }
+
+    
