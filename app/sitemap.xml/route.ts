@@ -4,9 +4,9 @@ import { getSettings } from '@/lib/settings'
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const WP = process.env.WP_URL ?? 'https://techoblivion.in'
+  const WP = process.env.WP_URL ?? 'http://example.com'
   const settings = await getSettings()
-  const SITE = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://techoblivion.in'
+  const SITE = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'http://example.com'
   if (!WP) return new NextResponse('WP_URL missing', { status: 500 })
 
   const url = new URL('/wp-json/wp/v2/posts', WP)

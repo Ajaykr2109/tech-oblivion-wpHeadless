@@ -8,7 +8,7 @@ export async function GET() {
   if (settings.robotsCustom && settings.robotsCustom.trim()) {
     return new NextResponse(settings.robotsCustom, { headers: { 'Content-Type': 'text/plain' } })
   }
-  const SITE = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://techoblivion.in'
+  const SITE = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'http://example.com'
   const body = `User-agent: *\nAllow: /\nSitemap: ${SITE.replace(/\/$/, '')}/sitemap.xml\n`
   return new NextResponse(body, { headers: { 'Content-Type': 'text/plain' } })
 }

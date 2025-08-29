@@ -10,7 +10,7 @@ export async function GET(_req: NextRequest, {
     return new Response('Bad path', { status: 400 });
   }
 
-  const WP = (process.env.WP_URL || 'https://techoblivion.in').replace(/\/+$/, '');
+  const WP = (process.env.WP_URL || 'http://example.com').replace(/\/+$/, '');
   let origin = `${WP}/${segs.join('/')}`;
   // Support absolute fetches: /api/wp/media/absolute/<encodeURIComponent(full_url)>
   if (segs[0] === 'absolute') {
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, {
     Accept: 'image/*,*/*;q=0.8',
     'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    Referer: 'https://techoblivion.in/',
+    Referer: 'http://example.com/',
   };
 
   let upstream: Response;

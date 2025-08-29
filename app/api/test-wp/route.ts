@@ -3,7 +3,7 @@ export async function GET() {
     console.log('Testing WordPress connection...')
     
     // Test basic WordPress REST API
-    const wpUrl = process.env.WP_URL || 'https://techoblivion.in'
+    const wpUrl = process.env.WP_URL || 'http://example.com'
     console.log('WordPress URL:', wpUrl)
     
     const testResponse = await fetch(`${wpUrl}/wp-json/wp/v2/posts?per_page=1`, {

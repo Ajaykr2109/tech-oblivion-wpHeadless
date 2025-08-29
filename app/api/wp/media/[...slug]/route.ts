@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug?: stri
   if (!Array.isArray(segs) || segs.length === 0) {
     return new Response('Bad path', { status: 400 })
   }
-  const WP = (process.env.WP_URL || 'https://techoblivion.in').replace(/\/+$/, '')
+  const WP = (process.env.WP_URL || 'http://example.com').replace(/\/+$/, '')
   let origin = `${WP}/${segs.join('/')}`
   if (segs[0] === 'absolute') {
     const encoded = segs.slice(1).join('/')
@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug?: stri
   const headers: Record<string, string> = {
     Accept: 'image/*,*/*;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    Referer: 'https://techoblivion.in/',
+    Referer: 'http://example.com/',
   }
   let upstream: Response
   try {

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   
   try {
     // Direct fetch to WordPress JWT endpoint
-    const wpUrl = process.env.WP_URL || 'https://techoblivion.in'
+    const wpUrl = process.env.WP_URL || 'http://example.com'
     // Add a timeout to avoid hanging requests
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 10000)
