@@ -44,6 +44,8 @@ export type PostDetail = {
   contentHtml: string
   featuredImage?: string | null
   date: string
+  authorName?: string | null
+  authorAvatar?: string | null
   categories?: { id: number; name?: string; slug?: string }[]
   tags?: { id: number; name?: string; slug?: string }[]
   seo?: {
@@ -172,6 +174,8 @@ export async function getPostBySlug(slug: string) {
     contentHtml: p.content.rendered,
     featuredImage,
     date: p.date,
+  authorName: p._embedded?.author?.[0]?.name ?? null,
+  authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
     categories,
     tags,
     seo,

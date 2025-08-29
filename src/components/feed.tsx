@@ -1,7 +1,7 @@
 
 import { cn } from "@/lib/utils";
 import { PostCard } from "./post-card";
-import { dummyPosts } from "@/data/dummy-posts";
+import { getPosts } from "@/lib/wp";
 
 type FeedProps = {
   layout?: 'grid' | 'list';
@@ -9,8 +9,7 @@ type FeedProps = {
 };
 
 export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
-  // Using dummy data for frontend design
-  const posts = dummyPosts.slice(0, postCount);
+  const { items } = await getPosts({ page: 1, perPage: postCount });
 
   const wrapperClass = cn(
     "grid gap-6",
@@ -19,10 +18,26 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
 
   return (
     <div className={wrapperClass}>
-      {posts.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No posts available.</p>
       ) : (
-        posts.map((post) => <PostCard key={post.id} post={post} layout={layout as any} />)
+        items.map((p) => (
+          <PostCard
+            key={p.id}
+            layout={layout as any}
+            post={{
+              id: String(p.id),
+              title: p.title,
+              author: p.authorName || 'Unknown',
+              avatar: p.authorAvatar || '/favicon.ico',
+              imageUrl: p.featuredImage || '/favicon.ico',
+              imageHint: 'featured image',
+              excerpt: (p.excerptHtml || '').replace(/<[^>]+>/g, '').slice(0, 180),
+              slug: p.slug,
+              date: p.date,
+            }}
+          />
+        ))
       )}
     </div>
   );

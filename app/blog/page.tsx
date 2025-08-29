@@ -1,7 +1,5 @@
 
 import React from 'react'
-import { getPosts, PostSummary } from '@/lib/wp'
-import { sanitizeWP } from '@/lib/sanitize'
 import Feed from '@/components/feed'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -12,7 +10,6 @@ import { Card, CardContent } from '@/components/ui/card'
 export const dynamic = 'force-static'
 
 export default async function BlogIndexPage() {
-  
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">

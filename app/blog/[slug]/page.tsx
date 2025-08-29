@@ -7,73 +7,54 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
-import { dummyPosts } from '@/data/dummy-posts'
 import { Button } from '@/components/ui/button'
 import { Edit, MessageCircle, ThumbsUp, Twitter, Linkedin, Github } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { getPostBySlug } from '@/lib/wp'
+import { sanitizeWP } from '@/lib/sanitize'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const post = dummyPosts.find(p => p.slug === params.slug)
-  if (!post) {
-    return { title: 'Post not found' }
-  }
-  return {
-    title: post.title,
-    description: post.excerpt,
-  }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+    const { slug } = await params
+    const post = await getPostBySlug(slug)
+  if (!post) return { title: 'Post not found' }
+  return { title: post.seo?.title || post.title, description: post.seo?.description }
 }
 
-export default async function PostPage({ params }: { params: { slug: string } }) {
-  const post = dummyPosts.find(p => p.slug === params.slug)
+export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params
+    const post = await getPostBySlug(slug)
+  if (!post) notFound()
 
-  if (!post) {
-    notFound()
-  }
+  const rawHtml = post.contentHtml || ''
+  const safeHtml = sanitizeWP(rawHtml)
 
-  // Dummy content for demonstration
-  const dummyContentHtml = `
-    <p>This is the beginning of a beautiful blog post titled "${post.title}". The content here is a placeholder to demonstrate the page structure.</p>
-    <h2>Understanding the Core Concept</h2>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi. Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum. Praesent mauris.</p>
-    <pre><code class="language-javascript">
-    // Example code block
-    function greet(name) {
-      console.log(\`Hello, \${name}!\`);
+  // Simple reading time based on words/minute
+  const wordsPerMinute = 225
+  const wordCount = safeHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
+  const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / wordsPerMinute))
+  const readingTime = `${readingTimeMinutes} min read`
+
+  // Lightweight TOC: grab h2/h3 tags
+  const tocMatches = Array.from(safeHtml.matchAll(/<h([23])[^>]*>(.*?)<\/h\1>/gi))
+  const tableOfContents = tocMatches.map((m) => {
+    const level = Number(m[1])
+    const text = m[2].replace(/<[^>]+>/g, '')
+    const slug = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    return { level, text, slug }
+  })
+
+  const highlightedContent = safeHtml.replace(/<pre><code class=\"language-([a-z0-9_-]+)\">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
+    try {
+      const highlighted = hljs.highlight(code, { language: lang }).value
+      return `<pre><code class=\"hljs language-${lang}\">${highlighted}</code></pre>`
+    } catch {
+      return match
     }
-    greet('World');
-    </code></pre>
-    <h3>Further Details and a Much Longer Heading to Test Wrapping</h3>
-    <p>Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himaenaeos.</p>
-    <ul>
-      <li>First list item</li>
-      <li>Second list item</li>
-      <li>Third list item</li>
-    </ul>
-    <blockquote>Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor. Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis.</blockquote>
-  `;
-
-  // Calculate reading time from dummy content
-  const wordsPerMinute = 225;
-  const wordCount = dummyContentHtml.replace(/<[^>]+>/g, '').split(/\s+/).length;
-  const readingTimeMinutes = Math.ceil(wordCount / wordCount);
-  const readingTime = `${readingTimeMinutes} min read`;
-
-  // Dummy Table of Contents
-  const tableOfContents = [
-    { level: 2, text: "Understanding the Core Concept", slug: "understanding-the-core-concept" },
-    { level: 3, text: "Further Details and a Much Longer Heading to Test Wrapping", slug: "further-details" },
-  ];
-
-  // In a real scenario, you'd parse dummyContentHtml to generate the TOC and apply highlighting.
-  // For this template, we'll use the pre-formatted content.
-  const highlightedContent = dummyContentHtml.replace(/<pre><code class="language-javascript">([\s\S]*?)<\/code><\/pre>/, (match, code) => {
-    const highlighted = hljs.highlight(code, { language: 'javascript' }).value;
-    return `<pre><code class="hljs language-javascript">${highlighted}</code></pre>`;
-  });
+  })
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
@@ -85,32 +66,32 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     </Link>
                 </Button>
             </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
+      <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
           <div className="flex justify-center items-center gap-4 text-muted-foreground text-sm">
             <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
-                    <AvatarImage src={post.avatar} alt={post.author} />
-                    <AvatarFallback>{post.author.charAt(0)}</AvatarFallback>
+          <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+          <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
                 </Avatar>
-                <span>By {post.author}</span>
+        <span>By {post.authorName || 'Unknown'}</span>
             </div>
             <span>•</span>
-            <span>{new Date(post.date).toLocaleDateString()}</span>
+      <span>{new Date(post.date).toLocaleDateString()}</span>
             <span>•</span>
             <span>{readingTime}</span>
           </div>
         </header>
 
-        {post.imageUrl && (
+    {post.featuredImage && (
           <div className="relative w-full max-w-4xl mx-auto mb-12">
              <Image
-              src={post.imageUrl}
-              alt={post.title}
+        src={post.featuredImage}
+        alt={post.title}
               width={1024}
               height={576}
               className="rounded-lg object-cover w-full shadow-2xl shadow-primary/20 hover:shadow-primary/40 transition-shadow duration-300"
               priority
-              data-ai-hint={post.imageHint}
+        data-ai-hint={'featured image'}
             />
           </div>
         )}
@@ -143,9 +124,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
             <aside className="lg:col-span-3 lg:sticky top-8 self-start">
                 <div className="bg-card p-6 rounded-lg shadow-lg">
                     <RelatedPostsSidebar
-                    currentPostId={Number(post.id)}
-                    currentPostCategories={[]}
-                    currentPostTags={[]}
+                      currentPostId={Number(post.id)}
+                      currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
+                      currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
                     />
                 </div>
             </aside>
@@ -155,13 +136,13 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
         <div className="max-w-4xl mx-auto">
             <div className="bg-card/50 p-6 rounded-lg flex flex-col sm:flex-row items-start gap-6">
-                <Avatar className="h-20 w-20">
-                    <AvatarImage src={post.avatar} alt={post.author} />
-                    <AvatarFallback>{post.author.charAt(0)}</AvatarFallback>
+                    <Avatar className="h-20 w-20">
+                    <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+                    <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
                     <h3 className="text-lg font-semibold text-muted-foreground">WRITTEN BY</h3>
-                    <h2 className="text-2xl font-bold mb-2">{post.author}</h2>
+                    <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
                     <p className="text-muted-foreground mb-4">Jane Doe is a senior software engineer specializing in frontend technologies and AI integration. She loves building beautiful, performant user interfaces.</p>
                     <div className="flex gap-4">
                         <a href="#" className="text-muted-foreground hover:text-foreground"><Twitter /></a>
