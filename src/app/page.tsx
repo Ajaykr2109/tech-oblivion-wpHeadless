@@ -1,19 +1,17 @@
 import Feed from "@/components/feed";
 import { ClientFeed } from '@/components/client-feed'
-import { getPageContent, getPosts } from '@/lib/wp'
-import { renderUpdatesSummary } from '@/lib/sanitize'
+import { getPosts } from '@/lib/wordpress-client'
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { PlayCircle, Rss, BookOpen, Send } from "lucide-react";
 import { Marquee } from "@/components/marquee";
 
 export default async function Home() {
-  const updates = await getPageContent('updates')
-  const summary = updates ? renderUpdatesSummary(updates.contentHtml, 50) : 'Latest updates from our blog.'
+  const summary = 'Latest updates from our blog.'
 
   // get first recent post for hero image
-  const recent = await getPosts({ page: 1, perPage: 1 })
-  const heroImage = recent.items[0]?.featuredImage || '/favicon.ico'
+  const recent = await getPosts({ page: 1, per_page: 1 })
+  const heroImage = recent.posts[0]?._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico'
 
   return (
     <div className="container mx-auto px-4 py-8">

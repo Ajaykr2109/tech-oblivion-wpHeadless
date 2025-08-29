@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { PostCard } from './post-card'
 import { cn } from '@/lib/utils'
+import { getPosts, type WordPressPost } from '@/lib/wordpress-client'
 
 type Post = {
   id: string
@@ -24,22 +25,21 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
   async function loadPage(p: number) {
     setLoading(true)
     try {
-      const res = await fetch(`/api/wp/posts?page=${p}&perPage=${perPage}`)
-      const data = await res.json()
-      const mapped = data.items.map((i: any) => ({
-        id: String(i.id),
-        title: i.title,
-        author: i.authorName || 'Unknown',
-        avatar: i.authorAvatar || '/favicon.ico',
-        imageUrl: i.featuredImage || '/favicon.ico',
-        imageHint: i.title,
-        excerpt: (i.excerptHtml || '').replace(/<[^>]+>/g, '').slice(0,240),
+      const data = await getPosts({ page: p, per_page: perPage })
+      const mapped = data.posts.map((post: WordPressPost) => ({
+        id: String(post.id),
+        title: post.title.rendered,
+        author: 'Tech Oblivion',
+        avatar: '/favicon.ico',
+        imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
+        imageHint: post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered,
+        excerpt: post.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0,240),
       }))
       if (p === 1) setPosts(mapped)
       else setPosts(prev => [...prev, ...mapped])
       setPage(p)
     } catch (e) {
-      // ignore
+      console.error('Error loading posts:', e)
     } finally { setLoading(false) }
   }
 
