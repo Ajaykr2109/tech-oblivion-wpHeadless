@@ -24,8 +24,8 @@ export async function POST(req: Request) {
     const res = await wpFetch('/wp-json/fe-auth/v1/register', { method: 'POST', body: parsed.data })
     return NextResponse.json(res, { status: 201 })
   } catch (err: any) {
-  // log WP errors for diagnostics
-  logWPError('register', { status: err.status, statusText: err.message, body: err.details && typeof err.details === 'string' ? err.details : JSON.stringify(err.details || '') })
-  return NextResponse.json({ message: err.message ?? 'Error', details: err.details }, { status: err.status ?? 500 })
+    // log WP errors for diagnostics
+    logWPError('register', { status: err.status, statusText: err.message, body: err.details && typeof err.details === 'string' ? String(err.details).slice(0, 2000) : JSON.stringify(err.details || '').slice(0, 2000) })
+    return NextResponse.json({ message: err.message ?? 'Error', details: err.details }, { status: err.status ?? 500 })
   }
 }

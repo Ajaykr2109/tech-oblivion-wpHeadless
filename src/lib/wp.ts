@@ -1,4 +1,4 @@
-import { logWPError } from '@/lib/log'
+import { logWPError } from './log'
 
 const WP = process.env.WP_URL!
 
