@@ -116,7 +116,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         }) }}
       />
       <div className="flex flex-col lg:flex-row gap-8">
-        <article className="w-full lg:w-3/4 max-w-4xl lg:mx-0 mx-auto">
+        <article className="w-full lg:w-3/4 max-w-4xl lg:mx-0 mx-auto bg-card/50 p-6 md:p-8 rounded-lg shadow-lg">
           <header className="mb-8">
             <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
             {post.featuredImage && (
@@ -137,12 +137,12 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           </header>
 
           {tableOfContents.length > 0 && (
-            <div className="mb-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div className="mb-8 p-4 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
               <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
               <ul className="list-disc pl-5">
                 {tableOfContents.map((item: { slug: string; text: string; level: number }, index: number) => (
                   <li key={item.slug} className={`mb-1 text-base level-${item.level}`}>
-                    <a href={`#${item.slug}`} className="text-blue-600 hover:underline dark:text-blue-400">
+                    <a href={`#${item.slug}`} className="text-primary hover:underline">
                       {item.text}
                     </a>
                   </li>
@@ -152,12 +152,12 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           )}
 
           <div
-            className="prose dark:prose-invert max-w-none mx-auto [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-gray-300 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
+            className="prose dark:prose-invert max-w-none mx-auto [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
             dangerouslySetInnerHTML={{ __html: contentWithTocAnchorsAndHighlights || '' }}
           />
         </article>
         <aside className="w-full lg:w-1/4">
-          <div className="sticky top-8"> {/* Adjust top value as needed */}
+          <div className="sticky top-8 bg-card/50 p-6 rounded-lg shadow-lg">
             <RelatedPostsSidebar
               currentPostId={post.id}
               currentPostCategories={Array.isArray(post.categories) ? post.categories : []}
