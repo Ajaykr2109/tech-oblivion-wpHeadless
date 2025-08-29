@@ -23,6 +23,19 @@
 # misc
 .DS_Store
 *.pem
+*.log
+.modified
+logs/
+backup/
+temp_api_backup/
+*.local.*
+*.local
+*.tmp
+*.swp
+*.swo
+.idx/
+.vscode/
+.idea/
 
 # debug
 npm-debug.log*
@@ -39,6 +52,10 @@ next-env.d.ts
 
 .genkit/*
 .env*
+!.env.example
+
+# local media cache (generated at runtime)
+public/media-cache/
 
 # firebase
 firebase-debug.log

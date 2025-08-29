@@ -1,8 +1,15 @@
 import { revalidateTag } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { invalidateTags } from '@/lib/serverCache'
 import { getSettings, updateSettings } from '@/lib/settings'
+import { requireAnyRole } from '@/lib/auth'
 
 export default async function AdminSettingsPage() {
+  try {
+    await requireAnyRole(['administrator', 'editor'])
+  } catch {
+    redirect('/')
+  }
   const ttl = Number(process.env.WP_CACHE_TTL || 300)
   const settings = await getSettings()
 

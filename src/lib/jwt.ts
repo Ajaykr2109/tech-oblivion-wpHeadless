@@ -9,6 +9,8 @@ export type SessionClaims = {
   username: string
   email: string
   roles: string[]
+  displayName?: string
+  wpUserId?: number
 }
 
 export async function signSession(claims: SessionClaims, maxAgeSec = 60 * 60 * 24 * 7) {

@@ -1,4 +1,4 @@
-import Image from "next/image";
+import ClientImage from "@/components/ui/client-image";
 import Link from "next/link";
 import {
   Card,
@@ -35,7 +35,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
         <Link href={`/blog/${post.slug}`} className="block">
           <Card className="flex flex-row overflow-hidden border-none shadow-none items-center cursor-pointer hover:bg-gray-50">
             <div className="relative aspect-square h-24 w-24 flex-shrink-0">
-               <Image
+              <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
                 fill
@@ -74,7 +74,7 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
         <Card className="flex h-full flex-col overflow-hidden border-none shadow-none cursor-pointer hover:bg-gray-50">
           <CardHeader className="p-0">
             <div className="relative aspect-[3/2] w-full">
-              <Image
+              <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
                 fill

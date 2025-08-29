@@ -1,8 +1,7 @@
-import { cookies, headers } from 'next/headers'
-import { wpFetch } from './fetcher'
-import { logWPError } from './log'
+import { cookies } from 'next/headers'
+import { verifySession } from './jwt'
 
-export type User = { id: number; username: string; email: string; roles: string[]; display_name?: string }
+export type User = { id: number; username: string; email: string; roles: string[]; display_name?: string; wpUserId?: number }
 
 const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? 'session'
 
@@ -10,15 +9,18 @@ export async function getSessionUser(): Promise<User | null> {
   const cookieStore = (await cookies()) as any
   const session = cookieStore.get(SESSION_COOKIE)
   if (!session) return null
-
-  // Proxy to WP with cookie
-  const cookieHeader = `${SESSION_COOKIE}=${session.value}`
   try {
-    const data = await wpFetch<{ user: User }>(`/wp-json/fe-auth/v1/me`, { cookie: cookieHeader })
-    return (data as any).user ?? data as unknown as User
-  } catch (err) {
-    const e: any = err
-    logWPError('getSessionUser', { status: e?.status, statusText: e?.message, body: e?.details && typeof e.details === 'string' ? e.details : JSON.stringify(e?.details || '') })
+    const claims = await verifySession(session.value)
+    const user: User = {
+  id: (claims as any).wpUserId ?? (Number.isFinite(Number(claims.sub)) ? Number(claims.sub) : -1),
+      username: claims.username as string,
+      email: claims.email as string,
+      roles: (claims.roles as string[]) || [],
+      display_name: (claims as any).displayName,
+      wpUserId: (claims as any).wpUserId,
+    }
+    return user
+  } catch {
     return null
   }
 }
@@ -31,6 +33,21 @@ export async function requireRole(role: string) {
     throw e
   }
   if (!user.roles || !user.roles.includes(role)) {
+    const e: any = new Error('Forbidden')
+    e.status = 403
+    throw e
+  }
+  return user
+}
+
+export async function requireAnyRole(roles: string[]) {
+  const user = await getSessionUser()
+  if (!user) {
+    const e: any = new Error('Unauthorized')
+    e.status = 401
+    throw e
+  }
+  if (!user.roles || !roles.some(r => user.roles.includes(r))) {
     const e: any = new Error('Forbidden')
     e.status = 403
     throw e

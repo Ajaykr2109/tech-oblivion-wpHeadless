@@ -9,21 +9,7 @@ import { getSettings } from '@/lib/settings'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
-export const metadata: Metadata = {
-  title: 'tech.oblivion Client',
-  description: 'Welcome to tech.oblivion',
-  // Fallback; will be overridden dynamically in generateMetadata if needed
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  openGraph: {
-    type: 'website',
-    title: 'tech.oblivion',
-    description: 'Technology with purpose',
-    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  },
-  twitter: {
-    card: 'summary_large_image',
-  },
-};
+// Note: We use generateMetadata for dynamic site settings; avoid exporting both metadata and generateMetadata.
 
 export default async function RootLayout({
   children,
@@ -31,18 +17,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getSettings()
-  // Ensure a CSRF token cookie exists (double-submit pattern).
-  try {
-    const cookieStore = await cookies()
-    const existing = (cookieStore as any).get?.('csrf')
-    if (!existing) {
-      const hasRandomUUID = typeof (globalThis.crypto as any)?.randomUUID === 'function'
-      const token = hasRandomUUID ? (globalThis.crypto as any).randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)
-      ;(cookieStore as any)?.set?.({ name: 'csrf', value: token, path: '/', httpOnly: false, sameSite: 'lax', maxAge: 60 * 60 * 24 * 7 })
-    }
-  } catch (_e: unknown) {
-    // no-op in environments where cookies can't be set server-side
-  }
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-body antialiased`}>
@@ -59,14 +33,59 @@ export default async function RootLayout({
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  // Helpers
+  const toAbsoluteBase = (s?: string) => {
+    const v = (s || '').trim()
+    if (!v) return 'http://localhost:3000'
+    if (/^https?:\/\//i.test(v)) return v
+    return `https://${v.replace(/^\/+/, '')}`
+  }
+  const rewriteIfWP = (url?: string) => {
+    if (!url) return url
+    const WP = process.env.WP_URL || ''
+    if (!WP) return url
+    try {
+      const u = new URL(url)
+      if (u.host === new URL(WP).host) {
+        return `/api/wp/media${u.pathname}${u.search}`
+      }
+      return url
+    } catch {
+      return url
+    }
+  }
+
+  const envBase = toAbsoluteBase(process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL)
   try {
     const settings = await getSettings()
-    const base = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const base = toAbsoluteBase(settings.siteUrl || envBase)
+    const title = settings.siteTitle || 'Tech Oblivion'
+    const description = settings.defaultDescription || 'Technology with purpose'
+    const ogImage = rewriteIfWP(settings.defaultOgImage || undefined)
+    const twImage = rewriteIfWP(settings.defaultTwitterImage || ogImage || undefined)
+
     return {
+      title,
+      description,
       metadataBase: new URL(base),
-      openGraph: { url: base },
+      openGraph: {
+        type: 'website',
+        title,
+        description,
+        url: base,
+        images: ogImage ? [ogImage] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: twImage ? [twImage] : undefined,
+      },
     }
   } catch {
-    return {}
+    // Ensure metadataBase is still set to avoid localhost warnings elsewhere.
+    return {
+      metadataBase: new URL(envBase),
+    }
   }
 }

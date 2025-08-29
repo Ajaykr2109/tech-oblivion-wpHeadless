@@ -84,20 +84,23 @@ export async function POST(req: Request) {
   }
 
   // JWT auth endpoint returns token and user info
-  const { token, user_email, user_nicename, user_display_name } = data as { 
+  const { token, user_email, user_nicename, user_display_name, user_id, roles: wpRoles } = data as { 
     token: string; 
     user_email: string; 
     user_nicename: string; 
     user_display_name: string;
     user_id?: number;
+    roles?: string[];
   }
 
   // Create session with the user data from JWT response
   const sessionToken = await signSession({ 
-    sub: String(data.user_id || user_nicename), 
+    sub: String(user_id || user_nicename), 
     username: user_nicename, 
     email: user_email, 
-    roles: ['subscriber'] // Default role, can be enhanced later
+    roles: Array.isArray(wpRoles) && wpRoles.length ? wpRoles : ['subscriber'],
+    wpUserId: user_id,
+    displayName: user_display_name,
   })
 
   const isProd = process.env.NODE_ENV === 'production'

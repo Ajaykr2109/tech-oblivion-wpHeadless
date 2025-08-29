@@ -1,17 +1,14 @@
 import React from 'react'
 import { Metadata } from 'next'
-import { getPostBySlug } from '@/lib/wp'
-import { parse } from 'node-html-parser';
-import { notFound } from 'next/navigation'
-// import Link from 'next/link';
-
 import Image from 'next/image'
-import hljs from 'highlight.js';
-import RelatedPostsSidebar from '@/components/RelatedPostsSidebar';
-import 'highlight.js/styles/github-dark.css'; // Or any other style you prefer
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
+import { parse } from 'node-html-parser'
+import { notFound } from 'next/navigation'
+import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { sanitizeWP } from '@/lib/sanitize'
 import { getSettings } from '@/lib/settings'
-
+import { getPostBySlug } from '@/lib/wp'
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   try {
     const { slug } = await params
@@ -50,7 +47,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   // Initialize highlight.js server-side
   // This ensures that code blocks are highlighted on initial render
-  hljs.configure({ ignoreUnescapedHTML: true }); // Optional: configure to ignore HTML in code blocks
+  hljs.configure({ ignoreUnescapedHTML: true }) // Optional: configure to ignore HTML in code blocks
   
   let post: any = null
 
@@ -125,7 +122,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             {post.featuredImage && (
               <div className="relative w-full max-w-2xl mx-auto mb-6">
                  <Image
-                  src={post.featuredImage.replace('/api/wp/media/', 'https://techoblivion.in/')}
+                  src={post.featuredImage}
                   alt={post.title}
                   width={800}
                   height={400}
@@ -156,11 +153,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
           <div
             className="prose dark:prose-invert max-w-none mx-auto [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-gray-300 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4"
-            dangerouslySetInnerHTML={{
-              __html: contentWithTocAnchorsAndHighlights
-                ?.replace(/src=\"\/api\/wp\/media\//g, 'src=\"https://techoblivion.in/')
-                ?.replace(/src=\"\/wp-content\//g, 'src=\"https://techoblivion.in/wp-content/') || ''
-            }}
+            dangerouslySetInnerHTML={{ __html: contentWithTocAnchorsAndHighlights || '' }}
           />
         </article>
         <aside className="w-full lg:w-1/4">

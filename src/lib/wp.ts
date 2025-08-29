@@ -60,23 +60,22 @@ function _rawMediaUrl(p: WPPost) {
   return p._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null
 }
 
-function proxiedMediaUrl(src: string | null | undefined) {
+async function cachedMediaUrl(src: string | null | undefined) {
   if (!src) return null
   try {
     const u = new URL(src)
-    // Keep path + search so we preserve filenames and query strings if any
-    const WP = process.env.WP_URL ?? ''
-    try {
-      const wpOrigin = WP ? new URL(WP).origin : ''
-      if (wpOrigin && u.origin === wpOrigin) {
-        return `/api/wp/media${u.pathname}${u.search}`
-      }
-    } catch (e) {
-      // fallthrough - treat as non-WP origin
+    // Prefer permanent on-disk cache served from /public/media-cache
+    // Do not expose upstream origins to the client.
+    const endpoint = new URL('/api/media-cache', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')
+    endpoint.searchParams.set('url', src)
+    // Call internal route server-side
+    const res = await fetch(endpoint.toString(), { cache: 'no-store' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json?.url) return json.url as string
     }
-    // For remote origins (gravatar, cdn, etc.) encode full URL so the media proxy
-    // can fetch the correct upstream absolute URL without leaking origins to the client.
-    return `/api/wp/media/absolute/${encodeURIComponent(src)}`
+    // Fallback: return direct url (last resort if internal route fails)
+    return src
   } catch (e) {
     // If it's not a valid absolute URL, leave it alone
     return src
@@ -121,22 +120,17 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
     throw e
   }
 
-  return {
-    items: items.map(p => ({
+  const itemsMapped = await Promise.all(items.map(async (p) => ({
       id: p.id,
       slug: p.slug,
       title: p.title.rendered,
       excerptHtml: p.excerpt.rendered,
-      // rewrite featured image to our media proxy so the browser never calls WP origin
-      featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
+      featuredImage: await cachedMediaUrl(_rawMediaUrl(p)),
       authorName: p._embedded?.author?.[0]?.name ?? null,
-      // proxify author avatar too (may be gravatar or remote host)
-      authorAvatar: proxiedMediaUrl(p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null),
+      authorAvatar: await cachedMediaUrl(p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null),
       date: p.date,
-    })),
-    total,
-    totalPages,
-  }
+    })))
+  return { items: itemsMapped, total, totalPages }
 }
 
 export async function getPostBySlug(slug: string) {
@@ -191,12 +185,13 @@ export async function getPostBySlug(slug: string) {
     schemaType: metaSource.seo_schema_type || undefined,
   }
 
+  const featuredImage = await cachedMediaUrl(_rawMediaUrl(p))
   return {
     id: p.id,
     slug: p.slug,
     title: p.title.rendered,
     contentHtml: p.content.rendered,
-    featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
+    featuredImage,
     date: p.date,
     categories,
     tags,

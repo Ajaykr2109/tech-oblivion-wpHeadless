@@ -9,7 +9,9 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // We serve cached images from /public/media-cache (local domain), no need to whitelist.
     remotePatterns: [
+      // Allow direct WP origin if you choose to bypass the cache on some paths
       {
         protocol: 'https',
         hostname: 'techoblivion.in',

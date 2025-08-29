@@ -8,8 +8,13 @@ type FeedProps = {
 };
 
 export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
-  const data = await getWPPosts({ page: 1, perPage: postCount })
-  const posts = data.items.map(p => ({
+  let data: Awaited<ReturnType<typeof getWPPosts>> | null = null
+  try {
+    data = await getWPPosts({ page: 1, perPage: postCount })
+  } catch (e) {
+    console.error('[Feed] failed to load posts', e)
+  }
+  const posts = (data?.items || []).map(p => ({
     id: String(p.id),
     title: p.title,
     author: p.authorName || 'Tech Oblivion',
@@ -27,7 +32,11 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
 
   return (
     <div className={wrapperClass}>
-      {posts.map((post) => <PostCard key={post.id} post={post} layout={layout as any} />)}
+      {posts.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No posts available.</p>
+      ) : (
+        posts.map((post) => <PostCard key={post.id} post={post} layout={layout as any} />)
+      )}
     </div>
   );
 }
