@@ -1,36 +1,49 @@
 import React from 'react'
-import Link from 'next/link'
 import { getPosts, PostSummary } from '@/lib/wp'
 import { sanitizeWP } from '@/lib/sanitize'
+import Feed from '@/components/feed'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Search } from 'lucide-react'
 
 export const dynamic = 'force-static'
 
 export default async function BlogIndexPage() {
-  let posts: PostSummary[] = []
-  try {
-    const res = await getPosts({ page: 1, perPage: 9 })
-    posts = res.items || []
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Blog fetch failed during prerender:', err)
-    posts = []
-  }
-
+  
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-6">Articles</h1>
-      {posts.length === 0 ? (
-        <div>No posts available.</div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post) => (
-            <Link key={post.id} href={`/blog/${post.slug}`} className="block border rounded-lg p-4 hover:shadow">
-              <h2 className="font-semibold mb-2" dangerouslySetInnerHTML={{ __html: sanitizeWP(post.title) }} />
-              <div className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: post.excerptHtml || '' }} />
-            </Link>
-          ))}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold tracking-tight">Articles & Insights</h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+          Explore the latest in web development, AI, and technology.
+        </p>
+      </div>
+
+      <div className="mb-8 p-4 border rounded-lg bg-card/50">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <div className="md:col-span-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input placeholder="Search articles..." className="pl-10" />
+            </div>
+          </div>
+          <Select>
+            <SelectTrigger>
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">Latest</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="popular">Popular</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button className="w-full">Apply Filters</Button>
         </div>
-      )}
+      </div>
+      
+      <Feed layout="grid" postCount={6} />
+      
     </div>
   )
 }

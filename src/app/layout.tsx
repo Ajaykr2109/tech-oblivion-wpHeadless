@@ -4,8 +4,8 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
-import { cookies } from 'next/headers'
 import { getSettings } from '@/lib/settings'
+import Footer from '@/components/Footer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -24,6 +24,7 @@ export default async function RootLayout({
           <div className="flex min-h-screen flex-col">
             <Header />
             <main className="flex-grow">{children}</main>
+            <Footer />
           </div>
           <Toaster />
         </ThemeProvider>
