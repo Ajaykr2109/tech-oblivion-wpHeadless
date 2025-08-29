@@ -1,13 +1,16 @@
 import sanitizeHtml from 'sanitize-html'
 
 const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','blockquote','code','pre']
+// Do NOT include 'script' or 'style' in allowedTags
 export const allowedTags = baseAllowedTags.concat(['img','figure','figcaption','iframe'])
 
 export const allowedAttributes: any = {
   a: ['href','name','target','rel'],
   img: ['src','alt','title','width','height','srcset','sizes','loading','decoding'],
   iframe: ['src','width','height','title','allow','allowfullscreen','frameborder'],
-  '*': ['class','id','style'],
+  // Avoid allowing arbitrary inline style by default. If needed, whitelist specific style props via
+  // a custom transform later. Keeping class/id only here prevents the sanitize-html warnings.
+  '*': ['class','id'],
 }
 
 export function sanitizeWP(html: string) {
@@ -49,8 +52,8 @@ export function sanitizeWP(html: string) {
         attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
       }),
     },
-    // Post-process style attributes to rewrite url(...) references if they point to WP
-    textFilter: (text: string) => {
+  // Post-process style attributes embedded in CSS text (if any) to rewrite url(...) references
+  textFilter: (text: string) => {
       if (!WP) return text
       return text.replace(/url\(([^)]+)\)/g, (m, g1) => {
         const raw = g1.trim().replace(/^['"]|['"]$/g, '')

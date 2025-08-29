@@ -9,17 +9,36 @@ import Image from 'next/image'
 import hljs from 'highlight.js';
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar';
 import 'highlight.js/styles/github-dark.css'; // Or any other style you prefer
-import sanitizeHtml from 'sanitize-html'
+import { sanitizeWP } from '@/lib/sanitize'
+import { getSettings } from '@/lib/settings'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   try {
     const { slug } = await params
-    const post = await getPostBySlug(slug)
+    const [post, settings] = await Promise.all([getPostBySlug(slug), getSettings()])
     if (!post) return { title: slug }
+    const desc = (post.seo?.description || post.contentHtml?.replace(/<[^>]+>/g, '').slice(0, 160) || undefined)
+    const canonical = `${settings.siteUrl.replace(/\/$/, '')}/blog/${post.slug}`
+    const title = post.seo?.title || post.title || settings.siteTitle
+    const image = post.seo?.ogImage || post.featuredImage || settings.defaultOgImage
+
     return {
-      title: post.title || slug,
-      description: post.contentHtml ? post.contentHtml.replace(/<[^>]+>/g, '').slice(0, 160) : undefined,
-      openGraph: post.featuredImage ? { images: [post.featuredImage] } : undefined,
+      title,
+      description: desc,
+      alternates: { canonical },
+      openGraph: {
+        type: 'article',
+        title,
+        description: desc || undefined,
+        url: canonical,
+        images: image ? [image] : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description: desc || undefined,
+        images: (post.seo?.twitterImage || settings.defaultTwitterImage || image) ? [post.seo?.twitterImage || settings.defaultTwitterImage || image!] : undefined,
+      },
     }
   } catch (err: any) {
     console.error('generateMetadata error:', err)
@@ -84,19 +103,21 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   // Use the modified HTML content for rendering, including the added IDs for TOC
   // Sanitize the HTML while allowing common formatting tags and attributes
-  const contentWithTocAnchorsAndHighlights = sanitizeHtml(root.innerHTML, {
-    allowedTags: false, // allow default set
-    allowedAttributes: {
-      '*': ['id', 'class', 'style'],
-      a: ['href', 'name', 'target', 'rel'],
-      img: ['src', 'alt', 'title', 'width', 'height']
-    },
-    // allow links/images to external domain
-    allowVulnerableTags: false
-  });
+  const contentWithTocAnchorsAndHighlights = sanitizeWP(root.innerHTML)
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* JSON-LD (rendered in body; search engines still parse this) */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': post.seo?.schemaType || 'BlogPosting',
+          headline: post.title,
+          datePublished: post.date,
+        }) }}
+      />
       <div className="flex flex-col lg:flex-row gap-8">
         <article className="w-full lg:w-3/4 max-w-4xl lg:mx-0 mx-auto">
           <header className="mb-8">
@@ -144,7 +165,11 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         </article>
         <aside className="w-full lg:w-1/4">
           <div className="sticky top-8"> {/* Adjust top value as needed */}
-            <RelatedPostsSidebar currentPostId={post.id} currentPostCategories={post.categories} currentPostTags={post.tags} />
+            <RelatedPostsSidebar
+              currentPostId={post.id}
+              currentPostCategories={Array.isArray(post.categories) ? post.categories : []}
+              currentPostTags={Array.isArray(post.tags) ? post.tags : []}
+            />
           </div>
         </aside>
       </div>

@@ -18,8 +18,8 @@ interface RelatedPost {
 }
 
 interface RelatedPostsSidebarProps {
-  currentPostCategories: Term[];
-  currentPostTags: Term[];
+  currentPostCategories?: Term[];
+  currentPostTags?: Term[];
   currentPostId: number;
 }
 
@@ -38,10 +38,10 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
       setError(null);
       try {
         // Build query parameters based on categories and tags
-        const categoryIds = currentPostCategories.map((cat) => cat.id).join(',');
-        const tagIds = currentPostTags.map((tag) => tag.id).join(',');
+  const categoryIds = (currentPostCategories ?? []).map((cat) => cat.id).join(',');
+  const tagIds = (currentPostTags ?? []).map((tag) => tag.id).join(',');
 
-        let url = 'https://techoblivion.in/wp-json/wp/v2/posts?_embed';
+  let url = '/api/wp/related';
         const params = new URLSearchParams();
 
         if (categoryIds) {
@@ -57,7 +57,7 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
         // Limit the number of related posts
         params.append('per_page', '5'); // Fetch up to 5 related posts
 
-        url = `${url}&${params.toString()}`;
+  url = `${url}?${params.toString()}`;
 
   const data = await apiFetch<RelatedPost[]>(url);
 

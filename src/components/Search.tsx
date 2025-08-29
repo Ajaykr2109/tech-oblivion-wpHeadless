@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -17,14 +18,16 @@ const Search: React.FC = () => {
     }
   };
   return (
-    <div>
+    <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
       <input
         type="text"
         placeholder="Search..."
         value={searchTerm}
         onChange={handleInputChange}
+        className="border rounded px-3 py-2"
       />
-    </div>
+      <button type="submit" className="bg-primary text-primary-foreground px-3 py-2 rounded">Go</button>
+    </form>
   );
 };
 

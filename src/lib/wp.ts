@@ -18,7 +18,12 @@ export type WPPost = {
   title: { rendered: string }
   excerpt: { rendered: string }
   content: { rendered: string }
+  categories?: number[]
+  tags?: number[]
   _embedded?: any
+  // ACF or custom meta could surface under 'acf' or via meta fields
+  acf?: Record<string, any>
+  meta?: Record<string, any>
 }
 
 export type PostSummary = {
@@ -39,6 +44,16 @@ export type PostDetail = {
   contentHtml: string
   featuredImage?: string | null
   date: string
+  categories?: { id: number; name?: string; slug?: string }[]
+  tags?: { id: number; name?: string; slug?: string }[]
+  seo?: {
+    title?: string
+    description?: string
+    canonical?: string
+    ogImage?: string
+    twitterImage?: string
+    schemaType?: string
+  }
 }
 
 function _rawMediaUrl(p: WPPost) {
@@ -152,6 +167,30 @@ export async function getPostBySlug(slug: string) {
   const p = arr[0]
   if (!p) return null
 
+  const categories: { id: number; name?: string; slug?: string }[] = []
+  const tags: { id: number; name?: string; slug?: string }[] = []
+  // Collect taxonomy IDs if present
+  const catIds: number[] = (p as any).categories || []
+  const tagIds: number[] = (p as any).tags || []
+  // Try to enrich from _embedded terms if available
+  const embeddedTerms: any[] = p._embedded?.['wp:term'] || []
+  const flatTerms = embeddedTerms.flat?.() || []
+  for (const t of flatTerms) {
+    if (t.taxonomy === 'category' && catIds.includes(t.id)) categories.push({ id: t.id, name: t.name, slug: t.slug })
+    if (t.taxonomy === 'post_tag' && tagIds.includes(t.id)) tags.push({ id: t.id, name: t.name, slug: t.slug })
+  }
+
+  // Extract SEO from ACF or meta namespaces if present
+  const metaSource = (p as any).acf || (p as any).meta || {}
+  const seo = {
+    title: metaSource.seo_title || undefined,
+    description: metaSource.seo_description || undefined,
+    canonical: metaSource.seo_canonical || undefined,
+    ogImage: metaSource.seo_og_image || undefined,
+    twitterImage: metaSource.seo_twitter_image || undefined,
+    schemaType: metaSource.seo_schema_type || undefined,
+  }
+
   return {
     id: p.id,
     slug: p.slug,
@@ -159,6 +198,9 @@ export async function getPostBySlug(slug: string) {
     contentHtml: p.content.rendered,
     featuredImage: proxiedMediaUrl(_rawMediaUrl(p)),
     date: p.date,
+    categories,
+    tags,
+    seo,
   }
 }
 

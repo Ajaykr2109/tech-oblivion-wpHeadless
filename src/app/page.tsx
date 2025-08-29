@@ -1,36 +1,33 @@
 import Feed from "@/components/feed";
-import { ClientFeed } from '@/components/client-feed'
 import { Button } from "@/components/ui/button";
 import Image from 'next/image';
 import { PlayCircle, Rss, BookOpen, Send } from "lucide-react";
 import { Marquee } from "@/components/marquee";
-import { parseStringPromise } from 'xml2js';
 
 export default async function Home() {
   const summary = 'Latest updates from our blog.'
 
   // get first recent post for hero image
   // Fetch the latest video from the YouTube RSS feed
-  let latestVideoEmbedUrl = null;
+  let latestVideoEmbedUrl: string | null = null
   try {
-    const rssResponse = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UC_f3tV18-R4k5E9l3i6x8A'); 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 2000)
+    const rssResponse = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UC_f3tV18-R4k5E9l3i6x8A', {
+      // Cache this for 15 minutes to avoid slowing down TTFB on every request
+      next: { revalidate: 900 },
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
     if (rssResponse.ok) {
-      const rssText = await rssResponse.text();
-      const rssParsed = await parseStringPromise(rssText);
-
-      if (rssParsed?.feed?.entry && rssParsed.feed.entry.length > 0) {
-        const latestVideo = rssParsed.feed.entry[0];
-        // Extract the video ID from the link tag
-        const videoUrl = latestVideo.link[0].$.href;
-        const videoIdMatch = videoUrl.match(/v=(.*?)$/);
-        if (videoIdMatch && videoIdMatch[1]) {
-          // Use the video URL for the link
-          latestVideoEmbedUrl = `https://www.youtube.com/embed/${videoIdMatch[1]}`;
-        }
-      }
+      const rssText = await rssResponse.text()
+      // Prefer <yt:videoId> as it's cheap to parse
+      const m = rssText.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)
+      const id = m?.[1]
+      if (id) latestVideoEmbedUrl = `https://www.youtube.com/embed/${id}`
     }
   } catch (error) {
-    console.error("Error fetching YouTube RSS feed:", error);
+    console.error('Error fetching YouTube RSS feed:', error)
   }
 
   return (
@@ -69,7 +66,7 @@ export default async function Home() {
         <div className="flex flex-col space-y-6 h-full">
           <h2 className="text-2xl font-semibold">Recent Posts</h2>
           <div className="flex-grow">
-            <ClientFeed layout="list" perPage={4} />
+            <Feed layout="list" postCount={4} />
           </div>
         </div>
       </div>
@@ -82,10 +79,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="pt-4 pb-8">
-        <h2 className="text-3xl font-bold text-center mb-8">Most Popular Posts</h2>
-        <Feed layout="grid" postCount={6} />
-      </section>
+  {/* Reduce duplicate data fetching; keep homepage light */}
     </div>
   )
 }

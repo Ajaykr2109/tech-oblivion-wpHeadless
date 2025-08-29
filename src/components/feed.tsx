@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { PostCard } from "./post-card";
-import { getPosts } from "@/lib/wordpress-client";
+import { getPosts as getWPPosts } from "@/lib/wp";
 
 type FeedProps = {
   layout?: 'grid' | 'list';
@@ -8,15 +8,15 @@ type FeedProps = {
 };
 
 export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
-  const data = await getPosts({ per_page: postCount });
-  const posts = data.posts.map(p => ({
+  const data = await getWPPosts({ page: 1, perPage: postCount })
+  const posts = data.items.map(p => ({
     id: String(p.id),
-    title: p.title.rendered,
-    author: 'Tech Oblivion', // WordPress doesn't expose author in basic response
-    avatar: '/favicon.ico',
-    imageUrl: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
-    imageHint: p._embedded?.['wp:featuredmedia']?.[0]?.alt_text || p.title.rendered,
-    excerpt: p.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0, 240),
+    title: p.title,
+    author: p.authorName || 'Tech Oblivion',
+    avatar: p.authorAvatar || '/favicon.ico',
+    imageUrl: p.featuredImage || '/favicon.ico',
+    imageHint: p.title,
+    excerpt: (p.excerptHtml || '').replace(/<[^>]+>/g, '').slice(0, 240),
     slug: p.slug,
   }))
 
