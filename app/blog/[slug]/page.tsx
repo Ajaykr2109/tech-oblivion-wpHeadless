@@ -46,7 +46,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
     }
     greet('World');
     </code></pre>
-    <h3>Further Details</h3>
+    <h3>Further Details and a Much Longer Heading to Test Wrapping</h3>
     <p>Fusce nec tellus sed augue semper porta. Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himaenaeos.</p>
     <ul>
       <li>First list item</li>
@@ -65,7 +65,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   // Dummy Table of Contents
   const tableOfContents = [
     { level: 2, text: "Understanding the Core Concept", slug: "understanding-the-core-concept" },
-    { level: 3, text: "Further Details", slug: "further-details" },
+    { level: 3, text: "Further Details and a Much Longer Heading to Test Wrapping", slug: "further-details" },
   ];
 
   // In a real scenario, you'd parse dummyContentHtml to generate the TOC and apply highlighting.
@@ -123,7 +123,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     <ul className="space-y-2">
                         {tableOfContents.map((item) => (
                         <li key={item.slug} className={`text-sm level-${item.level} ${item.level > 2 ? 'pl-4' : ''}`}>
-                            <a href={`#${item.slug}`} className="text-muted-foreground hover:text-foreground hover:underline">
+                            <a href={`#${item.slug}`} className="text-muted-foreground hover:text-foreground hover:underline break-words">
                             {item.text}
                             </a>
                         </li>
@@ -213,5 +213,3 @@ export default async function PostPage({ params }: { params: { slug: string } })
     </div>
   );
 }
-
-    
