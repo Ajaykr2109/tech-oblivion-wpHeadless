@@ -1,3 +1,4 @@
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +19,7 @@ const dummyAdminPosts = [
 
 export default async function AdminPostsPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Manage Posts</h1>
         <Button asChild>

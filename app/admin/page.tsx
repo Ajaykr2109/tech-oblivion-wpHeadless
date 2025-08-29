@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, LineChart, Users, FileText, MessageSquare } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -12,9 +15,9 @@ const chartData = [
   { month: "Jun", users: 350, posts: 100 },
 ];
 
-export default async function AdminHomePage() {
+export default function AdminHomePage() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="p-8">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">

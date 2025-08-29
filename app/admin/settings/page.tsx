@@ -1,3 +1,4 @@
+
 import { revalidateTag } from 'next/cache'
 import { invalidateTags } from '@/lib/serverCache'
 import { getSettings, updateSettings } from '@/lib/settings'
@@ -60,7 +61,7 @@ export default async function AdminSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Site Settings</h1>
 
       <div className="grid gap-8">

@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,7 +12,7 @@ const dummyComments = [
 
 export default async function AdminCommentsPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="p-8">
       <h1 className="text-3xl font-bold mb-8">Comments Moderation</h1>
       
       <div className="space-y-6">

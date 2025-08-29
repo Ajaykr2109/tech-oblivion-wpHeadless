@@ -1,3 +1,4 @@
+
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,7 +18,7 @@ const dummyUsers = [
 
 export default async function AdminUsersPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Manage Users</h1>
         <Button><UserPlus className="mr-2 h-4 w-4" /> Add User</Button>
