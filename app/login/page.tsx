@@ -1,11 +1,7 @@
+"use client"
 import React from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const params = useSearchParams()
-  const next = params?.get('next') || '/dashboard'
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     const form = e.target as HTMLFormElement
@@ -18,7 +14,9 @@ export default function LoginPage() {
         return
       }
       if (!res.ok) throw new Error('Login failed')
-      router.push(next)
+      const params = new URLSearchParams(window.location.search)
+      const next = params.get('next') || '/dashboard'
+      window.location.href = next
     } catch (err: any) {
       alert(err.message || 'Error')
     }

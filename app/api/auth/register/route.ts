@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { wpFetch } from '../../../../src/lib/fetcher'
+import { logWPError } from '../../../../src/lib/log'
 import { CSRF_COOKIE } from '../../../../src/lib/csrf'
 
 const bodySchema = z.object({ email: z.string().email(), password: z.string().min(6), username: z.string().optional() })
@@ -23,6 +24,8 @@ export async function POST(req: Request) {
     const res = await wpFetch('/wp-json/fe-auth/v1/register', { method: 'POST', body: parsed.data })
     return NextResponse.json(res, { status: 201 })
   } catch (err: any) {
-    return NextResponse.json({ message: err.message ?? 'Error', details: err.details }, { status: err.status ?? 500 })
+  // log WP errors for diagnostics
+  logWPError('register', { status: err.status, statusText: err.message, body: err.details && typeof err.details === 'string' ? err.details : JSON.stringify(err.details || '') })
+  return NextResponse.json({ message: err.message ?? 'Error', details: err.details }, { status: err.status ?? 500 })
   }
 }

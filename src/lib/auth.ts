@@ -1,5 +1,6 @@
 import { cookies, headers } from 'next/headers'
 import { wpFetch } from './fetcher'
+import { logWPError } from './log'
 
 export type User = { id: number; username: string; email: string; roles: string[]; display_name?: string }
 
@@ -16,6 +17,8 @@ export async function getSessionUser(): Promise<User | null> {
     const data = await wpFetch<{ user: User }>(`/wp-json/fe-auth/v1/me`, { cookie: cookieHeader })
     return (data as any).user ?? data as unknown as User
   } catch (err) {
+    const e: any = err
+    logWPError('getSessionUser', { status: e?.status, statusText: e?.message, body: e?.details && typeof e.details === 'string' ? e.details : JSON.stringify(e?.details || '') })
     return null
   }
 }
