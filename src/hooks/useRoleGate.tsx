@@ -14,8 +14,13 @@ export function useMe() {
       try {
         const r = await fetch('/api/auth/me', { cache: 'no-store' })
         if (!cancelled) {
-          if (r.ok) setMe(await r.json())
-          else setMe(null)
+          if (r.ok) {
+            try {
+              const j = await r.json()
+              // API returns { user } wrapper
+              setMe((j && typeof j === 'object' && 'user' in j) ? (j as any).user : j)
+            } catch { setMe(null) }
+          } else setMe(null)
         }
       } catch {
         if (!cancelled) setMe(null)

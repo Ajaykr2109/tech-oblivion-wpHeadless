@@ -66,8 +66,10 @@ export type PostSummary = {
   title: string
   excerptHtml?: string
   featuredImage?: string | null
+  authorId?: number | null
   authorName?: string | null
   authorAvatar?: string | null
+  authorSlug?: string | null
   date: string
 }
 
@@ -78,8 +80,10 @@ export type PostDetail = {
   contentHtml: string
   featuredImage?: string | null
   date: string
+  authorId?: number | null
   authorName?: string | null
   authorAvatar?: string | null
+  authorSlug?: string | null
   categories?: { id: number; name?: string; slug?: string }[]
   tags?: { id: number; name?: string; slug?: string }[]
   seo?: {
@@ -141,8 +145,10 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
       excerptHtml: p.excerpt.rendered,
       // Direct WP media URL for stability
       featuredImage: _rawMediaUrl(p),
+  authorId: (p as any).author ?? null,
       authorName: p._embedded?.author?.[0]?.name ?? null,
       authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
+  authorSlug: p._embedded?.author?.[0]?.slug ?? null,
       date: p.date,
     }))
   return { items: itemsMapped, total, totalPages }
@@ -208,8 +214,10 @@ export async function getPostBySlug(slug: string) {
     contentHtml: p.content.rendered,
     featuredImage,
     date: p.date,
+  authorId: (p as any).author ?? null,
   authorName: p._embedded?.author?.[0]?.name ?? null,
   authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
+  authorSlug: p._embedded?.author?.[0]?.slug ?? null,
     categories,
     tags,
     seo,
