@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { getPostBySlug } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
+import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
 
@@ -86,7 +87,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
         <span>By {post.authorName || 'Unknown'}</span>
             </div>
             <span>•</span>
-      <span>{new Date(post.date).toLocaleDateString()}</span>
+    <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
             <span>•</span>
             <span>{readingTime}</span>
           </div>
@@ -111,15 +112,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 {tableOfContents.length > 0 && (
                     <div className="lg:hidden p-4 mb-6 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
                         <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
-                        <ul className="space-y-2">
-                            {tableOfContents.map((item) => (
-                                <li key={item.slug} className={`text-sm level-${item.level} ${item.level > 2 ? 'pl-4' : ''}`}>
-                                    <a href={`#${item.slug}`} className="text-muted-foreground hover:text-foreground hover:underline break-words">
-                                        {item.text}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
+                        <TocList items={tableOfContents} />
                     </div>
                 )}
 
@@ -128,15 +121,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                  {tableOfContents.length > 0 && (
                     <div className="p-4 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
                     <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
-                    <ul className="space-y-2">
-                        {tableOfContents.map((item) => (
-                        <li key={item.slug} className={`text-sm level-${item.level} ${item.level > 2 ? 'pl-4' : ''}`}>
-                            <a href={`#${item.slug}`} className="text-muted-foreground hover:text-foreground hover:underline break-words">
-                            {item.text}
-                            </a>
-                        </li>
-                        ))}
-                    </ul>
+                    <TocList items={tableOfContents} />
                     </div>
                 )}
             </aside>

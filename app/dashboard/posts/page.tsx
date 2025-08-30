@@ -29,7 +29,7 @@ export default function DashboardPostsPage() {
               <CardHeader>
                 <CardTitle>{post.title}</CardTitle>
                 <CardDescription>
-                  Published on {new Date(post.date).toLocaleDateString()}
+                  Published on {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </CardDescription>
               </CardHeader>
               <CardContent>

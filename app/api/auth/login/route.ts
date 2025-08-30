@@ -94,6 +94,7 @@ export async function POST(req: Request) {
   }
 
   // Create session with the user data from JWT response
+  // IMPORTANT: include the upstream WP JWT as `wpToken` so protected proxy routes can authenticate.
   const sessionToken = await signSession({ 
     sub: String(user_id || user_nicename), 
     username: user_nicename, 
@@ -101,10 +102,13 @@ export async function POST(req: Request) {
     roles: Array.isArray(wpRoles) && wpRoles.length ? wpRoles : ['subscriber'],
     wpUserId: user_id,
     displayName: user_display_name,
+    wpToken: token,
   })
 
-  const isProd = process.env.NODE_ENV === 'production'
-  const cookie = `${process.env.SESSION_COOKIE_NAME || 'session'}=${sessionToken}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax; ${isProd ? 'Secure; ' : ''}HttpOnly`
+  // Only set Secure on HTTPS; using it on HTTP drops the cookie and causes auth loops
+  const xfProto = req.headers.get('x-forwarded-proto')
+  const isHttps = (xfProto ? xfProto.split(',')[0].trim() : '') === 'https' || new URL(req.url).protocol === 'https:'
+  const cookie = `${process.env.SESSION_COOKIE_NAME || 'session'}=${sessionToken}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax; ${isHttps ? 'Secure; ' : ''}HttpOnly`
   
   return new Response(JSON.stringify({ 
     user: {

@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Menu, ChevronDown } from "lucide-react";
 
@@ -27,13 +28,14 @@ interface User {
 }
 
 export function Header() {
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me');
+  const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
@@ -50,9 +52,8 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setUser(null);
-      window.location.href = '/';
+      // Use GET redirect so the server clears cookie and navigates in one step
+      window.location.href = '/api/auth/logout?redirect=/';
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -70,12 +71,12 @@ export function Header() {
         </div>
 
   <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
-          {navLinks.map((link) => (
+      {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
               className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-              aria-current={typeof window !== 'undefined' && window.location?.pathname === link.href ? 'page' : undefined}
+        aria-current={pathname === link.href ? 'page' : undefined}
             >
               {link.label}
             </Link>
@@ -130,6 +131,9 @@ export function Header() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>
                       <Link href="/dashboard">Dashboard</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href="/account">Account Center</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <button onClick={handleLogout}>Logout</button>
@@ -189,9 +193,12 @@ export function Header() {
                         <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
                           Dashboard
                         </Link>
-                        <button onClick={handleLogout} className="text-left text-muted-foreground hover:text-foreground">
+                        <Link href="/account" className="text-muted-foreground hover:text-foreground">
+                          Account Center
+                        </Link>
+                        <a href="/api/auth/logout?redirect=/" className="text-left text-muted-foreground hover:text-foreground">
                           Logout
-                        </button>
+                        </a>
                       </>
                     ) : (
                       <Link href="/login" className="text-muted-foreground hover:text-foreground">

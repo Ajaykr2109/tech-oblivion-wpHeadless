@@ -1,12 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [nextUrl, setNextUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const u = new URL(window.location.href)
+      const n = u.searchParams.get('next')
+      if (n) setNextUrl(n)
+    } catch {}
+    // If already logged in, bounce early
+    ;(async () => {
+      try {
+        const r = await fetch('/api/auth/me', { cache: 'no-store' })
+        if (r.ok) {
+          const d = await r.json()
+          if (d?.user) {
+            window.location.href = nextUrl || '/dashboard'
+          }
+        }
+      } catch {}
+    })()
+  }, [])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,7 +43,7 @@ export default function LoginPage() {
         const j = await res.json().catch(() => ({}))
         throw new Error(j?.message || 'Login failed')
       }
-      window.location.href = '/dashboard'
+  window.location.href = nextUrl || '/dashboard'
     } catch (e: any) {
       setError(e.message)
     } finally { setLoading(false) }
