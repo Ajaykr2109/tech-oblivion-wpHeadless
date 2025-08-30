@@ -42,18 +42,35 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   // Floating mode removed on post page
 
   const ids = useMemo(() => flatIds(items), [items])
-  const state = useScrollSpy(ids, { rootMargin: '-40% 0px -50% 0px', nearbyRange: 1, adjacentRange: 2 })
+  // Compute rootMargin to account for sticky header height
+  const rootMargin = useMemo(() => {
+    if (typeof window === 'undefined') return '-25% 0px -60% 0px'
+    const styles = getComputedStyle(document.documentElement)
+    const header = parseInt(styles.getPropertyValue('--header-height') || '64', 10)
+    const topOffset = (isNaN(header) ? 64 : header) + 24 // add small cushion
+    return `-${topOffset}px 0px -60% 0px`
+  }, [])
+  const state = useScrollSpy(ids, { rootMargin, nearbyRange: 1, adjacentRange: 2 })
   const hierarchy = useMemo(() => toHierarchy(items), [items])
-  // Preselect first item when mounting and content is at top
+  // Sync a class on the active heading in the document to avoid flicker
   useEffect(() => {
     if (!ids.length) return
-    // If near top of page, mark first as active until observer updates
-    if (typeof window !== 'undefined' && window.scrollY < 80) {
-      // add a CSS class to the first heading to mirror active
-      const first = document.getElementById(ids[0])
-      if (first) first.classList.add('heading-active')
+    const activeId = state.activeId || ids[0]
+    ids.forEach((id) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      if (id === activeId) el.classList.add('heading-active')
+      else el.classList.remove('heading-active')
+    })
+  }, [ids, state.activeId])
+  // Sync content heading highlight strictly to the single activeId
+  useEffect(() => {
+    const clearAll = () => ids.forEach(id => document.getElementById(id)?.classList.remove('heading-active'))
+    clearAll()
+    if (state.activeId) {
+      document.getElementById(state.activeId)?.classList.add('heading-active')
     }
-  }, [ids])
+  }, [state.activeId, ids])
   // Floating mode removed
 
   // Keyboard navigation
@@ -122,7 +139,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
 
   const content = (
     <div className={`overflow-hidden print:hidden`}>
-      <div className="max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
+      <div className="toc-scroll max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
         <div className="py-2">
           {(expanded ? items : items.slice(0, 24)).map((i, idx) => {
             const st = i.id === state.activeId
@@ -152,6 +169,22 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
       )}
     </div>
   )
+
+  // Keep active TOC item in view when list overflows
+  useEffect(() => {
+    if (!state.activeId) return
+    const container = listRef.current
+    if (!container) return
+    const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
+    if (!el) return
+    const cRect = container.getBoundingClientRect()
+    const eRect = el.getBoundingClientRect()
+    const isAbove = eRect.top < cRect.top + 8
+    const isBelow = eRect.bottom > cRect.bottom - 8
+    if (isAbove || isBelow) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  }, [state.activeId])
 
   return (
     <div className="relative">

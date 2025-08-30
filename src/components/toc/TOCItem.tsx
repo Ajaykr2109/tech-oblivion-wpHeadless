@@ -20,9 +20,11 @@ export default function TOCItem({ id, value, depth, state, onClick, focused, min
     idle: 'text-muted-foreground hover:text-foreground'
   }[state]
   return (
-    <motion.div initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3, ease: [0.4,0,0.2,1] }}>
-      <Link href={`#${id}`} onClick={onClick} className={`block rounded-sm px-2 py-1.5 transition-colors ${classes}`} style={{ paddingLeft: padding + 8 }}>
-  <span className={`inline-block ${focused ? 'outline outline-2 outline-primary/40 rounded-sm' : ''}`}>{decodeEntities(value)}</span>
+    <motion.div initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25, ease: [0.4,0,0.2,1] }}>
+      <Link href={`#${id}`} onClick={onClick} className={`toc-link group block rounded-sm px-2 py-1.5 transition-colors ${classes}`} style={{ paddingLeft: padding + 8 }}>
+        <span className={`inline-block transition-transform duration-150 ease-out group-hover:translate-x-[2px] group-hover:scale-[1.015]`}>
+          {decodeEntities(value)}
+        </span>
         {typeof minutes === 'number' && minutes > 0 && (
           <span className="float-right ml-2 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">

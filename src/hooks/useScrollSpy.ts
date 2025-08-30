@@ -7,9 +7,11 @@ export type ActiveState = {
   adjacentIds: Set<string>
 }
 
-export function useScrollSpy(ids: string[], options?: { rootMargin?: string; nearbyRange?: number; adjacentRange?: number }) {
+export function useScrollSpy(
+  ids: string[],
+  options?: { rootMargin?: string; nearbyRange?: number; adjacentRange?: number }
+) {
   const [state, setState] = useState<ActiveState>({ activeId: null, nearbyIds: new Set(), adjacentIds: new Set() })
-  const rootMargin = options?.rootMargin ?? '-40% 0px -50% 0px'
   const nearbyRange = options?.nearbyRange ?? 1
   const adjacentRange = options?.adjacentRange ?? 2
 
@@ -19,6 +21,17 @@ export function useScrollSpy(ids: string[], options?: { rootMargin?: string; nea
     return map
   }, [ids])
 
+  // Derive an offset from CSS variable --header-height with a small cushion.
+  function getTopOffset(): number {
+    try {
+      const styles = getComputedStyle(document.documentElement)
+      const header = parseInt(styles.getPropertyValue('--header-height') || '64', 10)
+      return (isNaN(header) ? 64 : header) + 24
+    } catch {
+      return 88
+    }
+  }
+
   useEffect(() => {
     if (!ids.length) return
     const elements = ids
@@ -26,39 +39,63 @@ export function useScrollSpy(ids: string[], options?: { rootMargin?: string; nea
       .filter(Boolean) as HTMLElement[]
     if (!elements.length) return
 
-    let active: string | null = null
-    const io = new IntersectionObserver((entries) => {
-      // Pick the most prominent intersecting entry (closest to top)
-      const visible = entries
-        .filter((e) => e.isIntersecting)
-        .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top))
-      const nextActive = visible[0]?.target?.id || null
-      if (nextActive !== active) {
-        active = nextActive
-        const idx = nextActive ? idIndex.get(nextActive) ?? -1 : -1
-        const nearby = new Set<string>()
-        const adjacent = new Set<string>()
-        if (idx >= 0) {
-          for (let i = Math.max(0, idx - nearbyRange); i <= Math.min(ids.length - 1, idx + nearbyRange); i++) {
-            if (i !== idx) nearby.add(ids[i])
-          }
-          for (let i = Math.max(0, idx - adjacentRange); i <= Math.min(ids.length - 1, idx + adjacentRange); i++) {
-            if (!nearby.has(ids[i]) && i !== idx) adjacent.add(ids[i])
-          }
-        }
-        setState({ activeId: nextActive, nearbyIds: nearby, adjacentIds: adjacent })
-        // Update URL hash (without page jump)
-        if (nextActive) {
-          const url = new URL(window.location.href)
-          url.hash = `#${nextActive}`
-          history.replaceState({}, '', url)
-        }
-      }
-    }, { rootMargin, threshold: [0, 1] })
+    let raf = 0
+    let lastActive: string | null = null
 
-    elements.forEach((el) => io.observe(el))
-    return () => io.disconnect()
-  }, [ids, idIndex, rootMargin, nearbyRange, adjacentRange])
+    const compute = () => {
+      raf = 0
+      const offset = getTopOffset()
+      let current: string | null = null
+      for (const el of elements) {
+        const top = el.getBoundingClientRect().top
+        if (top - offset <= 0) current = el.id
+        else break
+      }
+      // Fallbacks: top of page => first; bottom past last => last
+      if (!current) current = elements[0].id
+      const idx = idIndex.get(current) ?? 0
+      const nearby = new Set<string>()
+      const adjacent = new Set<string>()
+      for (let i = Math.max(0, idx - nearbyRange); i <= Math.min(ids.length - 1, idx + nearbyRange); i++) {
+        if (i !== idx) nearby.add(ids[i])
+      }
+      for (let i = Math.max(0, idx - adjacentRange); i <= Math.min(ids.length - 1, idx + adjacentRange); i++) {
+        if (!nearby.has(ids[i]) && i !== idx) adjacent.add(ids[i])
+      }
+      if (current !== lastActive) {
+        lastActive = current
+        setState({ activeId: current, nearbyIds: nearby, adjacentIds: adjacent })
+        // Update URL hash (without page jump)
+        try {
+          const url = new URL(window.location.href)
+          url.hash = `#${current}`
+          history.replaceState({}, '', url)
+        } catch {}
+      } else {
+        // Still update nearby/adjacent to keep badges consistent
+        setState((s) => ({ activeId: s.activeId, nearbyIds: nearby, adjacentIds: adjacent }))
+      }
+    }
+
+    const onScroll = () => {
+      if (raf) return
+      raf = requestAnimationFrame(compute)
+    }
+    const onResize = () => {
+      if (raf) cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(compute)
+    }
+
+    // Initial run after paint to avoid layout thrash
+    raf = requestAnimationFrame(compute)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onResize)
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [ids, idIndex, nearbyRange, adjacentRange])
 
   return state
 }
