@@ -57,12 +57,13 @@ async function tryProxyUser(WP: string, slugOrSearch: { slug?: string; search?: 
   return null
 }
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const { slug } = await ctx.params
   const WP = process.env.WP_URL
   if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
 
   const base = WP.replace(/\/$/, '')
-  const candidate = toSlugish(params.slug)
+  const candidate = toSlugish(slug)
   const headers: HeadersInit = {}
   const basic = authHeader()
   if (basic) (headers as any).Authorization = basic
@@ -71,7 +72,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
   try {
     const viaSlug = await tryProxyUser(WP, { slug: candidate })
     if (viaSlug) return new Response(JSON.stringify(sanitizeUser(viaSlug)), { status: 200, headers: { 'Content-Type': 'application/json' } })
-    const viaSearch = await tryProxyUser(WP, { search: params.slug })
+  const viaSearch = await tryProxyUser(WP, { search: slug })
     if (viaSearch) return new Response(JSON.stringify(sanitizeUser(viaSearch)), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch {}
 
@@ -86,13 +87,13 @@ export async function GET(request: Request, { params }: { params: { slug: string
 
   // 2) Fallback search
   const bySearch = new URL('/wp-json/wp/v2/users', base)
-  bySearch.searchParams.set('search', params.slug)
+  bySearch.searchParams.set('search', slug)
   const b = await fetchJSON(bySearch, { headers })
   if (!b.res.ok || !Array.isArray(b.data) || b.data.length === 0) {
     // 404 when nothing is returned, even if WP responded 200 with an empty list
     return new Response(JSON.stringify({ error: 'User not found', status: 404 }), { status: 404 })
   }
-  const lower = params.slug.toLowerCase()
+  const lower = slug.toLowerCase()
   const exact = b.data.find((u: any) => u?.slug?.toLowerCase() === candidate || u?.slug?.toLowerCase() === lower)
   const chosen = exact || b.data.find((u: any) => u?.name?.toLowerCase() === lower || u?.display_name?.toLowerCase() === lower) || b.data[0]
   return new Response(JSON.stringify(sanitizeUser(chosen)), { status: 200, headers: { 'Content-Type': 'application/json' } })

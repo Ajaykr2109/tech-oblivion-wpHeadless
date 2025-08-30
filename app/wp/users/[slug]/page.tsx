@@ -11,10 +11,11 @@ export default async function UserProfilePage({ params }: { params: { slug: stri
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "";
   const proto = hdrs.get("x-forwarded-proto") || "http";
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`).replace(/\/$/, "");
+  const cookie = hdrs.get('cookie') || ''
 
   const res = await fetch(`${origin}/api/wp/users/${encodeURIComponent(params.slug)}`, {
     cache: "no-store",
-    headers: { Accept: "application/json" } as any,
+    headers: Object.assign({ Accept: 'application/json' } as any, cookie ? { cookie } : {}),
   });
   if (!res.ok) return notFound();
   const user = await res.json();

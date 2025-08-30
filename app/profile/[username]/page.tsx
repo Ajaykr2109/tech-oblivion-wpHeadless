@@ -8,6 +8,7 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import AuthorActivity from "@/components/author-activity";
 import { headers } from "next/headers";
+import { createHmac } from 'crypto'
 
 function toSlugish(s: string) {
   return String(s || "")
@@ -17,20 +18,73 @@ function toSlugish(s: string) {
     .replace(/[^a-z0-9-_]/g, '');
 }
 
-async function fetchUser(username: string) {
+async function fetchUser(username: string, viewingUser?: { id?: number|string; wpUserId?: number|string } | null) {
   try {
-  // 1) Prefer internal proxy API (/api/wp/users/[slug]) for better compatibility
-  // Build absolute origin from request headers to work on LAN IP/localhost/prod
+    // 1) Prefer internal proxy API (/api/wp/users/[slug]) for better compatibility
+    // Build absolute origin from request headers to work on LAN IP/localhost/prod
   const hdrs = await headers()
   const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || ''
   const proto = hdrs.get('x-forwarded-proto') || 'http'
-  const autoOrigin = host ? `${proto}://${host}` : ''
-  const origin = (autoOrigin || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
-  const resLocal = await fetch(`${origin}/api/wp/users/${encodeURIComponent(username)}`, { cache: 'no-store', headers: { 'Accept': 'application/json' } as any })
+    const autoOrigin = host ? `${proto}://${host}` : ''
+    const origin = (autoOrigin || process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+    const cookie = hdrs.get('cookie') || ''
+    const commonHeaders: any = { Accept: 'application/json' }
+    if (cookie) commonHeaders.cookie = cookie
+
+    const resLocal = await fetch(`${origin}/api/wp/users/${encodeURIComponent(username)}`, { cache: 'no-store', headers: commonHeaders })
     if (resLocal.ok) {
       const data = await resLocal.json()
       if (data && data.id) return data
     }
+
+    // 1b) If internal slug lookup failed and the viewer is the same user, try /api/wp/users/me
+    if (viewingUser) {
+      const vu = viewingUser as any
+      const sameUser = (String(vu?.username || '').toLowerCase() === String(username).toLowerCase()) || (String(vu?.wpUserId ?? vu?.id) === String(username))
+      if (sameUser) {
+        try {
+          const meRes = await fetch(`${origin}/api/wp/users/me`, { cache: 'no-store', headers: commonHeaders })
+          if (meRes.ok) {
+            const me = await meRes.json()
+            if (me && me.id) return me
+          }
+        } catch {}
+      }
+    }
+
+    // 1c) Direct FE Auth Bridge proxy fallback (no login required)
+    try {
+      const WP = (process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL || '').replace(/\/$/, '')
+      const secret = process.env.FE_PROXY_SECRET || ''
+      if (WP && secret) {
+        const candidate = toSlugish(username)
+        const path = 'wp/v2/users'
+        const proxy = new URL('/wp-json/fe-auth/v1/proxy', WP)
+        proxy.searchParams.set('path', path)
+        proxy.searchParams.set('query[slug]', candidate)
+        const ts = String(Math.floor(Date.now() / 1000))
+        const base = `GET\n${path}\n${ts}\n`
+        const sign = createHmac('sha256', secret).update(base).digest('base64')
+        const pres = await fetch(proxy.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
+        if (pres.ok) {
+          const arr = await pres.json().catch(() => null)
+          if (Array.isArray(arr) && arr.length) return arr[0]
+        }
+        // Try search as a secondary proxy fallback
+        const proxy2 = new URL('/wp-json/fe-auth/v1/proxy', WP)
+        proxy2.searchParams.set('path', path)
+        proxy2.searchParams.set('query[search]', String(username))
+        const pres2 = await fetch(proxy2.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
+        if (pres2.ok) {
+          const arr = await pres2.json().catch(() => null)
+          if (Array.isArray(arr) && arr.length) {
+            const lower = String(username).toLowerCase()
+            const exact = arr.find((u: any) => u?.slug?.toLowerCase() === candidate || u?.slug?.toLowerCase() === lower)
+            return exact || arr[0]
+          }
+        }
+      }
+    } catch {}
 
     // 2) Fallback to direct WP REST (public access may be restricted)
     const base = (process.env.NEXT_PUBLIC_WP_URL || process.env.WP_URL || '').replace(/\/$/, '')
@@ -46,7 +100,6 @@ async function fetchUser(username: string) {
 
     const urlSearch = `${base}/wp-json/wp/v2/users?search=${encodeURIComponent(username)}`
     const resSearch = await fetch(urlSearch, { next: { revalidate: 300 } })
-    if (!resSearch.ok) return null
     const list = await resSearch.json()
     if (!Array.isArray(list) || list.length === 0) return null
     const lower = username.toLowerCase()
@@ -59,10 +112,15 @@ async function fetchUser(username: string) {
   }
 }
 
-export default async function PublicProfilePage({ params }: { params: { username: string } }) {
-  const { username } = params;
+export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
+  const { username } = await props.params;
   const viewingUser = await getSessionUser().catch(() => null)
-  const user = await fetchUser(username);
+  let user = await fetchUser(username);
+  // Try again using /me if the first lookup failed and the viewer is logged in
+  if (!user && viewingUser) {
+    const user2 = await fetchUser(username, viewingUser)
+    if (user2) user = user2
+  }
   if (!user) notFound();
   const isSelf = !!(viewingUser && String(viewingUser.wpUserId ?? viewingUser.id) === String(user.id))
 

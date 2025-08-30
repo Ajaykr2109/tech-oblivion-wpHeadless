@@ -1,21 +1,24 @@
-import { cookies } from 'next/headers'
 import { verifySession } from '@/lib/jwt'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: Request) {
   const WP = process.env.WP_URL
-  if (!WP) return new Response('WP_URL env required', { status: 500 })
+  if (!WP) return new Response(JSON.stringify({ error: 'config', message: 'WP_URL env required' }), { status: 500 })
 
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
-  if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
+  // Extract session token from cookie header (align with /api/auth/me)
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(new RegExp(`${process.env.SESSION_COOKIE_NAME || 'session'}=([^;]+)`))
+  const token = match?.[1]
+  if (!token) return new Response(JSON.stringify({ error: 'unauthorized', message: 'Missing session cookie' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
 
   let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
+  try { claims = await verifySession(token) } catch {
+    return new Response(JSON.stringify({ error: 'unauthorized', message: 'Invalid session token' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+  }
   const wpToken = claims?.wpToken
-  if (!wpToken) return new Response('Unauthorized', { status: 401 })
+  if (!wpToken) return new Response(JSON.stringify({ error: 'unauthorized', message: 'Missing wpToken in session' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
 
   // Include profile_fields exposed by FE Auth Bridge plugin (and meta for backward compat)
   const fields = 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta'
@@ -47,14 +50,15 @@ export async function POST(req: Request) {
   const WP = process.env.WP_URL
   if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
 
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
-  if (!sessionCookie?.value) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(new RegExp(`${process.env.SESSION_COOKIE_NAME || 'session'}=([^;]+)`))
+  const token = match?.[1]
+  if (!token) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing session cookie' }), { status: 401 })
 
   let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) }
+  try { claims = await verifySession(token) } catch { return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Invalid session token' }), { status: 401 }) }
   const wpToken = claims?.wpToken
-  if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing wpToken in session' }), { status: 401 })
 
   let body: any = {}
   try { body = await req.json() } catch { body = {} }
@@ -98,14 +102,15 @@ export async function PUT(req: Request) {
   const WP = process.env.WP_URL
   if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
 
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
-  if (!sessionCookie?.value) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(new RegExp(`${process.env.SESSION_COOKIE_NAME || 'session'}=([^;]+)`))
+  const token = match?.[1]
+  if (!token) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing session cookie' }), { status: 401 })
 
   let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) }
+  try { claims = await verifySession(token) } catch { return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Invalid session token' }), { status: 401 }) }
   const wpToken = claims?.wpToken
-  if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing wpToken in session' }), { status: 401 })
 
   let body: any = {}
   try { body = await req.json() } catch { body = {} }
