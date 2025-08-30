@@ -1,5 +1,7 @@
 
 import React from 'react'
+import Head from 'next/head'
+import { getArticleSchema, getBreadcrumbSchema } from '@/lib/generateSchema'
 import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function PostPage({ params }: { params: { slug: string } }) {
     const { slug } = params
     const post = await getPostBySlug(slug)
-  if (!post) notFound()
+    if (!post) notFound()
 
     const rawHtml = post.contentHtml || ''
     const safeHtml = sanitizeWP(rawHtml)
@@ -67,8 +69,19 @@ export default async function PostPage({ params }: { params: { slug: string } })
     const autoLinkTargets: AutoLinkTarget[] = [] // populate from settings if available
     const contentLinked = autoLinkFirst(contentWithHeadingIds, autoLinkTargets)
 
-  return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
+    return (
+        <>
+            <Head>
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getArticleSchema(post)) }}
+                />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
+                />
+            </Head>
+            <div className="container mx-auto px-4 py-12 max-w-7xl">
         <header className="text-center mb-8 relative">
             <div className="absolute top-0 right-0">
                 <Button variant="outline" asChild>
@@ -203,6 +216,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 </div>
             </div>
         </div>
-    </div>
-  );
+            </div>
+        </>
+    );
 }
