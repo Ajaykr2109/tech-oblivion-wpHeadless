@@ -15,9 +15,9 @@ export default function TOCItem({ id, value, depth, state, onClick, focused, min
   const padding = Math.max(0, (depth - 1)) * 12
   const classes = {
     active: 'bg-primary/10 font-semibold border-l-2 border-primary text-foreground',
-    nearby: 'text-foreground',
-    adjacent: 'text-foreground',
-    idle: 'text-muted-foreground hover:text-foreground'
+    nearby: 'text-foreground/90',
+    adjacent: 'text-muted-foreground',
+    idle: 'text-muted-foreground hover:text-foreground/80'
   }[state]
   return (
     <motion.div initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25, ease: [0.4,0,0.2,1] }}>

@@ -5,6 +5,29 @@ import { createHmac } from 'crypto'
 
 type AnyObj = Record<string, any>
 
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null
+  const s = String(u).trim()
+  if (!s) return null
+  if (/^https?:\/\//i.test(s)) return s
+  return `https://${s}`
+}
+
+function deriveSocial(u: AnyObj) {
+  const pf = (u && typeof u.profile_fields === 'object') ? (u.profile_fields as Record<string, unknown>) : null
+  const get = (k: string) => (pf && typeof (pf as any)[k] === 'string') ? String((pf as any)[k]) : undefined
+  const tw = (u?.twitter_url as string) || get('twitter_url') || get('twitter') || get('x')
+  const ln = (u?.linkedin_url as string) || get('linkedin_url') || get('linkedin')
+  const gh = (u?.github_url as string) || get('github_url') || get('github')
+  return {
+    social: {
+      twitter: normalizeUrl(tw || null),
+      linkedin: normalizeUrl(ln || null),
+      github: normalizeUrl(gh || null),
+    }
+  }
+}
+
 function sanitizeUser(u: AnyObj) {
   return {
     id: u?.id,
@@ -14,6 +37,7 @@ function sanitizeUser(u: AnyObj) {
     description: u?.description ?? '',
     avatar_urls: u?.avatar_urls ?? {},
     url: u?.url ?? '',
+    ...deriveSocial(u),
   }
 }
 

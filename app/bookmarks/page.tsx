@@ -4,21 +4,32 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-async function getBookmarks() {
+async function getBookmarks(cookiesHeader?: string) {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/wp/bookmarks?expand=1`, { cache: 'no-store' })
+    const r = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/wp/bookmarks?expand=1`, {
+      cache: 'no-store',
+      headers: cookiesHeader ? { cookie: cookiesHeader } : undefined,
+    })
     if (!r.ok) return null
     return await r.json()
   } catch { return null }
 }
 
 export default async function BookmarksPage() {
-  const data = await getBookmarks()
+  // Forward cookies so upstream sees the logged-in session
+  const cookie = (await import('next/headers')).cookies
+  const jar = await cookie()
+  const sessionName = process.env.SESSION_COOKIE_NAME || 'session'
+  const c = jar.get(sessionName)?.value
+  const header = c ? `${sessionName}=${c}` : undefined
+  const data = await getBookmarks(header)
   const items = Array.isArray(data?.items) ? data.items as Array<any> : []
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
       <h1 className="text-2xl font-semibold mb-6">Bookmarks</h1>
-      {items.length === 0 ? (
+      {data === null ? (
+        <div className="text-muted-foreground">Login required to view your bookmarks.</div>
+      ) : items.length === 0 ? (
         <div className="text-muted-foreground">You haven't saved any bookmarks yet.</div>
       ) : (
         <ul className="space-y-4">

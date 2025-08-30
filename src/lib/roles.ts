@@ -104,7 +104,8 @@ export function normalizeRole(userRoles?: string[] | null): RoleKey {
   if (!userRoles || userRoles.length === 0) return 'guest'
   // Choose the highest-privileged role based on priority order
   const priority: RoleKey[] = ['admin','publisher','editor','author','writer','reader','seo_lead','seo_specialist','guest']
-  const mapped = userRoles.map(r => roleAlias[r] || (r as RoleKey))
+  // Normalize case before mapping; WP roles may come capitalized (e.g., 'Subscriber')
+  const mapped = userRoles.map(r => roleAlias[r.toLowerCase?.() as any] || (r.toLowerCase?.() as RoleKey))
   for (const key of priority) {
     if (mapped.includes(key)) return key
   }

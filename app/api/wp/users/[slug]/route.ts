@@ -10,6 +10,33 @@ type PublicUser = {
   profile_fields?: Record<string, unknown> | null
   recent_posts?: any[]
   recent_comments?: any[]
+  social?: { twitter: string | null; linkedin: string | null; github: string | null }
+}
+
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null
+  const s = String(u).trim()
+  if (!s) return null
+  if (/^https?:\/\//i.test(s)) return s
+  return `https://${s}`
+}
+
+function deriveSocial(u: any): { twitter: string | null; linkedin: string | null; github: string | null } {
+  // Prefer explicit social object if backend/plugin supplies it
+  if (u && typeof u.social === 'object' && u.social) {
+    return {
+      twitter: normalizeUrl((u.social as any).twitter ?? null),
+      linkedin: normalizeUrl((u.social as any).linkedin ?? null),
+      github: normalizeUrl((u.social as any).github ?? null),
+    }
+  }
+  const pf = (u && typeof u.profile_fields === 'object') ? (u.profile_fields as Record<string, unknown>) : null
+  const get = (k: string) => (pf && typeof pf[k] === 'string') ? (pf[k] as string) : undefined
+  // Primary keys from user_meta
+  const tw = (u?.twitter_url as string) || get('twitter_url') || get('twitter') || get('x')
+  const ln = (u?.linkedin_url as string) || get('linkedin_url') || get('linkedin')
+  const gh = (u?.github_url as string) || get('github_url') || get('github')
+  return { twitter: normalizeUrl(tw || null), linkedin: normalizeUrl(ln || null), github: normalizeUrl(gh || null) }
 }
 
 function sanitize(u: any): PublicUser {
@@ -39,6 +66,7 @@ function sanitize(u: any): PublicUser {
     profile_fields: u?.profile_fields ?? null,
     recent_posts: Array.isArray(u?.recent_posts) ? u.recent_posts.map(mapPost) : [],
     recent_comments: Array.isArray(u?.recent_comments) ? u.recent_comments.map(mapComment) : [],
+  social: deriveSocial(u),
   }
 }
 

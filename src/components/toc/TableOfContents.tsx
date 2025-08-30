@@ -50,21 +50,13 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     const topOffset = (isNaN(header) ? 64 : header) + 24 // add small cushion
     return `-${topOffset}px 0px -60% 0px`
   }, [])
-  const state = useScrollSpy(ids, { rootMargin, nearbyRange: 1, adjacentRange: 2 })
+  // Keep nearby range small so only the truly in-view section remains highlighted
+  const state = useScrollSpy(ids, { rootMargin, nearbyRange: 0, adjacentRange: 1 })
   const hierarchy = useMemo(() => toHierarchy(items), [items])
   // Sync a class on the active heading in the document to avoid flicker
-  useEffect(() => {
-    if (!ids.length) return
-    const activeId = state.activeId || ids[0]
-    ids.forEach((id) => {
-      const el = document.getElementById(id)
-      if (!el) return
-      if (id === activeId) el.classList.add('heading-active')
-      else el.classList.remove('heading-active')
-    })
-  }, [ids, state.activeId])
   // Sync content heading highlight strictly to the single activeId
   useEffect(() => {
+    if (!ids.length) return
     const clearAll = () => ids.forEach(id => document.getElementById(id)?.classList.remove('heading-active'))
     clearAll()
     if (state.activeId) {
@@ -175,7 +167,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     if (!state.activeId) return
     const container = listRef.current
     if (!container) return
-    const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
+  const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
     if (!el) return
     const cRect = container.getBoundingClientRect()
     const eRect = el.getBoundingClientRect()

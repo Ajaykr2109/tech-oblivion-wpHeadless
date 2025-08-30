@@ -20,6 +20,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const nameRaw = user.name || username
   const name = decodeEntities(String(nameRaw))
   const avatar = user.avatar_urls?.['96'] || user.avatar_urls?.['48'] || user.avatar_urls?.['24'] || `https://i.pravatar.cc/150?u=${username}`
+  // Bio comes from WP 'description' field in the FE plugin payload
   const bio = decodeEntities(String(user.description || ""))
   const pf = (user.profile_fields && typeof user.profile_fields === 'object') ? (user.profile_fields as Record<string, unknown>) : null
   function getPFString(key: string): string | undefined {
@@ -49,12 +50,19 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   }
   const rolesList = getPFArray('roles') || getPFArray('role') || getPFArray('roles_display')
 
+  // Determine if we should show authored posts. Hide for plain subscribers/readers
+  const userHasRecentPosts = Array.isArray((user as any)?.recent_posts) && (user as any).recent_posts.length > 0
+  const showPostsTab = userHasRecentPosts
+  const defaultTab = showPostsTab ? 'posts' : 'comments'
+
   // Server-side fetch of posts and comments authored by this user
   type WPPost = { id: number; slug: string; title?: { rendered?: string }; excerpt?: { rendered?: string }; date?: string }
   type WPComment = { id: number; post: number; content?: { rendered?: string }; date?: string }
   const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const postsRes = await fetch(new URL(`/api/wp/posts?author=${encodeURIComponent(String(user.id))}&per_page=9`, SITE).toString(), { cache: 'no-store' })
-  const postsJson: WPPost[] = postsRes.ok ? await postsRes.json() : []
+  const postsJson: WPPost[] = showPostsTab ? await (async () => {
+    const postsRes = await fetch(new URL(`/api/wp/posts?author=${encodeURIComponent(String(user.id))}&per_page=9`, SITE).toString(), { cache: 'no-store' })
+    return postsRes.ok ? await postsRes.json() : []
+  })() : []
   const commentsRes = await fetch(new URL(`/api/wp/comments?author=${encodeURIComponent(String(user.id))}&status=approve&per_page=20&orderby=date&order=desc`, SITE).toString(), { cache: 'no-store' })
   const commentsJson: WPComment[] = commentsRes.ok ? await commentsRes.json() : []
 
@@ -124,14 +132,15 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="posts">
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
-          <TabsTrigger value="posts">Posts</TabsTrigger>
+          {showPostsTab && <TabsTrigger value="posts">Posts</TabsTrigger>}
           <TabsTrigger value="comments">Comments</TabsTrigger>
         </TabsList>
 
         {/* Posts Tab */}
-        <TabsContent value="posts" className="mt-6">
+  {showPostsTab && (
+  <TabsContent value="posts" className="mt-6">
           {posts.length === 0 ? (
             <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">No posts yet.</div>
           ) : (
@@ -156,7 +165,8 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
               ))}
             </div>
           )}
-        </TabsContent>
+  </TabsContent>
+  )}
 
         {/* Comments Tab */}
         <TabsContent value="comments" className="mt-6">
