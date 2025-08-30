@@ -30,6 +30,7 @@ import BackToTop from '@/components/back-to-top'
 import ViewsCounter from '@/components/views-counter'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
+import { extractTocFromMarkdown } from '@/lib/toc-md'
 
 // Enhanced recommendation type with more metadata
 type EnhancedRecommendation = {
@@ -92,8 +93,14 @@ export default async function PostPage({ params }: PageProps) {
         return `<h${level}${attrsOut}>${inner}</h${level}>`
     })
 
-    // 🔧 FIX: Generate TOC from content that already has heading IDs
-    const tableOfContents = await getOrBuildToc(Number(post.id), contentWithHeadingIds)
+        // Generate TOC: prefer Markdown AST if content_raw present, otherwise from HTML
+        let tableOfContents: any[] = []
+        if ((post as any).content_raw) {
+            const mdToc = extractTocFromMarkdown((post as any).content_raw as string)
+            tableOfContents = mdToc.map(i => ({ id: i.id, text: i.value, depth: i.depth }))
+        } else {
+            tableOfContents = await getOrBuildToc(Number(post.id), contentWithHeadingIds)
+        }
 
     // Auto-linking: only first occurrence per target
     const autoLinkTargets: AutoLinkTarget[] = []

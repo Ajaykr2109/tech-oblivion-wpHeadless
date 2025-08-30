@@ -6,6 +6,7 @@ import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 import { getSettings } from '@/lib/settings'
 import Footer from '@/components/Footer';
+import { ReactQueryProvider } from '@/components/providers/react-query'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -25,7 +26,9 @@ export default async function RootLayout({
             {/* Skip link for keyboard users */}
             <a href="#main-content" className="skip-link">Skip to content</a>
             <Header />
-            <main id="main-content" className="flex-grow">{children}</main>
+            <ReactQueryProvider>
+              <main id="main-content" className="flex-grow">{children}</main>
+            </ReactQueryProvider>
             <Footer />
           </div>
           <Toaster />
