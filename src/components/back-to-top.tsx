@@ -18,7 +18,7 @@ export default function BackToTop({ threshold = 400 }: { threshold?: number }) {
   if (!visible) return null
 
   return (
-    <div className="fixed bottom-24 right-6 z-[60]">
+    <div className="fixed right-6 z-[65]" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
       <Button
         size="icon"
         variant="secondary"

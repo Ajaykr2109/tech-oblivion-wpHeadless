@@ -8,9 +8,28 @@ type PublicUser = {
   description?: string
   avatar_urls?: Record<string, string>
   profile_fields?: Record<string, unknown> | null
+  recent_posts?: any[]
+  recent_comments?: any[]
 }
 
 function sanitize(u: any): PublicUser {
+  const mapPost = (p: any) => ({
+    id: Number(p?.id ?? 0),
+    title: String(p?.title ?? p?.title?.rendered ?? ''),
+    slug: String(p?.slug ?? ''),
+    date: String(p?.date ?? p?.date_gmt ?? ''),
+    link: String(p?.link ?? ''),
+    content_raw: String(p?.content_raw ?? p?.content?.raw ?? ''),
+    content_rendered: String(p?.content_rendered ?? p?.content?.rendered ?? ''),
+  })
+  const mapComment = (c: any) => ({
+    id: Number(c?.id ?? 0),
+    post: Number(c?.post ?? c?.post_id ?? 0),
+    date: String(c?.date ?? c?.date_gmt ?? ''),
+    link: String(c?.link ?? c?.permalink ?? ''),
+    content_raw: String(c?.content_raw ?? c?.content?.raw ?? ''),
+    content_rendered: String(c?.content_rendered ?? c?.content?.rendered ?? ''),
+  })
   return {
     id: Number(u?.id ?? 0),
     name: u?.name ?? u?.display_name,
@@ -18,6 +37,8 @@ function sanitize(u: any): PublicUser {
     description: u?.description ?? '',
     avatar_urls: u?.avatar_urls ?? {},
     profile_fields: u?.profile_fields ?? null,
+    recent_posts: Array.isArray(u?.recent_posts) ? u.recent_posts.map(mapPost) : [],
+    recent_comments: Array.isArray(u?.recent_comments) ? u.recent_comments.map(mapComment) : [],
   }
 }
 

@@ -1,5 +1,6 @@
 export type Action =
   | 'read'
+  | 'bookmark'
   | 'comment'
   | 'draft'
   | 'requestPublish'
@@ -30,40 +31,41 @@ export const roleConfig: Record<RoleKey, RoleConfig> = {
   guest: {
     allowed: new Set<Action>(['read']),
     messages: {
+      bookmark: 'Log in to bookmark.',
       comment: 'Log in to comment.',
       draft: 'Log in to write drafts.',
       fallback: 'Please log in to use this feature.',
     },
   },
   reader: {
-    allowed: new Set<Action>(['read', 'comment']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment']),
     messages: {
       draft: 'Upgrade to Writer to draft posts.',
       fallback: 'This action requires a higher role.',
     },
   },
   writer: {
-    allowed: new Set<Action>(['read', 'comment', 'draft', 'requestPublish']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment', 'draft', 'requestPublish']),
     messages: {
       publishOwn: 'Editors handle publishing.',
       fallback: 'Ask an editor to publish or upgrade your role.',
     },
   },
   author: {
-    allowed: new Set<Action>(['read', 'comment', 'draft', 'requestPublish', 'publishOwn']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment', 'draft', 'requestPublish', 'publishOwn']),
     messages: {
       editOthers: 'You can publish your own posts only.',
       fallback: 'This action is limited to editors.',
     },
   },
   editor: {
-    allowed: new Set<Action>(['read', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments']),
     messages: {
       fallback: 'You have editor access.',
     },
   },
   publisher: {
-    allowed: new Set<Action>(['read', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments']),
     messages: { fallback: 'You can approve & publish others’ posts.' },
   },
   seo_specialist: {
@@ -75,7 +77,7 @@ export const roleConfig: Record<RoleKey, RoleConfig> = {
     messages: { publishOwn: 'Publishing is handled by editors.', fallback: 'SEO management enabled.' },
   },
   admin: {
-    allowed: new Set<Action>(['read', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments', 'seoEdit', 'seoManage', 'admin']),
+    allowed: new Set<Action>(['read', 'bookmark', 'comment', 'draft', 'requestPublish', 'publishOwn', 'editOthers', 'moderateComments', 'seoEdit', 'seoManage', 'admin']),
     messages: { fallback: 'You have full access.' },
   },
 }

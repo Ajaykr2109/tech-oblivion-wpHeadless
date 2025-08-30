@@ -9,7 +9,7 @@ export function useMe() {
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     let cancelled = false
-    async function run() {
+    const run = async () => {
       setLoading(true)
       try {
         const r = await fetch('/api/auth/me', { cache: 'no-store' })
@@ -24,7 +24,17 @@ export function useMe() {
       }
     }
     run()
-    return () => { cancelled = true }
+    const onFocus = () => run()
+    const onLogin = () => run()
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('auth:login', onLogin as any)
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('auth:login', onLogin as any)
+    }
   }, [])
   return { me, loading }
 }

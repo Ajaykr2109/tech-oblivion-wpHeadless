@@ -345,6 +345,39 @@ Example response (shape):
 { "post_id": 123, "views_total": 42, "user_views": 3 }
 ```
 
+### /api/wp/bookmarks
+
+- Methods: GET, POST
+- Description: Proxy to MU endpoints for user bookmarks. GET returns current user's bookmarks or checks a specific post's bookmark state when passing ?postId=. POST toggles bookmark for a post.
+
+Example request (check state):
+
+```js
+await fetch('/api/wp/bookmarks?postId=123');
+```
+
+Example response (shape):
+
+```json
+{ "post_id": 123, "bookmarked": true, "count": 5 }
+```
+
+Example request (toggle):
+
+```js
+await fetch('/api/wp/bookmarks', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ postId: 123 })
+});
+```
+
+Example response (shape):
+
+```json
+{ "post_id": 123, "bookmarked": true, "count": 6 }
+```
+
 ### /api/wp/users
 
 - Methods: GET
