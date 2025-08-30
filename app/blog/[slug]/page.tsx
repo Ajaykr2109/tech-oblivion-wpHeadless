@@ -10,15 +10,18 @@ import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { Button } from '@/components/ui/button'
-import { Edit, MessageCircle, ThumbsUp, Twitter, Linkedin, Github } from 'lucide-react'
+import { Edit, ThumbsUp, Twitter, Linkedin, Github, Share2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { getPostBySlug } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
+import PostActions from '@/components/post-actions'
+import CommentsSection from '@/components/comments-section'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
@@ -43,8 +46,27 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / wordsPerMinute))
   const readingTime = `${readingTimeMinutes} min read`
 
-    // Cached TOC (server memory) – skip entirely if empty
-    const tableOfContents = await getOrBuildToc(Number(post.id), safeHtml)
+        // Cached TOC (server memory) – skip entirely if empty
+        const tableOfContents = await getOrBuildToc(Number(post.id), safeHtml)
+
+        // Fetch related recommendations for bottom grid (best-effort)
+        let recommended: Array<{ id: number; slug: string; title: string }> = []
+        try {
+            const cats = (post.categories || []).map(c => c.id).join(',')
+            const tags = (post.tags || []).map(t => t.id).join(',')
+            const qs = new URLSearchParams()
+            if (cats) qs.set('categories', cats)
+            if (tags) qs.set('tags', tags)
+            qs.set('exclude', String(post.id))
+            qs.set('per_page', '3')
+            const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
+            const url = `${origin || ''}/api/wp/related?${qs.toString()}`
+            const r = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
+            if (r.ok) {
+                const data = (await r.json()) as any[]
+                recommended = (data || []).map(d => ({ id: d.id, slug: d.slug, title: d.title?.rendered || '' }))
+            }
+        } catch {}
 
         const highlightedContent = safeHtml.replace(/<pre><code class="language-([a-z0-9_-]+)">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
     try {
@@ -81,141 +103,151 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
-            <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <header className="text-center mb-8 relative">
-            <div className="absolute top-0 right-0">
-                <Button variant="outline" asChild>
-                    <Link href={`/editor/${post.id}`}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                    </Link>
-                </Button>
-            </div>
-      <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
-          <div className="flex justify-center items-center gap-4 text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-          <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-          <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                </Avatar>
-        <span>By {post.authorName || 'Unknown'}</span>
-            </div>
-            <span>•</span>
-    <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            <span>•</span>
-            <span>{readingTime}</span>
-          </div>
-        </header>
+                        <div className="container mx-auto px-4 py-10 max-w-7xl">
+                {/* Header */}
+                <header className="relative mb-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 break-words">{post.title}</h1>
+                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
+                                {/* Categories as badges */}
+                                <div className="flex flex-wrap gap-2">
+                                    {(post.categories && post.categories.length > 0) ? (
+                                        post.categories.map(c => (
+                                            <Badge key={c.id} variant="secondary">{c.name}</Badge>
+                                        ))
+                                    ) : null}
+                                </div>
+                                {post.categories?.length ? <span className="hidden sm:inline">•</span> : null}
+                                <div className="flex items-center gap-2">
+                                    <Avatar className="h-7 w-7">
+                                        <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+                                        <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="truncate">{post.authorName || 'Unknown'}</span>
+                                </div>
+                                <span className="hidden sm:inline">•</span>
+                                <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="inline-flex items-center gap-1">{readingTime}</span>
+                            </div>
+                        </div>
+                        {/* Floating actions */}
+                        <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
+                    </div>
+                </header>
 
-    {post.featuredImage && (
-          <div className="relative w-full max-w-4xl mx-auto mb-12">
-             <div className="flex justify-center mb-12">
-              <Image
-                src={post.featuredImage}
-                alt={post.title}
-                width={500}
-                height={500}
-                className="rounded-lg object-cover max-w-[250px] sm:max-w-[300px] md:max-w-[400px] w-full h-auto shadow-md hover:shadow-lg"
-                quality={70}
-              />
-            </div>
-          </div>
-        )}
+                {/* Featured banner */}
+                {post.featuredImage ? (
+                    <div className="mb-10">
+                        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
+                            <Image
+                                src={post.featuredImage}
+                                alt={post.title}
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 1024px"
+                                className="object-cover"
+                                priority={false}
+                                quality={70}
+                            />
+                        </div>
+                    </div>
+                ) : null}
 
-                {/* Mobile TOC */}
+                {/* Mobile TOC (accordion) */}
                 {tableOfContents.length > 0 && (
-                    <div className="lg:hidden p-4 mb-6 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
-                        <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
-                        <TocList items={tableOfContents} />
+                    <div className="lg:hidden mb-6">
+                        <Accordion type="single" collapsible>
+                            <AccordionItem value="toc">
+                                <AccordionTrigger>On this page</AccordionTrigger>
+                                <AccordionContent>
+                                    <TocList items={tableOfContents} />
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </div>
                 )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <aside className="lg:col-span-2 lg:sticky top-8 self-start hidden lg:block">
-                 {tableOfContents.length > 0 && (
-                    <div className="p-4 border-l-4 border-primary bg-secondary/50 rounded-r-lg">
-                    <h2 className="text-xl font-semibold mb-4">Table of Contents</h2>
-                    <TocList items={tableOfContents} />
-                    </div>
-                )}
-            </aside>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Sticky TOC on desktop (left) */}
+                        <aside className="lg:col-span-2 self-start hidden lg:block">
+                            {tableOfContents.length > 0 && (
+                                <div className="lg:sticky top-24">
+                                    <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">On this page</h2>
+                                    <div className="rounded-md border bg-card p-4">
+                                        <TocList items={tableOfContents} />
+                                    </div>
+                                </div>
+                            )}
+                        </aside>
 
-        <article className="lg:col-span-8 min-w-0">
-                <div
-            className="wp-content prose prose-lg dark:prose-invert max-w-none lg:max-w-[75ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
-                    dangerouslySetInnerHTML={{ __html: contentLinked }}
-                />
-            </article>
-
-            <aside className="lg:col-span-2 lg:sticky top-8 self-start">
-                <div className="bg-card p-6 rounded-lg shadow-lg">
-                    <RelatedPostsSidebar
-                      currentPostId={Number(post.id)}
-                      currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
-                      currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
+                <article className="lg:col-span-8 min-w-0">
+                    <div
+                        className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>figure]:my-6 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
+                        dangerouslySetInnerHTML={{ __html: contentLinked }}
                     />
-                </div>
-            </aside>
+                </article>
+
+                        {/* Related sidebar on desktop (right) */}
+                        <aside className="lg:col-span-2 self-start">
+                            <div className="bg-card p-6 rounded-lg shadow-lg">
+                                <RelatedPostsSidebar
+                                    currentPostId={Number(post.id)}
+                                    currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
+                                    currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
+                                />
+                            </div>
+                        </aside>
         </div>
 
         <Separator className="my-12" />
 
-        <div className="max-w-4xl mx-auto">
-            <div className="bg-card/50 p-6 rounded-lg flex flex-col sm:flex-row items-start gap-6">
-                    <Avatar className="h-20 w-20">
-                    <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                    <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <h3 className="text-lg font-semibold text-muted-foreground">WRITTEN BY</h3>
-                    <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
-                    <p className="text-muted-foreground mb-4">Jane Doe is a senior software engineer specializing in frontend technologies and AI integration. She loves building beautiful, performant user interfaces.</p>
-                    <div className="flex gap-4">
-                        <a href="#" className="text-muted-foreground hover:text-foreground"><Twitter /></a>
-                        <a href="#" className="text-muted-foreground hover:text-foreground"><Linkedin /></a>
-                        <a href="#" className="text-muted-foreground hover:text-foreground"><Github /></a>
+                {/* Author box */}
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-card/50 p-6 rounded-lg flex flex-col sm:flex-row items-start gap-6">
+                        <Avatar className="h-24 w-24">
+                            <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+                            <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h3 className="text-sm font-semibold text-muted-foreground">Written by</h3>
+                            <h2 className="text-2xl font-bold">{post.authorName || 'Unknown'}</h2>
+                            <p className="text-sm text-muted-foreground mb-4">{post.authorName ? `${post.authorName} · Author` : 'Author'}</p>
+                            <p className="text-muted-foreground mb-4">An avid writer and technologist. Short bio can go here if available.</p>
+                            <div className="flex gap-4">
+                                <a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-foreground"><Twitter className="h-5 w-5" /></a>
+                                <a href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-foreground"><Linkedin className="h-5 w-5" /></a>
+                                <a href="#" aria-label="GitHub" className="text-muted-foreground hover:text-foreground"><Github className="h-5 w-5" /></a>
+                            </div>
+                            <div className="mt-4">
+                                <Link href="/profile" className="text-sm text-primary hover:underline">View full profile</Link>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
         <Separator className="my-12" />
-
-        <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-6 mb-8">
-                <Button variant="outline" size="lg">
-                    <ThumbsUp className="mr-2 h-5 w-5" /> Like (123)
-                </Button>
-                <h2 className="text-2xl font-bold">Comments (3)</h2>
-            </div>
-
-            <div className="space-y-6">
-                <form className="grid gap-4">
-                    <Textarea placeholder="Write a comment..." rows={4} />
-                    <Button className="justify-self-end">Post Comment</Button>
-                </form>
-
-                <div className="flex items-start gap-4">
-                    <Avatar>
-                        <AvatarImage src="https://i.pravatar.cc/150?u=a04258114e29026702d" />
-                        <AvatarFallback>AJ</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">Alex Johnson</p>
-                        <p className="text-sm text-muted-foreground">This was a great read, thanks for sharing!</p>
-                    </div>
+                {/* Comments section */}
+                <div className="max-w-4xl mx-auto">
+                    <CommentsSection postId={Number(post.id)} />
                 </div>
-                 <div className="flex items-start gap-4">
-                    <Avatar>
-                        <AvatarImage src="https://i.pravatar.cc/150?u=a042581f4e29026703d" />
-                        <AvatarFallback>MG</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">Maria Garcia</p>
-                        <p className="text-sm text-muted-foreground">Very insightful. The code block was particularly helpful.</p>
+
+                {/* Recommended posts grid */}
+                {recommended.length > 0 && (
+                    <div className="mt-12">
+                        <h2 className="text-2xl font-bold mb-4">Recommended for you</h2>
+                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                            {recommended.map(r => (
+                                <Link key={r.id} href={`/blog/${r.slug}`} className="group">
+                                    <div className="h-full rounded-lg border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
+                                        <h3 className="font-semibold group-hover:underline line-clamp-2">{r.title}</h3>
+                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">Keep reading related insights.</p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                )}
             </div>
         </>
     );
