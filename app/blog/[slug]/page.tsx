@@ -19,6 +19,8 @@ import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
+import { RoleGate } from '@/hooks/useRoleGate'
+import CommentFormGate from '@/components/CommentFormGate'
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
@@ -84,11 +86,13 @@ export default async function PostPage({ params }: { params: { slug: string } })
             <div className="container mx-auto px-4 py-12 max-w-7xl">
         <header className="text-center mb-8 relative">
             <div className="absolute top-0 right-0">
-                <Button variant="outline" asChild>
-                    <Link href={`/editor/${post.id}`}>
-                    <Edit className="mr-2 h-4 w-4" /> Edit
-                    </Link>
-                </Button>
+                                <RoleGate action="draft" as="span">
+                                    <Button variant="outline" asChild>
+                                            <Link href={`/editor/${post.id}`}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Link>
+                                    </Button>
+                                </RoleGate>
             </div>
       <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
           <div className="flex justify-center items-center gap-4 text-muted-foreground text-sm">
@@ -188,11 +192,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 <h2 className="text-2xl font-bold">Comments (3)</h2>
             </div>
 
-            <div className="space-y-6">
-                <form className="grid gap-4">
-                    <Textarea placeholder="Write a comment..." rows={4} />
-                    <Button className="justify-self-end">Post Comment</Button>
-                </form>
+                                    <div className="space-y-6">
+                                        <CommentFormGate />
 
                 <div className="flex items-start gap-4">
                     <Avatar>
