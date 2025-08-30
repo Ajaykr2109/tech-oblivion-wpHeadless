@@ -95,10 +95,10 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
             </div>
           </CardHeader>
           <CardContent className="flex-grow p-4">
-            <CardTitle id={`post-title-${post.id}`} className="text-xl">
+            <CardTitle id={`post-title-${post.id}`} className="text-xl line-clamp-2">
               {post.title}
             </CardTitle>
-            <CardDescription className="mt-2">{post.excerpt}</CardDescription>
+            <CardDescription className="mt-2 line-clamp-3">{post.excerpt}</CardDescription>
           </CardContent>
           <CardFooter className="p-4">
             <div className="flex items-center space-x-3">

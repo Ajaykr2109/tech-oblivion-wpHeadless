@@ -4,9 +4,7 @@ import Feed from '@/components/feed'
 import FeedSkeleton from '@/components/feed-skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Search } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Search, Clock, Flame } from 'lucide-react'
 
 export const dynamic = 'force-static'
 
@@ -20,15 +18,18 @@ export default async function BlogIndexPage() {
         </p>
       </div>
 
-      <Card className="mb-8">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-            <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search articles by keyword..." className="pl-10" />
+      {/* Sticky search + filters */}
+      <div className="sticky top-16 z-30 mb-8 border-y bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="py-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 items-center">
+            {/* Search */}
+            <div className="lg:col-span-2 relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input aria-label="Search articles" placeholder="Search articles by keyword..." className="pl-10" />
             </div>
+            {/* Category filter */}
             <Select>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Filter by category">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
@@ -38,18 +39,23 @@ export default async function BlogIndexPage() {
                 <SelectItem value="react">React</SelectItem>
               </SelectContent>
             </Select>
+            {/* Sort filter with icons */}
             <Select>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Sort by">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="latest">Latest</SelectItem>
-                <SelectItem value="popular">Popular</SelectItem>
+                <SelectItem value="latest">
+                  <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Latest</span>
+                </SelectItem>
+                <SelectItem value="popular">
+                  <span className="flex items-center gap-2"><Flame className="h-4 w-4" /> Popular</span>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       <Suspense fallback={<FeedSkeleton layout="grid" count={6} />}>
         {/* Server component fetch with skeleton fallback */}
