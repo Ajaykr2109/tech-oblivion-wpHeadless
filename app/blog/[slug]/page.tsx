@@ -16,6 +16,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { getPostBySlug, type PostDetail } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
+import type { TocItem as HtmlTocItem } from '@/lib/toc'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
 import PostActions from '@/components/post-actions'
@@ -94,10 +95,13 @@ export default async function PostPage({ params }: PageProps) {
     })
 
         // Generate TOC: prefer Markdown AST if content_raw present, otherwise from HTML
-        let tableOfContents: any[] = []
+        let tableOfContents: HtmlTocItem[] = []
         if ((post as any).content_raw) {
             const mdToc = extractTocFromMarkdown((post as any).content_raw as string)
-            tableOfContents = mdToc.map(i => ({ id: i.id, text: i.value, depth: i.depth }))
+            // Normalize to HtmlTocItem shape expected by TocList: { level, text, slug }
+            tableOfContents = mdToc
+                .filter(i => i.depth === 2 || i.depth === 3)
+                .map(i => ({ level: (i.depth as 2 | 3), text: i.value, slug: i.id }))
         } else {
             tableOfContents = await getOrBuildToc(Number(post.id), contentWithHeadingIds)
         }

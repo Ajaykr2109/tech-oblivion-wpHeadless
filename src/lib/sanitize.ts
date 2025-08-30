@@ -1,7 +1,8 @@
 import sanitizeHtml from 'sanitize-html'
 import { decodeEntities } from './text'
 
-const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','blockquote','code','pre']
+// Include heading tags so we can build TOC and preserve document structure
+const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','blockquote','code','pre','h1','h2','h3','h4','h5','h6']
 // Do NOT include 'script' or 'style' in allowedTags
 export const allowedTags = baseAllowedTags.concat(['img','figure','figcaption','iframe'])
 
