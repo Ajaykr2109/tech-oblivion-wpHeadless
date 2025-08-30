@@ -13,7 +13,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { RoleGate } from "@/hooks/useRoleGate";
 import { fetchAllCategories, buildCategoryTree, type WpCategory, fetchAllTags, createCategory } from '@/lib/taxonomy-client'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
@@ -280,12 +279,8 @@ export default function EditorNewPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Create New Post</h1>
         <div className="flex gap-2">
-          <RoleGate action="draft" as="span">
-            <Button variant="outline" disabled={saving} onClick={() => createPost('draft')}>{saving ? 'Saving…' : 'Save Draft'}</Button>
-          </RoleGate>
-          <RoleGate action="publishOwn" as="span">
-            <Button disabled={saving} onClick={() => createPost('publish')}>{saving ? 'Saving…' : 'Publish'}</Button>
-          </RoleGate>
+      <Button variant="outline" disabled={saving} onClick={() => createPost('draft')}>{saving ? 'Saving…' : 'Save Draft'}</Button>
+      <Button disabled={saving} onClick={() => createPost('publish')}>{saving ? 'Saving…' : 'Publish'}</Button>
         </div>
       </div>
     {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
@@ -350,9 +345,7 @@ export default function EditorNewPage() {
                       </Select>
                     </div>
               <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
-                <RoleGate action="publishOwn" as="span">
-                  <Button className="w-full" disabled={saving} onClick={() => createPost(toWpStatus(post.status) as any)}>{saving ? 'Saving…' : 'Publish'}</Button>
-                </RoleGate>
+                <Button className="w-full" disabled={saving} onClick={() => createPost(toWpStatus(post.status) as any)}>{saving ? 'Saving…' : 'Publish'}</Button>
               </div>
                   </div>
                 </AccordionContent>

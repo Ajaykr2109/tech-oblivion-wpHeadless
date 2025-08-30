@@ -9,7 +9,8 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
-import { Twitter, Linkedin, Github } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Edit, ThumbsUp, Twitter, Linkedin, Github, Share2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -19,13 +20,8 @@ import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
-<<<<<<< HEAD
 import PostActions from '@/components/post-actions'
 import CommentsSection from '@/components/comments-section'
-=======
-import { RoleGate } from '@/hooks/useRoleGate'
-import CommentFormGate from '@/components/CommentFormGate'
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
@@ -107,8 +103,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
-<<<<<<< HEAD
-            <div className="container mx-auto px-4 py-10 max-w-7xl">
+                        <div className="container mx-auto px-4 py-10 max-w-7xl">
                 {/* Header */}
                 <header className="relative mb-6">
                     <div className="flex items-start justify-between gap-4">
@@ -141,34 +136,6 @@ export default async function PostPage({ params }: { params: { slug: string } })
                         <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
                     </div>
                 </header>
-=======
-            <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <header className="text-center mb-8 relative">
-            <div className="absolute top-0 right-0">
-                                <RoleGate action="draft" as="span">
-                                    <Button variant="outline" asChild>
-                                            <Link href={`/editor/${post.id}`}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </Link>
-                                    </Button>
-                                </RoleGate>
-            </div>
-      <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
-          <div className="flex justify-center items-center gap-4 text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-          <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-          <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                </Avatar>
-        <span>By {post.authorName || 'Unknown'}</span>
-            </div>
-            <span>•</span>
-    <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            <span>•</span>
-            <span>{readingTime}</span>
-          </div>
-        </header>
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
 
                 {/* Featured banner */}
                 {post.featuredImage ? (
@@ -260,33 +227,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 </div>
 
         <Separator className="my-12" />
-<<<<<<< HEAD
                 {/* Comments section */}
                 <div className="max-w-4xl mx-auto">
                     <CommentsSection postId={Number(post.id)} />
-=======
-
-        <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-6 mb-8">
-                <Button variant="outline" size="lg">
-                    <ThumbsUp className="mr-2 h-5 w-5" /> Like (123)
-                </Button>
-                <h2 className="text-2xl font-bold">Comments (3)</h2>
-            </div>
-
-                                    <div className="space-y-6">
-                                        <CommentFormGate />
-
-                <div className="flex items-start gap-4">
-                    <Avatar>
-                        <AvatarImage src="https://i.pravatar.cc/150?u=a04258114e29026702d" />
-                        <AvatarFallback>AJ</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">Alex Johnson</p>
-                        <p className="text-sm text-muted-foreground">This was a great read, thanks for sharing!</p>
-                    </div>
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
                 </div>
 
                 {/* Recommended posts grid */}

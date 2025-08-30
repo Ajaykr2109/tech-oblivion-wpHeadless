@@ -14,7 +14,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Upload, X, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { RoleGate } from "@/hooks/useRoleGate";
 import Link from "next/link";
 
 const EditorToolbar = () => (
@@ -213,9 +212,7 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
         <h1 className="text-3xl font-bold">Edit Post</h1>
         <div className="flex gap-2">
           <Button variant="outline">Preview</Button>
-          <RoleGate action="draft" as="span">
-            <Button disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update Post'}</Button>
-          </RoleGate>
+      <Button disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update Post'}</Button>
         </div>
       </div>
     {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
@@ -280,9 +277,7 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
                       </Select>
                     </div>
               <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
-                <RoleGate action="draft" as="span">
-                  <Button className="w-full" disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update'}</Button>
-                </RoleGate>
+                <Button className="w-full" disabled={saving} onClick={updatePost}>{saving ? 'Saving…' : 'Update'}</Button>
               </div>
                   </div>
                 </AccordionContent>
