@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Edit, Share2, MoreVertical, Clipboard } from 'lucide-react'
 import { RoleGate } from '@/hooks/useRoleGate'
+import { useToast } from '@/hooks/use-toast'
 
 type Props = {
   postId: number
@@ -12,6 +13,7 @@ type Props = {
 }
 
 export default function PostActions({ postId, slug, title }: Props) {
+  const { toast } = useToast()
   async function handleShare() {
     const url = typeof window !== 'undefined' ? window.location.href : `${slug}`
     try {
@@ -22,8 +24,7 @@ export default function PostActions({ postId, slug, title }: Props) {
     } catch {}
     try {
       await navigator.clipboard.writeText(url)
-      // Optional: integrate toast system if present
-      // toast({ title: 'Link copied', description: 'Post URL copied to clipboard.' })
+      toast({ title: 'Link copied', description: 'Post URL copied to clipboard.' })
       // Fallback: no-op
     } catch {}
   }
@@ -51,7 +52,7 @@ export default function PostActions({ postId, slug, title }: Props) {
         <DropdownMenuItem
           onClick={async () => {
             const url = typeof window !== 'undefined' ? window.location.href : `${slug}`
-            try { await navigator.clipboard.writeText(url) } catch {}
+            try { await navigator.clipboard.writeText(url); toast({ title: 'Link copied' }) } catch {}
           }}
           className="cursor-pointer"
         >

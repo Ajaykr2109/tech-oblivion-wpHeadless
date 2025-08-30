@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { getPostBySlug } from '@/lib/wp'
+import { getPostBySlug, type PostDetail } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
@@ -22,6 +22,13 @@ import PostActions from '@/components/post-actions'
 import CommentsSection from '@/components/comments-section'
 import ReadingProgress from '@/components/reading-progress'
 import FloatingActions from '@/components/floating-actions'
+import ContentDecorators from '@/components/content-decorators'
+import { Suspense } from 'react'
+import ReaderToolbar from '@/components/reader-toolbar'
+import { getLatestByAuthor } from '@/lib/wp-author'
+import BackToTop from '@/components/back-to-top'
+import ViewsCounter from '@/components/views-counter'
+import ErrorBoundary from '@/components/error-boundary'
 
 // Enhanced recommendation type with more metadata
 type EnhancedRecommendation = {
@@ -35,22 +42,31 @@ type EnhancedRecommendation = {
   readingTime?: string
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+type PageParams = { params: { slug: string } }
+type PageProps = { params: { slug: string } }
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
     const { slug } = params
     const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post not found' }
   return { title: post.seo?.title || post.title, description: post.seo?.description }
 }
 
-export default async function PostPage({ params }: { params: { slug: string } }) {
+export default async function PostPage({ params }: PageProps) {
     const { slug } = params
-    const post = await getPostBySlug(slug)
-    if (!post) notFound()
+        let post: PostDetail | null = null
+        try {
+            post = await getPostBySlug(slug)
+        } catch (e) {
+            console.error('Failed to load post', e)
+            post = null
+        }
+        if (!post) notFound()
 
     const rawHtml = post.contentHtml || ''
     const safeHtml = sanitizeWP(rawHtml)
 
-  // Simple reading time based on words/minute
+    // Simple reading time based on words/minute
   const wordsPerMinute = 225
   const wordCount = safeHtml.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / wordsPerMinute))
@@ -84,6 +100,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
     // 🚀 ENHANCED: Better recommendations with more metadata
     let recommended: EnhancedRecommendation[] = []
+    // Try to infer author id from categories/tags data model; fallback 0 (no fetch)
+    const authorId = (post as any).author ?? 0
+    const latestByAuthor = authorId ? await getLatestByAuthor(Number(authorId), Number(post.id), 3) : []
     try {
         const cats = (post.categories || []).map(c => c.id).join(',')
         const tags = (post.tags || []).map(t => t.id).join(',')
@@ -136,6 +155,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
+            <ReaderToolbar />
 
             {/* 🚀 NEW: Reading Progress Bar */}
             <ReadingProgress />
@@ -193,7 +213,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                                 <span className="hidden sm:inline">•</span>
                                 <span className="inline-flex items-center gap-1">
                                     <Eye className="h-3 w-3" />
-                                    <span>1.2k views</span>
+                                    <ViewsCounter postId={Number(post.id)} />
                                 </span>
                             </div>
                         </div>
@@ -203,11 +223,12 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 </header>
 
                 <FloatingActions title={post.title} />
+                <BackToTop />
 
                 {/* Featured banner */}
-                {post.featuredImage ? (
+        {post.featuredImage ? (
                     <div className="mb-10">
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
                             <Image
                                 src={post.featuredImage}
                                 alt={post.title}
@@ -257,7 +278,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Eye className="h-3 w-3" />
-                                        <span>1.2k views</span>
+                                        <ViewsCounter postId={Number(post.id)} />
                                     </div>
                                 </div>
                             </div>
@@ -281,6 +302,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
                             className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-4 [&>figure]:my-6 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
                             dangerouslySetInnerHTML={{ __html: contentLinked }}
                         />
+                        {/* Client decorators for anchors, code copy, quote share */}
+                        <ContentDecorators selector=".wp-content" />
 
                         {/* 🚀 NEW: Article tags section */}
                         {post.tags && post.tags.length > 0 && (
@@ -301,13 +324,29 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
                     {/* Enhanced Related sidebar */}
                     <aside className="lg:col-span-2 self-start">
-                        <div className="bg-card p-6 rounded-lg shadow-lg">
-                            <RelatedPostsSidebar
-                                currentPostId={Number(post.id)}
-                                currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
-                                currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
-                            />
-                        </div>
+                                                    <div className="bg-card p-6 rounded-lg shadow-lg">
+                                                        <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Failed to load related posts.</div>}>
+                                                            <RelatedPostsSidebar
+                                                                    currentPostId={Number(post.id)}
+                                                                    currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
+                                                                    currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
+                                                            />
+                                                        </ErrorBoundary>
+                                                    </div>
+
+                                            {/* 🚀 NEW: Author's latest posts */}
+                                            {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (
+                                                <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
+                                                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">More from the author</h3>
+                                                    <ul className="space-y-3">
+                                                        {latestByAuthor.map((p: any) => (
+                                                            <li key={p.id}>
+                                                                <Link href={`/blog/${p.slug}`} className="text-sm hover:underline line-clamp-2">{p.title?.rendered || p.title}</Link>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
 
                         {/* 🚀 NEW: Newsletter signup in sidebar */}
                         <div className="mt-6 bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-lg border">
@@ -344,13 +383,13 @@ export default async function PostPage({ params }: { params: { slug: string } })
                                 {/* This could be pulled from author bio field */}
                             </p>
                             <div className="flex items-center gap-4 mb-4">
-                                <a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-blue-500 transition-colors">
+                                <a href={post.seo?.twitterImage ? post.seo?.canonical || '#' : '#'} aria-label="Twitter" className="text-muted-foreground hover:text-blue-500 transition-colors">
                                     <Twitter className="h-5 w-5" />
                                 </a>
-                                <a href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-blue-600 transition-colors">
+                                <a href={post.seo?.canonical || '#'} aria-label="LinkedIn" className="text-muted-foreground hover:text-blue-600 transition-colors">
                                     <Linkedin className="h-5 w-5" />
                                 </a>
-                                <a href="#" aria-label="GitHub" className="text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <a href={post.authorName ? `https://github.com/${encodeURIComponent(post.authorName.replace(/\s+/g,'').toLowerCase())}` : '#'} aria-label="GitHub" className="text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors">
                                     <Github className="h-5 w-5" />
                                 </a>
                             </div>
@@ -370,7 +409,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
                 {/* Comments section */}
                 <div className="max-w-4xl mx-auto">
-                    <CommentsSection postId={Number(post.id)} />
+                                        <Suspense fallback={<div className="text-sm text-muted-foreground">Loading comments...</div>}> 
+                                            <CommentsSection postId={Number(post.id)} />
+                                        </Suspense>
                 </div>
 
                 {/* 🚀 ENHANCED: Recommended posts with rich cards */}

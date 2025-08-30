@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 
 export default function ReadingProgress({ targetSelector = '.wp-content' }: { targetSelector?: string }) {
   const [progress, setProgress] = useState(0)
+  const [top, setTop] = useState<number>(0)
 
   useEffect(() => {
     function update() {
@@ -23,8 +24,19 @@ export default function ReadingProgress({ targetSelector = '.wp-content' }: { ta
     }
   }, [targetSelector])
 
+  useEffect(() => {
+    const computeTop = () => {
+      const header = document.querySelector('header') as HTMLElement | null
+      const h = header ? header.getBoundingClientRect().height : 0
+      setTop(h)
+    }
+    computeTop()
+    window.addEventListener('resize', computeTop)
+    return () => window.removeEventListener('resize', computeTop)
+  }, [])
+
   return (
-    <div className="fixed left-0 right-0 top-0 z-40 h-1 bg-transparent">
+    <div style={{ top }} className="fixed left-0 right-0 z-40 h-1 bg-transparent">
       <div className="h-1 bg-primary transition-[width] duration-150 ease-out" style={{ width: `${progress}%` }} />
     </div>
   )

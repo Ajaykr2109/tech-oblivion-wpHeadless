@@ -126,6 +126,16 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Ensure site content clears the sticky header */
+main#main-content {
+  padding-top: clamp(56px, 8vh, 88px);
+}
+
+/* Provide bottom safe area so floating buttons don't collide with footer */
+main#main-content {
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+
 /* Ensure post content wraps normally and occupies available width */
 .wp-content {
   /* Prevent unintended multi-column or narrow measure effects */
@@ -138,12 +148,18 @@ html {
   margin-right: auto;
 }
 
+/* Reader font scaling (controlled by ReaderToolbar via --reader-scale) */
+.wp-content {
+  font-size: calc(1rem * (var(--reader-scale, 100) / 100));
+}
+
 /* Extra polish for markdown-like content */
 .wp-content pre {
   overflow-x: auto;
   padding: 1rem;
   border-radius: 0.5rem;
   background: hsl(var(--muted));
+  position: relative;
 }
 .wp-content code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -170,6 +186,14 @@ html {
 .wp-content h2[id],
 .wp-content h3[id] {
   scroll-margin-top: 6rem;
+}
+
+/* Active heading highlight inside article */
+.wp-content h2.heading-active,
+.wp-content h3.heading-active {
+  text-decoration: underline;
+  text-decoration-color: hsl(var(--primary) / 0.6);
+  text-underline-offset: 4px;
 }
 
 /* Better focus styles for links/buttons */
