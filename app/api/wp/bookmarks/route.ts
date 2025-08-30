@@ -36,12 +36,14 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const postId = searchParams.get('postId') || searchParams.get('post_id')
+  const expand = searchParams.get('expand')
     if (postId) {
       // Check bookmark state and count for a post
       return await forward(req, `/bookmarks/check?post_id=${encodeURIComponent(postId)}`)
     }
     // List bookmarks for current user
-    return await forward(req, '/bookmarks')
+  const q = expand ? `?expand=${encodeURIComponent(expand)}` : ''
+  return await forward(req, `/bookmarks${q}`)
   } catch (e: any) {
     return new Response(JSON.stringify({ error: 'server error', detail: String(e?.message || e) }), { status: 500 })
   }

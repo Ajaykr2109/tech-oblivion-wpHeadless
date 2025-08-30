@@ -88,6 +88,14 @@ export function Header() {
           </Link>
         );
       })}
+      {user && (
+        <Link
+          href="/bookmarks"
+          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+        >
+          Bookmarks
+        </Link>
+      )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-haspopup="menu" aria-expanded={undefined}>
@@ -192,6 +200,9 @@ export function Header() {
                     </Link>
                   );
                 })}
+                {user && (
+                  <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
+                )}
                  <RoleGate action="admin" as="div">
                    <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
                  </RoleGate>
