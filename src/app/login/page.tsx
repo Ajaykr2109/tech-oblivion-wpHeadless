@@ -22,7 +22,7 @@ export default function LoginPage() {
         if (r.ok) {
           const d = await r.json()
           if (d?.user) {
-            window.location.href = nextUrl || '/dashboard'
+            window.location.href = nextUrl || '/account'
           }
         }
       } catch {}
@@ -43,7 +43,7 @@ export default function LoginPage() {
         const j = await res.json().catch(() => ({}))
         throw new Error(j?.message || 'Login failed')
       }
-  window.location.href = nextUrl || '/dashboard'
+  window.location.href = nextUrl || '/account'
     } catch (e: any) {
       setError(e.message)
     } finally { setLoading(false) }

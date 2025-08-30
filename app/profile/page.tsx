@@ -26,10 +26,7 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold">{user.name}</h1>
           <p className="text-muted-foreground">@{user.username}</p>
           <p className="mt-4 text-muted-foreground max-w-lg">{user.bio}</p>
-          <div className="flex gap-4 mt-4 justify-center md:justify-start">
-            <span><strong>{user.followers}</strong> Followers</span>
-            <span><strong>{user.following}</strong> Following</span>
-          </div>
+          {/* Followers/following removed */}
           <div className="flex items-center gap-6 mt-4 justify-center md:justify-start">
             <Button>Follow</Button>
              <div className="flex gap-4">
@@ -44,24 +41,13 @@ export default function ProfilePage() {
       <Tabs defaultValue="activity">
         <TabsList>
           <TabsTrigger value="activity">Recent Activity</TabsTrigger>
-          <TabsTrigger value="followers">Followers</TabsTrigger>
-          <TabsTrigger value="following">Following</TabsTrigger>
         </TabsList>
         <TabsContent value="activity" className="mt-4">
           <div className="border-2 border-dashed rounded-lg p-8 text-center">
             <p className="text-muted-foreground">User's recent activities (e.g., posts, comments) will be displayed here.</p>
           </div>
         </TabsContent>
-        <TabsContent value="followers" className="mt-4">
-           <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">A list of users who follow this person will be displayed here.</p>
-          </div>
-        </TabsContent>
-        <TabsContent value="following" className="mt-4">
-           <div className="border-2 border-dashed rounded-lg p-8 text-center">
-            <p className="text-muted-foreground">A list of users this person follows will be displayed here.</p>
-          </div>
-        </TabsContent>
+  {/* Followers/Following tabs removed */}
       </Tabs>
     </div>
   )

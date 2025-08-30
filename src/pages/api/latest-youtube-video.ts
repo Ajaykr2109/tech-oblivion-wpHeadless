@@ -3,7 +3,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const rssRes = await fetch('https://www.youtube.com/feeds/videos.xml?channel_id=UCQPQCy_QR1rJc-a_YxHSYjg');
+    const channelId = process.env.NEXT_PUBLIC_YOUTUBE_CHANNEL_ID;
+    if (!channelId) return res.status(500).json({ error: 'YouTube channel ID not set' });
+    const rssRes = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
     if (!rssRes.ok) return res.status(502).json({ error: 'Failed to fetch YouTube RSS' });
     const rssText = await rssRes.text();
     const match = rssText.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);

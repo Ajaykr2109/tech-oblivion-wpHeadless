@@ -72,16 +72,21 @@ export function Header() {
         </div>
 
   <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
-      {navLinks.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-        aria-current={pathname === link.href ? 'page' : undefined}
-            >
-              {link.label}
-            </Link>
-          ))}
+      {navLinks.map((link) => {
+        const computedHref = link.label === "Profile"
+          ? (user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile")
+          : link.href;
+        return (
+          <Link
+            key={link.label}
+            href={computedHref}
+            className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+            aria-current={pathname === computedHref ? 'page' : undefined}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-haspopup="menu" aria-expanded={undefined}>
@@ -108,9 +113,9 @@ export function Header() {
                     <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent>
-                        <DropdownMenuItem asChild><Link href="/dashboard">My Account</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/dashboard/posts">My Posts</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/account">My Account</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/editor">My Posts</Link></DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href="/account">Settings</Link></DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
@@ -131,10 +136,13 @@ export function Header() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>
-                      <Link href="/dashboard">Dashboard</Link>
+                      <Link href="/account">Account</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Link href="/account">Account Center</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href={user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile"}>Public Profile</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <button onClick={handleLogout}>Logout</button>
@@ -169,20 +177,25 @@ export function Header() {
                 >
                   <span>tech.oblivion</span>
                 </Link>
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {navLinks.map((link) => {
+                  const computedHref = link.label === "Profile"
+                    ? (user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile")
+                    : link.href;
+                  return (
+                    <Link
+                      key={link.label}
+                      href={computedHref}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
                  {!!user?.roles?.some(r => ['administrator','editor'].includes(r)) && (
                    <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
                  )}
                  {!!user?.roles?.some(r => ['subscriber','contributor','author','editor','administrator'].includes(r)) && (
-                   <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link>
+                   <Link href="/account" className="text-muted-foreground hover:text-foreground">Account</Link>
                  )}
                 {!isLoading && (
                   <>
@@ -191,7 +204,7 @@ export function Header() {
                         <div className="text-muted-foreground">
                           Welcome, {user.username}
                         </div>
-                        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
+                        <Link href="/account" className="text-muted-foreground hover:text-foreground">
                           Dashboard
                         </Link>
                         <Link href="/account" className="text-muted-foreground hover:text-foreground">
