@@ -61,6 +61,11 @@ export function Header() {
     }
   };
 
+  const isPostDetail = (() => {
+    const p = pathname || '/'
+    const parts = p.split('/').filter(Boolean)
+    return parts.length === 2 && parts[0] === 'blog'
+  })()
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex items-center justify-between">
@@ -180,7 +185,7 @@ export function Header() {
             </>
           )}
 
-          <ThemeToggle />
+          {!isPostDetail && <ThemeToggle />}
            <Sheet>
             <SheetTrigger asChild>
               <Button

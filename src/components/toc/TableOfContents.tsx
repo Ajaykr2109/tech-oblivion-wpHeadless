@@ -3,8 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { TocItem as FlatItem } from '@/lib/toc-md'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
 import TOCItem from './TOCItem'
-import TOCControls from './TOCControls'
-import type { TocNode } from './types'
+import type { TocNode, SectionTimeMap } from './types'
 import { motion, AnimatePresence } from 'framer-motion'
 
 function toHierarchy(items: FlatItem[]): TocNode[] {
@@ -25,19 +24,37 @@ function flatIds(items: FlatItem[]): string[] {
 
 export default function TableOfContents({ items }: { items: FlatItem[] }) {
   const [zoom, setZoom] = useState<number>(100)
-  const [mode, setMode] = useState<'sticky'|'floating'>('sticky')
   const [expanded, setExpanded] = useState<boolean>(items.length <= 24)
   const [focusedIndex, setFocusedIndex] = useState<number>(0)
+  const [open, setOpen] = useState<boolean>(false) // floating disabled
 
   useEffect(() => {
-    const s = Number(localStorage.getItem('toc:zoom') || '100')
+    const fromReader = Number(localStorage.getItem('reader:scale') || '100')
+    const s = Number(localStorage.getItem('toc:zoom') || String(fromReader || '100'))
     setZoom(isNaN(s) ? 100 : s)
   }, [])
-  useEffect(() => { localStorage.setItem('toc:zoom', String(zoom)) }, [zoom])
+  useEffect(() => {
+    localStorage.setItem('toc:zoom', String(zoom))
+    // Drive global reader scale (affects .wp-content font-size)
+    document.documentElement.style.setProperty('--reader-scale', String(zoom))
+    localStorage.setItem('reader:scale', String(zoom))
+  }, [zoom])
+  // Floating mode removed on post page
 
   const ids = useMemo(() => flatIds(items), [items])
   const state = useScrollSpy(ids, { rootMargin: '-40% 0px -50% 0px', nearbyRange: 1, adjacentRange: 2 })
   const hierarchy = useMemo(() => toHierarchy(items), [items])
+  // Preselect first item when mounting and content is at top
+  useEffect(() => {
+    if (!ids.length) return
+    // If near top of page, mark first as active until observer updates
+    if (typeof window !== 'undefined' && window.scrollY < 80) {
+      // add a CSS class to the first heading to mirror active
+      const first = document.getElementById(ids[0])
+      if (first) first.classList.add('heading-active')
+    }
+  }, [ids])
+  // Floating mode removed
 
   // Keyboard navigation
   const listRef = useRef<HTMLDivElement | null>(null)
@@ -60,22 +77,51 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     return () => el.removeEventListener('keydown', onKey)
   }, [focusedIndex, ids])
 
-  // Reading progress under TOC
-  const [progress, setProgress] = useState(0)
+  // Compute per-section reading time badges by measuring text between headings
+  const [sectionTimes, setSectionTimes] = useState<SectionTimeMap>({})
   useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement
-      const scrolled = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100
-      setProgress(Math.max(0, Math.min(100, scrolled)))
+    if (!items.length) return
+    const compute = () => {
+      const idsOnPage = items.map(i => i.id).filter(id => document.getElementById(id))
+      if (!idsOnPage.length) { setSectionTimes({}); return }
+      const speedWpm = 200
+      const getSectionRange = (startId: string, endId?: string) => {
+        const startEl = document.getElementById(startId)
+        const endEl = endId ? document.getElementById(endId) : null
+        if (!startEl) return ''
+        let text = ''
+        let node: Node | null = startEl.nextSibling
+        while (node) {
+          if (endEl && node === endEl) break
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement
+            if (/^H[1-6]$/.test(el.tagName)) break
+            text += ' ' + el.innerText
+          } else if (node.nodeType === Node.TEXT_NODE) {
+            text += ' ' + (node.textContent || '')
+          }
+          node = node.nextSibling
+        }
+        return text
+      }
+      const map: SectionTimeMap = {}
+      for (let i = 0; i < idsOnPage.length; i++) {
+        const start = idsOnPage[i]
+        const end = idsOnPage[i+1]
+        const text = getSectionRange(start, end)
+        const words = text.trim().split(/\s+/).filter(Boolean).length
+        const minutes = Math.max(0, Math.round(words / speedWpm))
+        map[start] = minutes
+      }
+      setSectionTimes(map)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    // compute after paint
+    const id = requestAnimationFrame(() => setTimeout(compute, 0))
+    return () => cancelAnimationFrame(id)
+  }, [items])
 
   const content = (
-    <div className={`rounded-md border bg-card overflow-hidden`} style={{ fontSize: `${zoom}%` }}>
-      <TOCControls zoom={zoom} onZoom={setZoom} mode={mode} setMode={setMode} />
+    <div className={`overflow-hidden print:hidden`}>
       <div className="max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
         <div className="py-2">
           {(expanded ? items : items.slice(0, 24)).map((i, idx) => {
@@ -93,13 +139,11 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
                 state={st as any}
                 focused={idx === focusedIndex}
                 onClick={() => setFocusedIndex(idx)}
+                minutes={sectionTimes[i.id]}
               />
             )
           })}
         </div>
-      </div>
-      <div className="h-1 bg-muted">
-        <div className="h-1 bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
       </div>
       {items.length > 24 && (
         <button className="w-full text-xs py-1.5 hover:bg-muted border-t" onClick={() => setExpanded(!expanded)}>
@@ -111,19 +155,60 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
 
   return (
     <div className="relative">
-      {/* Desktop sticky */}
-      <div className="hidden lg:block lg:sticky lg:top-20">
+  {/* Floating opener removed */}
+  {false && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="hidden md:flex fixed right-4 bottom-24 z-40 items-center gap-2 rounded-full border bg-card px-3 py-2 text-sm shadow-lg hover:bg-muted print:hidden"
+          aria-label="Open table of contents"
+        >
+          On this page
+        </button>
+      )}
+
+      {/* Desktop sticky (only when sticky mode) */}
+      <div className="hidden lg:block lg:sticky lg:top-20 print:hidden">
         {content}
       </div>
-      {/* Tablet collapsible */}
-      <div className="hidden md:block lg:hidden">
-        <details className="rounded-md border bg-card">
+
+      {/* Tablet collapsible (sticky mode) */}
+      <div className="hidden md:block lg:hidden print:hidden">
+        <details>
           <summary className="cursor-pointer px-3 py-2 font-medium">On this page</summary>
           <div className="p-3">{content}</div>
         </details>
       </div>
-      {/* Mobile bottom sheet (simple) */}
-      <div className="md:hidden">
+
+      {/* Floating side flyout for md+ when mode=floating */}
+  <AnimatePresence>
+  {false && open && (
+          <motion.aside
+            initial={{ x: 320, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 320, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+    className="fixed top-16 right-4 bottom-4 z-50 hidden md:flex w-[300px] flex-col overflow-hidden rounded-lg border bg-card shadow-2xl print:hidden cursor-default"
+            role="dialog"
+            aria-label="Table of contents"
+    drag
+    dragMomentum={false}
+    dragElastic={0.05}
+    dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
+          >
+    <div className="flex items-center justify-between border-b px-3 py-2 cursor-move select-none">
+              <span className="text-sm font-semibold">On this page</span>
+              <div className="flex items-center gap-2">
+                <button className="text-xs rounded border px-2 py-0.5 hover:bg-muted" onClick={() => setOpen(false)}>Close</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto">{content}</div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Mobile bottom sheet (always available) */}
+      <div className="md:hidden print:hidden">
         <AnimatePresence>
           <motion.details className="rounded-t-lg fixed bottom-0 left-0 right-0 z-40 bg-card border-t" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}>
             <summary className="cursor-pointer px-3 py-2 font-medium text-center">On this page</summary>
@@ -131,9 +216,6 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
           </motion.details>
         </AnimatePresence>
       </div>
-      <style jsx global>{`
-        @media print { .toc-hide-print { display: none !important; } }
-      `}</style>
     </div>
   )
 }

@@ -26,13 +26,16 @@ import FloatingActions from '@/components/floating-actions'
 import ContentDecorators from '@/components/content-decorators'
 import { Suspense } from 'react'
 import ReaderToolbar from '@/components/reader-toolbar'
+import ReaderToolbarPortal from '@/components/reader-toolbar-portal'
 import BackToTopCenter from '@/components/back-to-top-center'
 import { getLatestByAuthor } from '@/lib/wp-author'
-import BackToTop from '@/components/back-to-top'
 import ViewsCounter from '@/components/views-counter'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
 import { extractTocFromMarkdown } from '@/lib/toc-md'
+import { decodeEntities } from '@/lib/entities'
+
+// ToolbarPortal moved to component file
 
 // Enhanced recommendation type with more metadata
 type EnhancedRecommendation = {
@@ -89,7 +92,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     // 🔧 FIX: Inject heading IDs BEFORE TOC generation
     const contentWithHeadingIds = highlightedContent.replace(/<h([23])(\s[^>]*)?>([\s\S]*?)<\/h\1>/gi, (m, level, attrs = '', inner) => {
         if (/\sid=/i.test(attrs)) return m
-        const text = inner.replace(/<[^>]+>/g, '').toLowerCase()
+        const text = decodeEntities(inner.replace(/<[^>]+>/g, '')).toLowerCase()
         const slug = text.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
         const attrsOut = attrs ? `${attrs} id="${slug}"` : ` id="${slug}"`
         return `<h${level}${attrsOut}>${inner}</h${level}>`
@@ -102,7 +105,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             const mdToc = mdItems
             tableOfContents = mdToc
                 .filter(i => i.depth === 2 || i.depth === 3)
-                .map(i => ({ level: (i.depth as 2 | 3), text: i.value, slug: i.id }))
+                .map(i => ({ level: (i.depth as 2 | 3), text: decodeEntities(i.value), slug: i.id }))
         } else {
             tableOfContents = await getOrBuildToc(Number(post.id), contentWithHeadingIds)
         }
@@ -216,13 +219,15 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
+            {/* Top-center reader pill (Zoom + theme), positioned respecting header */}
+            <ReaderToolbarPortal />
             {/* Center back-to-top pill */}
             <BackToTopCenter />
 
             {/* 🚀 NEW: Reading Progress Bar */}
             <ReadingProgress />
 
-            <div className="container mx-auto px-4 py-10 max-w-7xl">
+            <div className="container mx-auto px-4 py-10 max-w-[90rem] 2xl:max-w-[96rem]">
                 {/* 🚀 ENHANCED: Breadcrumb Navigation */}
                 <nav className="mb-4 text-sm text-muted-foreground">
                     <Link href="/" className="hover:text-foreground">Home</Link>
@@ -288,7 +293,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                 </header>
 
                 <FloatingActions title={post.title} postId={Number(post.id)} />
-                <BackToTop />
+                
 
         {/* Featured banner */}
     {post.featuredImage ? (
@@ -307,29 +312,37 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     </div>
                 ) : null}
 
-                {/* Mobile/Tablet TOC (new component handles modes internally) */}
-                {mdItems && mdItems.length > 0 && (
-                    <div className="lg:hidden mb-6">
-                        <TableOfContents items={mdItems} />
-                    </div>
-                )}
+                                {/* Mobile/Tablet TOC (use markdown items or HTML fallback) */}
+                                {(() => {
+                                        const itemsForTOC = (mdItems && mdItems.length > 0)
+                                                ? mdItems
+                                                : (tableOfContents || []).map(i => ({ id: i.slug, value: i.text, depth: i.level }))
+                                        return itemsForTOC.length > 0 ? (
+                                                                    <div className="lg:hidden mb-6">
+                                                                        <TableOfContents items={itemsForTOC as unknown as any[]} />
+                                                                    </div>
+                                        ) : null
+                                })()}
 
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_320px] gap-8">
                     {/* 🔧 FIX: Sticky TOC with better positioning */}
-                                                            <aside className="lg:col-span-3 self-start hidden lg:block">
-                        {tableOfContents && tableOfContents.length > 0 && (
+                                                            <aside className="self-start hidden lg:block print:hidden" style={{ position: 'sticky', top: 'calc(var(--header-height) + 16px)' }}>
+                        {(() => {
+                            const itemsForTOC = (mdItems && mdItems.length > 0)
+                                ? mdItems
+                                : (tableOfContents || []).map(i => ({ id: i.slug, value: i.text, depth: i.level }))
+                            return itemsForTOC.length > 0 ? (
                             <div className="lg:sticky top-20"> {/* Reduced from top-24 to top-20 */}
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                                     On this page
                                 </h2>
-                                <div className="rounded-md border bg-card p-0 shadow-sm">
-                                    <TableOfContents items={mdItems} />
-                                </div>
+                                <TableOfContents items={itemsForTOC as unknown as any[]} />
                             </div>
-                        )}
+                            ) : null
+                        })()}
                     </aside>
 
-                                        <article className="lg:col-span-6 min-w-0">
+                                        <article className="min-w-0">
                         {/* Meta info bar removed to avoid duplication */}
 
                                                                                                 {/* Optional float image on desktop */}
@@ -341,15 +354,15 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                                                                                     </figure>
                                                                                                 ) : null}
 
-                                                { (post as any).content_raw ? (
+                        { (post as any).content_raw ? (
                                                     <MarkdownRenderer
-                                                        markdown={(post as any).content_raw as string}
+                            markdown={decodeEntities((post as any).content_raw as string)}
                                                                                                                 className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-3 [&>figure]:my-5 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-3 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-3 [&>ol]:mb-3 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
                                                     />
                                                 ) : (
                                                     <div
                                                                                                                 className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-3 [&>figure]:my-5 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-3 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-3 [&>ol]:mb-3 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
-                                                        dangerouslySetInnerHTML={{ __html: contentLinked }}
+                                                        dangerouslySetInnerHTML={{ __html: decodeEntities(contentLinked) }}
                                                     />
                                                 )}
                         {/* Client decorators for anchors, code copy, quote share */}
@@ -359,7 +372,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     </article>
 
                                         {/* Enhanced Right sidebar: Related, Recommended, Popular, Recent, Author latest */}
-                                        <aside className="lg:col-span-3 self-start">
+                                        <aside className="self-start">
                                                 <div className="bg-card p-6 rounded-lg shadow-lg">
                                                         <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Failed to load related posts.</div>}>
                                                                 <RelatedPostsSidebar

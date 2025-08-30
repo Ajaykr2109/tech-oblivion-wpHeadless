@@ -1,5 +1,5 @@
 "use client"
-import { Moon, Sun, Plus, Minus } from 'lucide-react'
+import { Moon, Sun, Plus, Minus, RotateCcw } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useRef, useState } from 'react'
 
@@ -16,8 +16,9 @@ export default function ReaderToolbar() {
     setDraft(String(isNaN(s) ? 100 : s))
   }, [])
   useEffect(() => {
-    document.documentElement.style.setProperty('--reader-scale', String(scale))
-    localStorage.setItem('reader:scale', String(scale))
+    const s = Math.max(80, Math.min(160, scale))
+    document.documentElement.style.setProperty('--reader-scale', String(s))
+    localStorage.setItem('reader:scale', String(s))
   }, [scale])
 
   function commitDraft() {
@@ -49,7 +50,7 @@ export default function ReaderToolbar() {
 
   return (
     <div className="flex items-center gap-2 rounded-full bg-card/70 backdrop-blur px-3 py-1.5 border shadow">
-      <button className="p-1.5 hover:text-primary" aria-label="Decrease font size" onClick={()=>setScale(Math.max(80, scale-10))}><Minus className="h-4 w-4"/></button>
+  <button className="p-1.5 hover:text-primary" aria-label="Decrease font size" onClick={()=>setScale(Math.max(80, scale-10))}><Minus className="h-4 w-4"/></button>
       {editing ? (
         <input
           className="w-14 text-xs text-center bg-transparent outline-none border-b border-border focus:border-primary rounded-none"
@@ -72,9 +73,25 @@ export default function ReaderToolbar() {
         </span>
       )}
       <button className="p-1.5 hover:text-primary" aria-label="Increase font size" onClick={()=>setScale(Math.min(160, scale+10))}><Plus className="h-4 w-4"/></button>
+      <button className="p-1.5 hover:text-primary" title="Reset to 100%" aria-label="Reset zoom" onClick={()=>{ setScale(100); setDraft('100') }}>
+        <RotateCcw className="h-4 w-4"/>
+      </button>
       <span className="mx-1 h-4 w-px bg-border"/>
-      <button className="p-1.5 hover:text-primary" aria-label="Toggle theme" onClick={()=>setTheme(theme === 'dark' ? 'light' : 'dark')}>
-        {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Moon className="h-4 w-4"/>}
+      <button
+        className={`p-1.5 rounded ${theme==='light' ? 'text-primary bg-primary/10' : 'hover:text-primary'}`}
+        aria-label="Light mode"
+        aria-pressed={theme==='light'}
+        onClick={()=>setTheme('light')}
+      >
+        <Sun className="h-4 w-4"/>
+      </button>
+      <button
+        className={`p-1.5 rounded ${theme==='dark' ? 'text-primary bg-primary/10' : 'hover:text-primary'}`}
+        aria-label="Dark mode"
+        aria-pressed={theme==='dark'}
+        onClick={()=>setTheme('dark')}
+      >
+        <Moon className="h-4 w-4"/>
       </button>
     </div>
   )

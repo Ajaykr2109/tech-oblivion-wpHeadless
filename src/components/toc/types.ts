@@ -10,3 +10,6 @@ export interface TocControlsState {
   theme: 'light' | 'dark' | 'system'
   mode: 'sticky' | 'floating'
 }
+
+// Map of heading id -> estimated minutes to read that section
+export type SectionTimeMap = Record<string, number>
