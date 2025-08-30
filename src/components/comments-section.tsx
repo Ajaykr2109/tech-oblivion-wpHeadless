@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 type Comment = {
   id: string | number
-  author: { name: string; avatar?: string }
+  author: { name: string; avatar?: string; id?: number; slug?: string }
   content: string
   createdAt: string
   replies?: Comment[]
@@ -37,7 +37,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
     const createdAt = (wpc?.date || wpc?.date_gmt || new Date().toISOString()) as string
     return {
       id: wpc?.id ?? wpc?.comment_ID ?? String(Math.random()),
-      author: { name, avatar },
+      author: { name, avatar, id: typeof wpc?.author === 'number' ? wpc.author : undefined },
       content: contentText,
       createdAt,
     }
@@ -54,7 +54,31 @@ export default function CommentsSection({ postId }: { postId: number }) {
         if (!cancelled && r.ok) {
           const data = await r.json().catch(() => [])
           const arr = Array.isArray(data) ? data : []
-          setComments(arr.map(mapWpToComment))
+          // Enrich with author slugs in a single batch
+          const mapped = arr.map(mapWpToComment)
+          const ids = Array.from(new Set(mapped.map(c => c.author?.id).filter(Boolean))) as number[]
+          if (ids.length) {
+            try {
+              const site = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '') || ''
+              const url = `${site}/api/wp/users?include=${ids.join(',')}&per_page=${Math.min(ids.length, 100)}`
+              const ur = await fetch(url, { cache: 'no-store' })
+              if (ur.ok) {
+                const users = await ur.json().catch(() => []) as any[]
+                const map = new Map<number, string>()
+                users.forEach(u => { if (u?.id && u?.slug) map.set(Number(u.id), String(u.slug)) })
+                setComments(mapped.map(c => ({
+                  ...c,
+                  author: { ...c.author, slug: c.author?.id ? map.get(c.author.id) : undefined }
+                })))
+              } else {
+                setComments(mapped)
+              }
+            } catch {
+              setComments(mapped)
+            }
+          } else {
+            setComments(mapped)
+          }
         } else if (!cancelled) {
           setComments([])
         }
@@ -172,7 +196,11 @@ function CommentItem({ c }: { c: Comment }) {
       </Avatar>
       <div className="flex-1">
         <div className="flex items-center gap-2 text-sm font-medium">
-          <span>{c.author?.name || 'Anonymous'}</span>
+          {c.author?.slug ? (
+            <Link href={`/profile/${encodeURIComponent(c.author.slug)}`} className="hover:underline">{c.author?.name || 'Anonymous'}</Link>
+          ) : (
+            <span>{c.author?.name || 'Anonymous'}</span>
+          )}
           <span className="text-xs text-muted-foreground">· {new Date(c.createdAt).toLocaleString()}</span>
         </div>
         <div className="text-sm text-foreground mt-1">{c.content}</div>
