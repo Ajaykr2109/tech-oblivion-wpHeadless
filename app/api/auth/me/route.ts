@@ -23,7 +23,8 @@ export async function GET(req: Request) {
       try {
         const url = new URL('/wp-json/wp/v2/users/me', WP)
         url.searchParams.set('context', 'edit')
-        url.searchParams.set('_fields', 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,acf')
+  // Ask WP for profile_fields (plugin) along with core profile fields
+  url.searchParams.set('_fields', 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta')
         const res = await fetch(url, { headers: { Authorization: `Bearer ${wpToken}` }, cache: 'no-store' })
         if (res.ok) {
           const wp = await res.json()
@@ -35,7 +36,9 @@ export async function GET(req: Request) {
           if (wp?.description) user.description = wp.description
           if (wp?.nickname) user.nickname = wp.nickname
           if (wp?.locale) user.locale = wp.locale
-          if (wp?.acf) user.acf = wp.acf
+          // Prefer profile_fields; keep meta for legacy UIs
+          if (wp?.profile_fields && typeof wp.profile_fields === 'object') user.profile_fields = wp.profile_fields
+          if (wp?.meta && typeof wp.meta === 'object') user.meta = wp.meta
         }
       } catch {
         // ignore enrichment failures; return base user
@@ -47,25 +50,8 @@ export async function GET(req: Request) {
       const g = (s: number) => `https://secure.gravatar.com/avatar/${md5}?s=${s}&d=identicon`
       user.avatar_urls = { '24': g(24), '48': g(48), '96': g(96), '128': g(128) }
     }
-    // Normalize socials from ACF if present; include website fallback
-    if (user.acf && typeof user.acf === 'object') {
-      const a = user.acf as any
-      const socials: Record<string, string> = {}
-      const set = (k: string, v?: string) => { if (v && typeof v === 'string' && v.trim()) socials[k] = v.trim() }
-      set('twitter', a.twitter || a.x || a.twitter_url)
-      set('github', a.github || a.github_url)
-      set('linkedin', a.linkedin || a.linkedin_url)
-      set('instagram', a.instagram || a.instagram_url)
-      set('facebook', a.facebook || a.facebook_url)
-      set('youtube', a.youtube || a.youtube_url)
-      set('tiktok', a.tiktok || a.tiktok_url)
-      set('mastodon', a.mastodon || a.mastodon_url)
-      set('bluesky', a.bluesky || a.bluesky_url)
-      set('website', a.website || a.site || user.url)
-      if (Object.keys(socials).length) user.socials = socials
-    } else if (user.url) {
-      user.socials = { website: user.url }
-    }
+  // Do not synthesize socials anymore; FE derives from user.profile_fields (or meta fallback). Provide website fallback separately.
+  if (user.url) user.website = user.url
     return new Response(JSON.stringify({ user }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })

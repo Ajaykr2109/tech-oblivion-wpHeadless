@@ -1,11 +1,11 @@
 "use client"
-import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 
 type Me = {
   id: number | string
@@ -16,6 +16,8 @@ type Me = {
   url?: string
   locale?: string
   nickname?: string
+  website?: string
+  profile_fields?: Record<string, string>
 }
 
 export default function AccountProfilePage() {
@@ -23,14 +25,28 @@ export default function AccountProfilePage() {
   const [me, setMe] = useState<Me | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const allowedKeys = ["insta", "fb", "youtube", "github", "linked"] as const
+  const [fields, setFields] = useState<Record<string, string>>({})
 
   useEffect(() => {
     ;(async () => {
       try {
-        const r = await fetch('/api/auth/me', { cache: 'no-store' })
+        const r = await fetch("/api/auth/me", { cache: "no-store" })
         if (r.ok) {
           const data = await r.json()
-          if (data?.user) setMe(data.user)
+          if (data?.user) {
+            setMe(data.user)
+            const profile =
+              data.user.profile_fields && typeof data.user.profile_fields === "object"
+                ? (data.user.profile_fields as Record<string, any>)
+                : {}
+            const init: Record<string, string> = {}
+            allowedKeys.forEach((k) => {
+              const v = profile[k]
+              init[k] = typeof v === "string" ? v : ""
+            })
+            setFields(init)
+          }
         }
       } finally {
         setLoading(false)
@@ -43,32 +59,41 @@ export default function AccountProfilePage() {
     if (!me) return
     const fd = new FormData(e.currentTarget)
     const payload: any = {
-      name: String(fd.get('name') || ''),
-      nickname: String(fd.get('nickname') || ''),
-      email: String(fd.get('email') || ''),
-      url: String(fd.get('url') || ''),
-      description: String(fd.get('description') || ''),
-      locale: String(fd.get('locale') || ''),
+      name: String(fd.get("name") || ""),
+      nickname: String(fd.get("nickname") || ""),
+      email: String(fd.get("email") || ""),
+      url: String(fd.get("url") || ""),
+      description: String(fd.get("description") || ""),
+      locale: String(fd.get("locale") || ""),
+      profile_fields: Object.fromEntries(
+        Object.entries(fields)
+          .filter(([k]) => (allowedKeys as readonly string[]).includes(k))
+          .map(([k, v]) => [k, String(v ?? "").trim()])
+          .filter(([, v]) => v.length > 0)
+      ),
     }
-    // prune empties to avoid unintended clears
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === '') delete payload[k]
+      if (payload[k] === "") delete payload[k]
     })
 
     setSaving(true)
     try {
-      const r = await fetch('/api/wp/users/me', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const r = await fetch("/api/wp/users/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
       if (!r.ok) {
-        const t = await r.text().catch(() => '')
-        throw new Error(t || 'Update failed')
+        const t = await r.text().catch(() => "")
+        throw new Error(t || "Update failed")
       }
-      toast({ title: 'Profile updated' })
+      toast({ title: "Profile updated" })
     } catch (err: any) {
-      toast({ title: 'Update failed', description: err?.message || String(err), variant: 'destructive' })
+      toast({
+        title: "Update failed",
+        description: err?.message || String(err),
+        variant: "destructive",
+      })
     } finally {
       setSaving(false)
     }
@@ -78,18 +103,33 @@ export default function AccountProfilePage() {
   if (!me) return <div className="p-6">Please log in.</div>
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Edit Profile</h1>
-      <Card>
-        <CardContent className="p-6">
-          <form onSubmit={onSubmit} className="grid gap-6 max-w-2xl">
+    <div className="p-6 max-w-3xl mx-auto">
+      <Card className="shadow-lg border rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Edit Profile</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Keep your profile up to date. People see this info across your account.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={onSubmit} className="grid gap-6">
             <div className="grid gap-2">
               <Label htmlFor="name">Display name</Label>
-              <Input id="name" name="name" defaultValue={me.name || me.nickname || (me as any).displayName} />
+              <Input
+                id="name"
+                name="name"
+                defaultValue={me.name || me.nickname || (me as any).displayName}
+                placeholder="e.g. John Doe"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="nickname">Nickname</Label>
-              <Input id="nickname" name="nickname" defaultValue={me.nickname} />
+              <Input
+                id="nickname"
+                name="nickname"
+                defaultValue={me.nickname}
+                placeholder="e.g. Johnny"
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -105,11 +145,41 @@ export default function AccountProfilePage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Bio</Label>
-              <Textarea id="description" name="description" rows={4} defaultValue={me.description} />
+              <Textarea
+                id="description"
+                name="description"
+                rows={4}
+                defaultValue={me.description}
+                placeholder="Write a short bio about yourself..."
+              />
             </div>
-            <div>
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving…' : 'Save changes'}
+
+            <fieldset className="grid gap-4 rounded-lg border p-4">
+              <legend className="text-lg font-semibold px-1">Profile links</legend>
+              <p className="text-sm text-muted-foreground">
+                Add your social links (optional).
+              </p>
+              {[
+                { key: "insta", label: "Instagram", ph: "https://instagram.com/yourhandle" },
+                { key: "fb", label: "Facebook", ph: "https://facebook.com/yourpage" },
+                { key: "youtube", label: "YouTube", ph: "https://youtube.com/@yourchannel" },
+                { key: "github", label: "GitHub", ph: "https://github.com/yourname" },
+                { key: "linked", label: "LinkedIn", ph: "https://linkedin.com/in/yourname" },
+              ].map(({ key, label, ph }) => (
+                <div key={key} className="flex items-center gap-2">
+                  <Label className="w-28 shrink-0">{label}</Label>
+                  <Input
+                    placeholder={ph}
+                    value={fields[key] || ""}
+                    onChange={(e) => setFields((p) => ({ ...p, [key]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </fieldset>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={saving} className="w-40">
+                {saving ? "Saving…" : "Save changes"}
               </Button>
             </div>
           </form>

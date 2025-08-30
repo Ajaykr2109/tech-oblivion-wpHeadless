@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html'
+import { decodeEntities } from './text'
 
 const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','blockquote','code','pre']
 // Do NOT include 'script' or 'style' in allowedTags
@@ -56,7 +57,7 @@ export function sanitizeWP(html: string) {
 }
 
 export function renderUpdatesSummary(html: string, maxWords = 50) {
-  const cleaned = sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} })
+  const cleaned = decodeEntities(sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }))
   // Split into sentences by full-stop and trim
   const sentences = cleaned.split('.')
     .map(s => s.trim())

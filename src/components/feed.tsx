@@ -1,5 +1,6 @@
 
 import { cn } from "@/lib/utils";
+import { htmlToText } from "@/lib/text";
 import { PostCard } from "./post-card";
 import { getPosts } from "@/lib/wp";
 import { Info } from "lucide-react";
@@ -39,7 +40,7 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
               avatar: p.authorAvatar || '/favicon.ico',
               imageUrl: p.featuredImage || '/favicon.ico',
               imageHint: 'featured image',
-              excerpt: (p.excerptHtml || '').replace(/<[^>]+>/g, '').slice(0, 180),
+              excerpt: htmlToText(p.excerptHtml || '').slice(0, 180),
               slug: p.slug,
               date: p.date,
             }}

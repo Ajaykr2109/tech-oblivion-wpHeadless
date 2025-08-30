@@ -1,103 +1,145 @@
 "use client";
-import { useEffect, useMemo, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 
 type Me = {
-  id: number|string
+  id: number | string
   username: string
   name?: string
   email?: string
   roles?: string[]
   description?: string
-  avatar_urls?: Record<string,string>
+  avatar_urls?: Record<string, string>
   url?: string
   locale?: string
   nickname?: string
+  profile_fields?: Record<string, string>
 }
 
-export default function AccountCentral() {
+export default function AccountCenter() {
+  const { toast } = useToast()
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/auth/me', { cache: 'no-store' })
+        const r = await fetch("/api/auth/me", { cache: "no-store" })
         if (r.ok) {
           const data = await r.json()
-          // auth/me returns { user }, not the raw WP user
           if (data?.user) setMe(data.user)
         }
-      } finally { setLoading(false) }
+      } finally {
+        setLoading(false)
+      }
     })()
   }, [])
 
-  // Hooks must not be called conditionally; compute roles before any early returns
-  const isAdmin = !!me?.roles?.includes('administrator')
-  const primaryRole = useMemo(() => {
-    const order = ['administrator','editor','author','contributor','subscriber']
-    const roles = me?.roles ?? []
-    const found = order.find(r => roles.includes(r)) || roles[0]
-    if (!found) return null
-    return found.charAt(0).toUpperCase() + found.slice(1)
-  }, [me?.roles])
+  const isAdmin = !!me?.roles?.includes("administrator")
 
-  if (loading) return <div className="container mx-auto px-4 py-10">Loading…</div>
+  if (loading) return <div className="p-6">Loading…</div>
+  if (!me) return <div className="p-6">Please log in.</div>
 
-  if (!me) return <div className="container mx-auto px-4 py-10">Please log in.</div>
+  // --- sections ---
+  const ProfileSection = (
+    <form
+      onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const fd = new FormData(e.currentTarget)
+        const payload: any = {
+          name: String(fd.get('name') || ''),
+          nickname: String(fd.get('nickname') || ''),
+          email: String(fd.get('email') || ''),
+          url: String(fd.get('url') || ''),
+          description: String(fd.get('description') || ''),
+        }
+        // prune empty strings so WP doesn't clear unintentionally
+        Object.keys(payload).forEach((k) => { if (payload[k] === '') delete payload[k] })
+        setSaving(true)
+        try {
+          const r = await fetch('/api/wp/users/me', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          if (!r.ok) {
+            const t = await r.text().catch(() => '')
+            throw new Error(t || 'Update failed')
+          }
+          toast({ title: 'Profile updated' })
+          // refresh local user state
+          try {
+            const r2 = await fetch('/api/auth/me', { cache: 'no-store' })
+            if (r2.ok) {
+              const d2 = await r2.json().catch(() => ({} as any))
+              if (d2?.user) setMe(d2.user)
+            }
+          } catch {}
+        } catch (err: any) {
+          toast({ title: 'Update failed', description: err?.message || String(err), variant: 'destructive' })
+        } finally {
+          setSaving(false)
+        }
+      }}
+      className="space-y-4"
+    >
+      <div>
+        <Label htmlFor="name">Display Name</Label>
+        <Input id="name" name="name" defaultValue={me.name} />
+      </div>
+      <div>
+        <Label htmlFor="nickname">Nickname</Label>
+        <Input id="nickname" name="nickname" defaultValue={me.nickname} />
+      </div>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" name="email" type="email" defaultValue={me.email} />
+      </div>
+      <div>
+        <Label htmlFor="url">Website</Label>
+        <Input id="url" name="url" type="url" defaultValue={me.url} />
+      </div>
+      <div>
+        <Label htmlFor="description">Bio</Label>
+        <Textarea id="description" name="description" defaultValue={me.description} />
+      </div>
+      <Button type="submit" disabled={saving}>
+        {saving ? "Saving…" : "Save Changes"}
+      </Button>
+    </form>
+  )
+
+  const AdminSection = (
+    <div>
+      <h2 className="text-xl font-semibold mb-2">Admin Tools</h2>
+      <div className="flex gap-2">
+        <Button asChild><a href="/admin">Dashboard</a></Button>
+        <Button variant="outline" asChild><a href="/admin/posts">Posts</a></Button>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="p-6 grid gap-6">
-      <h1 className="text-3xl font-bold">Account Central</h1>
-      {primaryRole && (
-        <div>
-          <Badge variant="secondary">You are logged in as: {primaryRole}</Badge>
-        </div>
-      )}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="text-xl font-semibold mb-2">Account Info</h2>
-            <div className="text-sm text-muted-foreground">Username: {me.username}</div>
-            <div className="text-sm text-muted-foreground">Display name: {me.name || me.nickname || (me as any).displayName}</div>
-            <div className="text-sm text-muted-foreground">Email: {me.email}</div>
-            <div className="text-sm text-muted-foreground">Roles: {me.roles?.join(', ')}</div>
-            <div className="text-sm text-muted-foreground">ID: {String(me.id)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="text-xl font-semibold mb-2">Profile Settings</h2>
-            <Button variant="outline" size="sm">Edit Profile</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="text-xl font-semibold mb-2">Security</h2>
-            <Button variant="outline" size="sm">Change Password</Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <h2 className="text-xl font-semibold mb-2">Activity</h2>
-            <div className="text-sm text-muted-foreground">Followers, following, recent activity</div>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Account</h1>
+      <Card>
+        <CardContent className="p-6">
+          {ProfileSection}
+        </CardContent>
+      </Card>
 
       {isAdmin && (
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Admin</h2>
-          <div className="flex gap-2">
-            <Button asChild><a href="/admin">Dashboard</a></Button>
-            <Button variant="outline" asChild><a href="/admin/posts">Posts</a></Button>
-          </div>
-        </div>
+        <Card className="mt-6">
+          <CardContent className="p-6">
+            {AdminSection}
+          </CardContent>
+        </Card>
       )}
     </div>
   )

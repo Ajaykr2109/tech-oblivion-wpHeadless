@@ -1,7 +1,18 @@
 import { cookies } from 'next/headers'
 import { verifySession } from './jwt'
 
-export type User = { id: number; username: string; email: string; roles: string[]; display_name?: string; wpUserId?: number }
+export type User = {
+  id: number
+  username: string
+  email: string
+  roles: string[]
+  display_name?: string
+  wpUserId?: number
+  // New canonical container from FE Auth Bridge plugin
+  profile_fields?: Record<string, string>
+  // Legacy: keep meta for backward compat; callers should prefer profile_fields
+  meta?: Record<string, string>
+}
 
 const SESSION_COOKIE = process.env.SESSION_COOKIE_NAME ?? 'session'
 

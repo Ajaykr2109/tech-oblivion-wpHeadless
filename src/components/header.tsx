@@ -25,6 +25,7 @@ interface User {
   email: string
   displayName: string
   roles?: string[]
+  profile_fields?: Record<string,string>
 }
 
 export function Header() {

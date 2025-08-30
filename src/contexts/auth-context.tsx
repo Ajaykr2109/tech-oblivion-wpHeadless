@@ -7,6 +7,12 @@ interface User {
   username: string
   email: string
   displayName: string
+  url?: string
+  website?: string
+  // Canonical container coming from WP via FE Auth Bridge
+  profile_fields?: Record<string, string>
+  // Legacy fallback
+  meta?: Record<string, string>
 }
 
 interface AuthContextType {
@@ -43,7 +49,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch('/api/auth/me')
       if (res.ok) {
         const data = await res.json()
-        setUser(data.user)
+        const u = data?.user || null
+        // Normalize profile_fields (preferred) or meta (fallback) to Record<string,string>
+        const normalize = (obj: any) => {
+          const out: Record<string, string> = {}
+          try {
+            Object.entries(obj || {}).forEach(([k, v]) => {
+              if (v == null) return
+              if (Array.isArray(v)) {
+                const val = v.find((x) => typeof x === 'string' && x.trim()) as string | undefined
+                if (val) out[k] = val
+              } else if (typeof v === 'string') {
+                out[k] = v
+              } else if (typeof v === 'number' || typeof v === 'boolean') {
+                out[k] = String(v)
+              }
+            })
+          } catch {}
+          return out
+        }
+        if (u) {
+          if (u.profile_fields && typeof u.profile_fields === 'object') {
+            u.profile_fields = normalize(u.profile_fields)
+          } else if (u.meta && typeof u.meta === 'object') {
+            // migration path: surface old meta as profile_fields for consumers
+            u.profile_fields = normalize(u.meta)
+          }
+        }
+        setUser(u)
       } else {
         setUser(null)
       }

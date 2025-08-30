@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { PostCard } from './post-card'
 import { cn } from '@/lib/utils'
+import { htmlToText } from '@/lib/text'
 // Use internal API to avoid direct browser calls to WordPress
 import type { WordPressPost } from '@/lib/wordpress-client'
 
@@ -38,7 +39,7 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
         avatar: '/favicon.ico',
         imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
         imageHint: post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered,
-        excerpt: post.excerpt.rendered.replace(/<[^>]+>/g, '').slice(0,240),
+  excerpt: htmlToText(post.excerpt.rendered).slice(0,240),
         slug: post.slug,
       }))
       if (p === 1) setPosts(mapped)
