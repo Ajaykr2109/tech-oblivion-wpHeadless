@@ -9,8 +9,7 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
-import { Button } from '@/components/ui/button'
-import { Edit, ThumbsUp, Twitter, Linkedin, Github, Share2 } from 'lucide-react'
+import { Twitter, Linkedin, Github } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -103,7 +102,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
-                        <div className="container mx-auto px-4 py-10 max-w-7xl">
+            <div className="container mx-auto px-4 py-10 max-w-7xl">
                 {/* Header */}
                 <header className="relative mb-6">
                     <div className="flex items-start justify-between gap-4">

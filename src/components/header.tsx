@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "./ui/dropdown-menu";
+import { RoleGate } from "@/hooks/useRoleGate";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -94,7 +95,7 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {!!user?.roles?.some(r => ['administrator','editor'].includes(r)) && (
+                <RoleGate action="admin" as="div">
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>Admin</DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
@@ -107,8 +108,8 @@ export function Header() {
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
-                )}
-                {!!user?.roles?.some(r => ['subscriber','contributor','author','editor','administrator'].includes(r)) && (
+                </RoleGate>
+                <RoleGate action="draft" as="div">
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
@@ -119,7 +120,7 @@ export function Header() {
                       </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                   </DropdownMenuSub>
-                )}
+                </RoleGate>
               </DropdownMenuContent>
             </DropdownMenu>
         </nav>
@@ -191,12 +192,12 @@ export function Header() {
                     </Link>
                   );
                 })}
-                 {!!user?.roles?.some(r => ['administrator','editor'].includes(r)) && (
+                 <RoleGate action="admin" as="div">
                    <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
-                 )}
-                 {!!user?.roles?.some(r => ['subscriber','contributor','author','editor','administrator'].includes(r)) && (
+                 </RoleGate>
+                 <RoleGate action="draft" as="div">
                    <Link href="/account" className="text-muted-foreground hover:text-foreground">Account</Link>
-                 )}
+                 </RoleGate>
                 {!isLoading && (
                   <>
                     {user ? (
@@ -204,9 +205,11 @@ export function Header() {
                         <div className="text-muted-foreground">
                           Welcome, {user.username}
                         </div>
-                        <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                          Dashboard
-                        </Link>
+                        <RoleGate action="draft" as="div">
+                          <Link href="/account" className="text-muted-foreground hover:text-foreground">
+                            Dashboard
+                          </Link>
+                        </RoleGate>
                         <Link href="/account" className="text-muted-foreground hover:text-foreground">
                           Account Center
                         </Link>
