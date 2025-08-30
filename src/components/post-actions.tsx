@@ -1,32 +1,33 @@
 "use client"
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Edit, Share2, MoreVertical, Clipboard } from 'lucide-react'
-import { RoleGate } from '@/hooks/useRoleGate'
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Copy, Edit, Link2, MoreVertical, Share2, Twitter, Linkedin } from "lucide-react"
+import { useCallback } from "react"
 
-type Props = {
+type PostActionsProps = {
   postId: number
-  slug: string
-  title: string
+  title?: string
 }
 
-export default function PostActions({ postId, slug, title }: Props) {
-  async function handleShare() {
-    const url = typeof window !== 'undefined' ? window.location.href : `${slug}`
+export function PostActions({ postId, title }: PostActionsProps) {
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+
+  const copy = useCallback(async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({ title, url })
-        return
-      }
+      await navigator.clipboard.writeText(shareUrl)
     } catch {}
-    try {
-      await navigator.clipboard.writeText(url)
-      // Optional: integrate toast system if present
-      // toast({ title: 'Link copied', description: 'Post URL copied to clipboard.' })
-      // Fallback: no-op
-    } catch {}
-  }
+  }, [shareUrl])
+
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title || '')}&url=${encodeURIComponent(shareUrl)}`
+  const liUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
 
   return (
     <DropdownMenu>
@@ -35,28 +36,26 @@ export default function PostActions({ postId, slug, title }: Props) {
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
-        <RoleGate action="draft" as="div">
-          <DropdownMenuItem asChild>
-            <Link href={`/editor/${postId}`} className="cursor-pointer">
-              <Edit className="h-4 w-4" />
-              <span>Edit</span>
-            </Link>
-          </DropdownMenuItem>
-        </RoleGate>
-        <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
-          <Share2 className="h-4 w-4" />
-          <span>Share...</span>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem asChild>
+          <Link href={`/editor/${postId}`} className="flex items-center gap-2">
+            <Edit className="h-4 w-4" /> Edit
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={async () => {
-            const url = typeof window !== 'undefined' ? window.location.href : `${slug}`
-            try { await navigator.clipboard.writeText(url) } catch {}
-          }}
-          className="cursor-pointer"
-        >
-          <Clipboard className="h-4 w-4" />
-          <span>Copy link</span>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={copy} className="flex items-center gap-2">
+          <Copy className="h-4 w-4" /> Copy link
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href={tweetUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+            <Twitter className="h-4 w-4" /> Share to X
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <a href={liUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+            <Linkedin className="h-4 w-4" /> Share to LinkedIn
+          </a>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

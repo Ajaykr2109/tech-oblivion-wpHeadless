@@ -8,24 +8,22 @@ import Link from 'next/link'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
-import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
-import { Twitter, Linkedin, Github } from 'lucide-react'
+import { headers } from 'next/headers'
+import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { getPostBySlug } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
 import TocList from '@/components/toc-list'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
-<<<<<<< HEAD
-import PostActions from '@/components/post-actions'
-import CommentsSection from '@/components/comments-section'
-=======
+import { PostActions } from '@/components/post-actions'
+import { RelatedPostsGrid } from '@/components/related-posts-grid'
 import { RoleGate } from '@/hooks/useRoleGate'
-import CommentFormGate from '@/components/CommentFormGate'
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
 
 // This function can remain as-is for now, as it's for SEO and doesn't block rendering.
 // In a real app, this would fetch live data.
@@ -40,8 +38,9 @@ export default async function PostPage({ params }: { params: { slug: string } })
     const { slug } = params
     const post = await getPostBySlug(slug)
     if (!post) notFound()
+    const p = post!
 
-    const rawHtml = post.contentHtml || ''
+    const rawHtml = p.contentHtml || ''
     const safeHtml = sanitizeWP(rawHtml)
 
   // Simple reading time based on words/minute
@@ -50,27 +49,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / wordsPerMinute))
   const readingTime = `${readingTimeMinutes} min read`
 
-        // Cached TOC (server memory) – skip entirely if empty
-        const tableOfContents = await getOrBuildToc(Number(post.id), safeHtml)
-
-        // Fetch related recommendations for bottom grid (best-effort)
-        let recommended: Array<{ id: number; slug: string; title: string }> = []
-        try {
-            const cats = (post.categories || []).map(c => c.id).join(',')
-            const tags = (post.tags || []).map(t => t.id).join(',')
-            const qs = new URLSearchParams()
-            if (cats) qs.set('categories', cats)
-            if (tags) qs.set('tags', tags)
-            qs.set('exclude', String(post.id))
-            qs.set('per_page', '3')
-            const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-            const url = `${origin || ''}/api/wp/related?${qs.toString()}`
-            const r = await fetch(url, { headers: { Accept: 'application/json' }, cache: 'no-store' })
-            if (r.ok) {
-                const data = (await r.json()) as any[]
-                recommended = (data || []).map(d => ({ id: d.id, slug: d.slug, title: d.title?.rendered || '' }))
-            }
-        } catch {}
+    // Cached TOC (server memory) – skip entirely if empty
+    const tableOfContents = await getOrBuildToc(Number(p.id), safeHtml)
 
         const highlightedContent = safeHtml.replace(/<pre><code class="language-([a-z0-9_-]+)">([\s\S]*?)<\/code><\/pre>/gi, (match, lang, code) => {
     try {
@@ -95,217 +75,209 @@ export default async function PostPage({ params }: { params: { slug: string } })
     const autoLinkTargets: AutoLinkTarget[] = [] // populate from settings if available
     const contentLinked = autoLinkFirst(contentWithHeadingIds, autoLinkTargets)
 
-    return (
-        <>
-            <Head>
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getArticleSchema(post)) }}
-                />
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
-                />
-            </Head>
-<<<<<<< HEAD
-            <div className="container mx-auto px-4 py-10 max-w-7xl">
-                {/* Header */}
-                <header className="relative mb-6">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 break-words">{post.title}</h1>
-                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
-                                {/* Categories as badges */}
-                                <div className="flex flex-wrap gap-2">
-                                    {(post.categories && post.categories.length > 0) ? (
-                                        post.categories.map(c => (
-                                            <Badge key={c.id} variant="secondary">{c.name}</Badge>
-                                        ))
-                                    ) : null}
+        // Fetch approved comments for this post
+        type WPComment = {
+            id: number
+            post: number
+            parent: number
+            date: string
+            author_name: string
+            author_avatar_urls?: Record<string,string>
+            content: { rendered: string }
+        }
+        // Build absolute base URL from request headers (works in server components without Node types)
+        const hdrs = headers()
+        const host = hdrs.get('x-forwarded-host') || hdrs.get('host') || 'localhost:3000'
+        const proto = hdrs.get('x-forwarded-proto') || 'http'
+        const base = `${proto}://${host}`
+        const commentsRes = await fetch(`${base}/api/wp/comments?post=${encodeURIComponent(String(p.id))}&status=approve&per_page=50&orderby=date&order=asc`, { cache: 'no-store' })
+        const comments: WPComment[] = commentsRes.ok ? await commentsRes.json() : []
+
+        // Build threaded tree
+        type CommentNode = WPComment & { children: CommentNode[] }
+        const byId = new Map<number, CommentNode>()
+        for (const c of comments) byId.set(c.id, { ...c, children: [] })
+        const roots: CommentNode[] = []
+        for (const c of byId.values()) {
+            if (c.parent && byId.has(c.parent)) byId.get(c.parent)!.children.push(c)
+            else roots.push(c)
+        }
+
+        function RenderComments({ nodes, depth = 0 }: { nodes: CommentNode[]; depth?: number }) {
+            return (
+                <div className={depth ? 'ml-6 mt-6 space-y-6' : 'space-y-6'}>
+                    {nodes.map((c) => (
+                        <div key={c.id} className="rounded-md border p-4">
+                            <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                <span className="font-medium text-foreground">{c.author_name || 'Anonymous'}</span>
+                                <span>•</span>
+                                <time dateTime={c.date}>{new Date(c.date).toLocaleString()}</time>
+                            </div>
+                            <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: c.content?.rendered || '' }} />
+                            {c.children.length > 0 && <RenderComments nodes={c.children} depth={depth + 1} />}
+                        </div>
+                    ))}
+                </div>
+            )
+        }
+
+        return (
+            <>
+                <Head>
+                    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(getArticleSchema(p)) }} />
+                    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(p)) }} />
+                </Head>
+                <div className="container mx-auto px-4 py-10 max-w-7xl">
+                            {/* Floating actions */}
+                            <div className="fixed right-4 bottom-4 z-40 lg:top-24 lg:bottom-auto">
+                                <PostActions postId={Number(p.id)} title={p.title} />
+                            </div>
+                    {/* Header */}
+                    <header className="mb-6">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <h1 className="text-3xl md:text-5xl font-bold tracking-tight break-words">{p.title}</h1>
+                                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                        <Avatar className="h-6 w-6">
+                                            <AvatarImage src={p.authorAvatar || ''} alt={p.authorName || 'Author'} />
+                                            <AvatarFallback>{(p.authorName || 'A').charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{p.authorName || 'Unknown'}</span>
+                                    </div>
+                                    <span>•</span>
+                                    <span>{new Date(p.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                    <span>•</span>
+                                    <span>{readingTime}</span>
                                 </div>
-                                {post.categories?.length ? <span className="hidden sm:inline">•</span> : null}
-                                <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7">
-                                        <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                                        <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="truncate">{post.authorName || 'Unknown'}</span>
-                                </div>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span className="inline-flex items-center gap-1">{readingTime}</span>
+                                                                {p.categories && p.categories.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                                                {p.categories.map(c => (
+                                                                                    <span key={c.id}><Badge variant="secondary">{c.name}</Badge></span>
+                                                                                ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="shrink-0">
+                                <PostActions postId={Number(p.id)} title={p.title} />
                             </div>
                         </div>
-                        {/* Floating actions */}
-                        <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
-                    </div>
-                </header>
-=======
-            <div className="container mx-auto px-4 py-12 max-w-7xl">
-        <header className="text-center mb-8 relative">
-            <div className="absolute top-0 right-0">
-                                <RoleGate action="draft" as="span">
-                                    <Button variant="outline" asChild>
-                                            <Link href={`/editor/${post.id}`}>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </Link>
-                                    </Button>
-                                </RoleGate>
-            </div>
-      <h1 className="text-4xl md:text-5xl font-bold mb-4">{post.title}</h1>
-          <div className="flex justify-center items-center gap-4 text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-          <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-          <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                </Avatar>
-        <span>By {post.authorName || 'Unknown'}</span>
-            </div>
-            <span>•</span>
-    <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            <span>•</span>
-            <span>{readingTime}</span>
-          </div>
-        </header>
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
+                    </header>
 
-                {/* Featured banner */}
-                {post.featuredImage ? (
-                    <div className="mb-10">
-                        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
-                            <Image
-                                src={post.featuredImage}
-                                alt={post.title}
-                                fill
-                                sizes="(max-width: 1024px) 100vw, 1024px"
-                                className="object-cover"
-                                priority={false}
-                                quality={70}
-                            />
+                    {/* Featured banner image 16:9 */}
+                    {p.featuredImage && (
+                        <div className="mb-10 overflow-hidden rounded-lg shadow">
+                            <div className="relative aspect-video w-full">
+                        <Image src={p.featuredImage} alt={p.title} fill className="object-cover" priority quality={70} />
+                            </div>
                         </div>
-                    </div>
-                ) : null}
+                    )}
 
-                {/* Mobile TOC (accordion) */}
-                {tableOfContents.length > 0 && (
-                    <div className="lg:hidden mb-6">
-                        <Accordion type="single" collapsible>
-                            <AccordionItem value="toc">
-                                <AccordionTrigger>On this page</AccordionTrigger>
-                                <AccordionContent>
-                                    <TocList items={tableOfContents} />
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </div>
-                )}
+                    {/* Mobile TOC as accordion */}
+                    {tableOfContents.length > 0 && (
+                        <div className="lg:hidden mb-6">
+                            <Accordion type="single" collapsible>
+                                <AccordionItem value="toc">
+                                    <AccordionTrigger>On this page</AccordionTrigger>
+                                    <AccordionContent>
+                                        <TocList items={tableOfContents} />
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </div>
+                    )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Sticky TOC on desktop (left) */}
-                        <aside className="lg:col-span-2 self-start hidden lg:block">
-                            {tableOfContents.length > 0 && (
-                                <div className="lg:sticky top-24">
-                                    <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">On this page</h2>
-                                    <div className="rounded-md border bg-card p-4">
+                    {/* 3-column layout on desktop */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Sticky TOC */}
+                        <aside className="hidden lg:block lg:col-span-3">
+                            <div className="sticky top-24">
+                                {tableOfContents.length > 0 && (
+                                    <div className="rounded-lg border bg-card p-4">
+                                        <h2 className="text-sm font-semibold mb-3">On this page</h2>
                                         <TocList items={tableOfContents} />
                                     </div>
+                                )}
+                            </div>
+                        </aside>
+
+                        {/* Article content */}
+                        <article className="lg:col-span-6 min-w-0">
+                            <div
+                                className="prose prose-lg dark:prose-invert max-w-[70ch] w-full leading-7 [&>img]:rounded-lg [&>img]:shadow-md [&>figure>img]:rounded-lg [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>figure>figcaption]:text-sm [&>pre]:rounded-md [&>pre]:p-0 [&_code.hljs]:block"
+                                dangerouslySetInnerHTML={{ __html: contentLinked }}
+                            />
+                        </article>
+
+                        {/* Related posts at side on desktop, move to bottom on mobile */}
+                        <aside className="lg:col-span-3">
+                            <div className="hidden lg:block">
+                                <RelatedPostsGrid />
+                            </div>
+                        </aside>
+                    </div>
+
+                    {/* Related posts for mobile/tablet */}
+                    <div className="mt-12 lg:hidden">
+                        <RelatedPostsGrid />
+                    </div>
+
+                    <Separator className="my-12" />
+
+                    {/* Author box */}
+                    <section aria-labelledby="author" className="max-w-4xl">
+                        <div className="flex items-start gap-6">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={p.authorAvatar || ''} alt={p.authorName || 'Author'} />
+                                <AvatarFallback>{(p.authorName || 'A').charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <h2 id="author" className="text-2xl font-bold">{p.authorName || 'Unknown'}</h2>
+                                <p className="text-sm text-muted-foreground">Author</p>
+                                <p className="mt-2 text-muted-foreground">{p.seo?.description || '—'}</p>
+                                <div className="mt-3 flex items-center gap-4">
+                                    {/* Socials from profile_fields if available could be linked here */}
+                                    <Link href={"/profile/" + encodeURIComponent(p.authorName || 'user')} className="text-sm underline">View profile</Link>
                                 </div>
-                            )}
-                        </aside>
-
-                <article className="lg:col-span-8 min-w-0">
-                    <div
-                        className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>p]:mb-4 [&>figure]:my-6 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg"
-                        dangerouslySetInnerHTML={{ __html: contentLinked }}
-                    />
-                </article>
-
-                        {/* Related sidebar on desktop (right) */}
-                        <aside className="lg:col-span-2 self-start">
-                            <div className="bg-card p-6 rounded-lg shadow-lg">
-                                <RelatedPostsSidebar
-                                    currentPostId={Number(post.id)}
-                                    currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
-                                    currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
-                                />
-                            </div>
-                        </aside>
-        </div>
-
-        <Separator className="my-12" />
-
-                {/* Author box */}
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-card/50 p-6 rounded-lg flex flex-col sm:flex-row items-start gap-6">
-                        <Avatar className="h-24 w-24">
-                            <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                            <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <h3 className="text-sm font-semibold text-muted-foreground">Written by</h3>
-                            <h2 className="text-2xl font-bold">{post.authorName || 'Unknown'}</h2>
-                            <p className="text-sm text-muted-foreground mb-4">{post.authorName ? `${post.authorName} · Author` : 'Author'}</p>
-                            <p className="text-muted-foreground mb-4">An avid writer and technologist. Short bio can go here if available.</p>
-                            <div className="flex gap-4">
-                                <a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-foreground"><Twitter className="h-5 w-5" /></a>
-                                <a href="#" aria-label="LinkedIn" className="text-muted-foreground hover:text-foreground"><Linkedin className="h-5 w-5" /></a>
-                                <a href="#" aria-label="GitHub" className="text-muted-foreground hover:text-foreground"><Github className="h-5 w-5" /></a>
-                            </div>
-                            <div className="mt-4">
-                                <Link href="/profile" className="text-sm text-primary hover:underline">View full profile</Link>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-        <Separator className="my-12" />
-<<<<<<< HEAD
-                {/* Comments section */}
-                <div className="max-w-4xl mx-auto">
-                    <CommentsSection postId={Number(post.id)} />
-=======
+                    <Separator className="my-12" />
 
-        <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-6 mb-8">
-                <Button variant="outline" size="lg">
-                    <ThumbsUp className="mr-2 h-5 w-5" /> Like (123)
-                </Button>
-                <h2 className="text-2xl font-bold">Comments (3)</h2>
-            </div>
-
-                                    <div className="space-y-6">
-                                        <CommentFormGate />
-
-                <div className="flex items-start gap-4">
-                    <Avatar>
-                        <AvatarImage src="https://i.pravatar.cc/150?u=a04258114e29026702d" />
-                        <AvatarFallback>AJ</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">Alex Johnson</p>
-                        <p className="text-sm text-muted-foreground">This was a great read, thanks for sharing!</p>
-                    </div>
->>>>>>> e02380fdfe9ba29999e04aed5a4d71a030036fd0
-                </div>
-
-                {/* Recommended posts grid */}
-                {recommended.length > 0 && (
-                    <div className="mt-12">
-                        <h2 className="text-2xl font-bold mb-4">Recommended for you</h2>
-                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                            {recommended.map(r => (
-                                <Link key={r.id} href={`/blog/${r.slug}`} className="group">
-                                    <div className="h-full rounded-lg border bg-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
-                                        <h3 className="font-semibold group-hover:underline line-clamp-2">{r.title}</h3>
-                                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">Keep reading related insights.</p>
+                    {/* Comments */}
+                    <section aria-labelledby="comments" className="max-w-4xl">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle id="comments">Comments{comments.length ? ` (${comments.length})` : ''}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {/* If not logged in, show login prompt */}
+                                <RoleGate action="comment" as="div" disabledClassName="">
+                                    <form className="grid gap-4">
+                                        <Textarea placeholder="Write a comment..." rows={4} />
+                                        <div className="flex justify-end"><Button>Post Comment</Button></div>
+                                    </form>
+                                </RoleGate>
+                                {/* When gated, provide message and link */}
+                                <RoleGate action="comment" as="div" className="hidden" disabledClassName="block">
+                                    <div className="text-sm text-muted-foreground">
+                                        <Link href="/login" className="underline">Log in</Link> to comment.
                                     </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </>
-    );
+                                </RoleGate>
+
+                                                                {/* Threaded comments list */}
+                                                                <div className="mt-6">
+                                                                    {roots.length === 0 ? (
+                                                                        <p className="text-sm text-muted-foreground">No comments yet.</p>
+                                                                    ) : (
+                                                                        <RenderComments nodes={roots} />
+                                                                    )}
+                                                                </div>
+                            </CardContent>
+                        </Card>
+                    </section>
+                </div>
+            </>
+        )
 }
