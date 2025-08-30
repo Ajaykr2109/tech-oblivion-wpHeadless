@@ -37,7 +37,7 @@ export default function PostActions({ postId, slug, title }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <RoleGate action="draft" as="div">
+  <RoleGate action="admin" as="div">
           <DropdownMenuItem asChild>
             <Link href={`/editor/${postId}`} className="cursor-pointer">
               <Edit className="h-4 w-4" />

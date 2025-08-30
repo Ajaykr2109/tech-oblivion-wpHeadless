@@ -15,11 +15,11 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
       return true
     }
 
-    // Decorate headings with anchor link buttons
+    // Decorate headings with anchor link buttons + subtle transition
     root.querySelectorAll('h2[id], h3[id]').forEach((h) => {
       const el = h as HTMLElement
       if (el.querySelector('.para-anchor')) return
-      el.classList.add('group')
+      el.classList.add('group','transition-colors','duration-200')
       const btn = document.createElement('button')
       btn.className = 'para-anchor opacity-0 group-hover:opacity-100 ml-2 text-xs text-muted-foreground hover:text-foreground'
       btn.title = 'Copy link to this section'
@@ -103,6 +103,27 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
       { rootMargin: '-40% 0px -50% 0px', threshold: [0, 1] }
     )
     headings.forEach((h) => observer.observe(h))
+
+    // Style internal vs external links inside content (no underline, subtle hover)
+    root.querySelectorAll('a[href]').forEach((a) => {
+      const el = a as HTMLAnchorElement
+      const href = el.getAttribute('href') || ''
+      el.classList.add('no-underline','hover:underline','transition-colors')
+      try {
+        const u = new URL(href, window.location.origin)
+        const isExternal = u.origin !== window.location.origin
+        if (isExternal) {
+          el.classList.add('text-primary')
+          el.setAttribute('target','_blank')
+          el.setAttribute('rel','noopener noreferrer')
+        } else {
+          el.classList.add('text-foreground')
+        }
+      } catch {
+        // Leave relative hash/mailto etc with basic style
+        el.classList.add('text-foreground')
+      }
+    })
 
     return () => { observer.disconnect() }
   }, [selector])

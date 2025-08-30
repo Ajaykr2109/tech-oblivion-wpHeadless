@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default function BackToTop({ threshold = 400 }: { threshold?: number }) {
+export default function BackToTop({ threshold = 400, offsetPx = 112 }: { threshold?: number; offsetPx?: number }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -18,7 +18,10 @@ export default function BackToTop({ threshold = 400 }: { threshold?: number }) {
   if (!visible) return null
 
   return (
-    <div className="fixed right-6 z-[65]" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 96px)' }}>
+    <div
+      className="fixed right-6 z-[65]"
+      style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${offsetPx}px)` }}
+    >
       <Button
         size="icon"
         variant="secondary"

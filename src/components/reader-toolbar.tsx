@@ -1,44 +1,79 @@
 "use client"
 import { Moon, Sun, Plus, Minus } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function ReaderToolbar() {
   const { theme, setTheme } = useTheme()
   const [scale, setScale] = useState<number>(100)
-  const [top, setTop] = useState<number>(8)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('100')
+  const lastClickRef = useRef<number>(0)
 
   useEffect(() => {
     const s = Number(localStorage.getItem('reader:scale') || '100')
     setScale(isNaN(s) ? 100 : s)
+    setDraft(String(isNaN(s) ? 100 : s))
   }, [])
   useEffect(() => {
     document.documentElement.style.setProperty('--reader-scale', String(scale))
     localStorage.setItem('reader:scale', String(scale))
   }, [scale])
 
-  useEffect(() => {
-    const updateTop = () => {
-      const header = document.querySelector('header') as HTMLElement | null
-      const h = header ? header.getBoundingClientRect().height : 0
-      setTop(Math.max(8, h + 8))
+  function commitDraft() {
+    const n = Number(draft)
+    if (!isNaN(n)) {
+      setScale(Math.max(80, Math.min(160, n)))
     }
-    updateTop()
-    window.addEventListener('resize', updateTop)
-    window.addEventListener('scroll', updateTop, { passive: true })
-    return () => {
-      window.removeEventListener('resize', updateTop)
-      window.removeEventListener('scroll', updateTop)
+    setEditing(false)
+  }
+
+  function cancelEdit() {
+    setDraft(String(scale))
+    setEditing(false)
+  }
+
+  function handleLabelClick() {
+    const now = Date.now()
+    if (now - lastClickRef.current < 250) {
+      // double click within window → reset
+      setScale(100)
+      setDraft('100')
+      lastClickRef.current = 0
+      return
     }
-  }, [])
+    lastClickRef.current = now
+    // enter edit mode on single click
+    setEditing(true)
+  }
 
   return (
-    <div style={{ top }} className="fixed right-2 z-[60] flex items-center gap-2 rounded-full bg-card/80 backdrop-blur px-2 py-1 border shadow">
-      <button className="p-1 hover:text-primary" aria-label="Decrease font size" onClick={()=>setScale(Math.max(80, scale-10))}><Minus className="h-4 w-4"/></button>
-      <span className="text-xs w-8 text-center">{scale}%</span>
-      <button className="p-1 hover:text-primary" aria-label="Increase font size" onClick={()=>setScale(Math.min(140, scale+10))}><Plus className="h-4 w-4"/></button>
+    <div className="flex items-center gap-2 rounded-full bg-card/70 backdrop-blur px-3 py-1.5 border shadow">
+      <button className="p-1.5 hover:text-primary" aria-label="Decrease font size" onClick={()=>setScale(Math.max(80, scale-10))}><Minus className="h-4 w-4"/></button>
+      {editing ? (
+        <input
+          className="w-14 text-xs text-center bg-transparent outline-none border-b border-border focus:border-primary rounded-none"
+          value={draft}
+          onChange={(e)=>setDraft(e.target.value.replace(/[^0-9]/g,''))}
+          onBlur={commitDraft}
+          onKeyDown={(e)=>{
+            if (e.key === 'Enter') commitDraft();
+            else if (e.key === 'Escape') cancelEdit();
+          }}
+          autoFocus
+        />
+      ) : (
+        <span
+          className="text-xs w-12 text-center tabular-nums cursor-text select-none"
+          title="Click to edit, double-click to reset"
+          onClick={handleLabelClick}
+        >
+          {scale}%
+        </span>
+      )}
+      <button className="p-1.5 hover:text-primary" aria-label="Increase font size" onClick={()=>setScale(Math.min(160, scale+10))}><Plus className="h-4 w-4"/></button>
       <span className="mx-1 h-4 w-px bg-border"/>
-      <button className="p-1 hover:text-primary" aria-label="Toggle theme" onClick={()=>setTheme(theme === 'dark' ? 'light' : 'dark')}>
+      <button className="p-1.5 hover:text-primary" aria-label="Toggle theme" onClick={()=>setTheme(theme === 'dark' ? 'light' : 'dark')}>
         {theme === 'dark' ? <Sun className="h-4 w-4"/> : <Moon className="h-4 w-4"/>}
       </button>
     </div>

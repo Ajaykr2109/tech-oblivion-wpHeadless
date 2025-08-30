@@ -62,7 +62,7 @@ export default function FloatingActions({ title, postId }: { title: string; post
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-2">
+    <div className="fixed bottom-6 right-6 z-[70] flex flex-col gap-2 items-center">
       <Button size="icon" variant="secondary" className="shadow" onClick={share} aria-label="Share">
         <Share2 className="h-4 w-4" />
       </Button>

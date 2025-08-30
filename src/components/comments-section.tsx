@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { RoleGate, useRoleGate } from '@/hooks/useRoleGate'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Heart } from 'lucide-react'
+// Removed likes UI per requirements
 
 type Comment = {
   id: string | number
@@ -171,10 +171,12 @@ function CommentItem({ c }: { c: Comment }) {
   <AvatarFallback>{(c.author?.name || 'A').split(' ').map(n => (n?.[0] || '')).join('').slice(0,2) || 'A'}</AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <div className="text-sm font-medium">{c.author?.name || 'Anonymous'} <span className="text-xs text-muted-foreground">· {new Date(c.createdAt).toLocaleString()}</span></div>
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <span>{c.author?.name || 'Anonymous'}</span>
+          <span className="text-xs text-muted-foreground">· {new Date(c.createdAt).toLocaleString()}</span>
+        </div>
         <div className="text-sm text-foreground mt-1">{c.content}</div>
         <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-          <button className="inline-flex items-center gap-1 hover:text-foreground" type="button"><Heart className="h-3.5 w-3.5" /> Like</button>
           <button className="hover:text-foreground" type="button">Reply</button>
         </div>
         {c.replies && c.replies.length > 0 && (

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { getPostBySlug, type PostDetail } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
-import TocList from '@/components/toc-list'
+import TableOfContents from '@/components/toc/TableOfContents'
 import type { TocItem as HtmlTocItem } from '@/lib/toc'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
@@ -26,6 +26,7 @@ import FloatingActions from '@/components/floating-actions'
 import ContentDecorators from '@/components/content-decorators'
 import { Suspense } from 'react'
 import ReaderToolbar from '@/components/reader-toolbar'
+import BackToTopCenter from '@/components/back-to-top-center'
 import { getLatestByAuthor } from '@/lib/wp-author'
 import BackToTop from '@/components/back-to-top'
 import ViewsCounter from '@/components/views-counter'
@@ -46,7 +47,7 @@ type EnhancedRecommendation = {
 }
 
 type PageParams = { params: { slug: string } }
-type PageProps = { params: { slug: string } }
+type PageProps = { params: { slug: string }, searchParams?: Record<string, string | string[] | undefined> }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
     const { slug } = params
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   return { title: post.seo?.title || post.title, description: post.seo?.description }
 }
 
-export default async function PostPage({ params }: PageProps) {
+export default async function PostPage({ params, searchParams }: PageProps) {
     const { slug } = params
         let post: PostDetail | null = null
         try {
@@ -94,11 +95,11 @@ export default async function PostPage({ params }: PageProps) {
         return `<h${level}${attrsOut}>${inner}</h${level}>`
     })
 
-        // Generate TOC: prefer Markdown AST if content_raw present, otherwise from HTML
+        // Generate TOC (legacy for anchors), and markdown items for new TOC component
         let tableOfContents: HtmlTocItem[] = []
+        const mdItems = (post as any).content_raw ? extractTocFromMarkdown((post as any).content_raw as string, { minDepth: 1, maxDepth: 6 }) : []
         if ((post as any).content_raw) {
-            const mdToc = extractTocFromMarkdown((post as any).content_raw as string)
-            // Normalize to HtmlTocItem shape expected by TocList: { level, text, slug }
+            const mdToc = mdItems
             tableOfContents = mdToc
                 .filter(i => i.depth === 2 || i.depth === 3)
                 .map(i => ({ level: (i.depth as 2 | 3), text: i.value, slug: i.id }))
@@ -155,6 +156,54 @@ export default async function PostPage({ params }: PageProps) {
         // Fallback recommendations could be hardcoded popular posts
     }
 
+    // Popular posts by views (cached)
+    let popular: EnhancedRecommendation[] = []
+    try {
+        const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
+        const url = `${origin || ''}/api/wp/popular?limit=6`
+        const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
+        if (r.ok) {
+            const data = (await r.json()) as any[]
+            popular = (data || []).map(d => ({
+                id: d.id,
+                slug: d.slug,
+                title: d.title?.rendered || d.title || '',
+                excerpt: (d.excerpt || '').substring(0, 120) + (d.excerpt && d.excerpt.length > 120 ? '...' : ''),
+                featuredImage: d.featuredImage || d.featured_media_url || d.jetpack_featured_media_url || '',
+                authorName: d.authorName || '',
+                date: d.date || '',
+            }))
+        }
+    } catch (e) {
+        console.warn('Failed to fetch popular posts:', e)
+    }
+
+    // Recent posts (chronological)
+    let recent: EnhancedRecommendation[] = []
+    try {
+        const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
+        const url = `${origin || ''}/api/wp/posts?per_page=6&_embed=1`
+        const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
+        if (r.ok) {
+            const data = (await r.json()) as any[]
+            recent = (data || []).map((p) => ({
+                id: p.id,
+                slug: p.slug,
+                title: p.title?.rendered || '',
+                excerpt: (p.excerpt?.rendered || '').replace(/<[^>]+>/g, '').substring(0, 120) + '...',
+                featuredImage: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || p.featured_media_url || p.jetpack_featured_media_url || '',
+                authorName: p._embedded?.author?.[0]?.name || '',
+                date: p.date || '',
+            }))
+        }
+    } catch (e) {
+        console.warn('Failed to fetch recent posts:', e)
+    }
+
+    const floatImage = typeof searchParams?.floatImage === 'string' 
+        ? ['1','true','yes','on'].includes(String(searchParams?.floatImage).toLowerCase())
+        : false
+
     return (
         <>
             <Head>
@@ -167,85 +216,89 @@ export default async function PostPage({ params }: PageProps) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
                 />
             </Head>
-            <ReaderToolbar />
+            {/* Center back-to-top pill */}
+            <BackToTopCenter />
 
             {/* 🚀 NEW: Reading Progress Bar */}
             <ReadingProgress />
 
             <div className="container mx-auto px-4 py-10 max-w-7xl">
                 {/* 🚀 ENHANCED: Breadcrumb Navigation */}
-                <nav className="mb-6 text-sm text-muted-foreground">
+                <nav className="mb-4 text-sm text-muted-foreground">
                     <Link href="/" className="hover:text-foreground">Home</Link>
-                    <span className="mx-2">›</span>
+                    <span className="mx-1">›</span>
                     <Link href="/blog" className="hover:text-foreground">Blog</Link>
                     {post.categories?.[0] && (
                         <>
-                            <span className="mx-2">›</span>
-                            <Link href={`/category/${post.categories[0].slug}`} className="hover:text-foreground">
+                            <span className="mx-1">›</span>
+                            <Link href={`/categories/${post.categories[0].slug}`} className="hover:text-foreground">
                                 {post.categories[0].name}
                             </Link>
                         </>
                     )}
-                    <span className="mx-2">›</span>
+                    <span className="mx-1">›</span>
                     <span className="text-foreground">{post.title}</span>
                 </nav>
 
                 {/* Header */}
                 <header className="relative mb-6">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 break-words">{post.title}</h1>
-                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
-                                {/* Categories as badges */}
-                                <div className="flex flex-wrap gap-2">
-                                    {(post.categories && post.categories.length > 0) ? (
-                                        post.categories.map(c => (
-                                            <Badge key={c.id} variant="secondary" className="hover:bg-primary hover:text-primary-foreground transition-colors">
-                                                <Link href={`/category/${c.slug}`}>{c.name}</Link>
-                                            </Badge>
-                                        ))
-                                    ) : null}
-                                </div>
-                                {post.categories?.length ? <span className="hidden sm:inline">•</span> : null}
-                                <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7">
-                                        <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                                        <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="truncate">{post.authorName || 'Unknown'}</span>
-                                </div>
-                                <span className="hidden sm:inline">•</span>
-                                <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span className="inline-flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {readingTime}
-                                </span>
-                                {/* 🚀 NEW: View count placeholder */}
-                                <span className="hidden sm:inline">•</span>
-                                <span className="inline-flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    <ViewsCounter postId={Number(post.id)} />
-                                </span>
-                            </div>
-                        </div>
-                        {/* Floating actions */}
+                    {/* Actions pinned on desktop */}
+                    <div className="hidden lg:block absolute right-0 top-0">
                         <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
+                    </div>
+                    <div className="max-w-3xl mx-auto text-center">
+                        <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 break-words">{post.title}</h1>
+                        <div className="flex flex-wrap items-center justify-center gap-3 text-muted-foreground text-sm">
+                            {/* Categories as badges */}
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                {(post.categories && post.categories.length > 0) ? (
+                                    post.categories.map(c => (
+                                        <Badge key={c.id} variant="secondary" className="hover:bg-primary hover:text-primary-foreground transition-colors">
+                                            <Link href={`/categories/${c.slug}`}>{c.name}</Link>
+                                        </Badge>
+                                    ))
+                                ) : null}
+                            </div>
+                            {post.categories?.length ? <span className="hidden sm:inline">•</span> : null}
+                            <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7">
+                                    <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+                                    <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="truncate">{post.authorName || 'Unknown'}</span>
+                            </div>
+                            <span className="hidden sm:inline">•</span>
+                            <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="inline-flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {readingTime}
+                            </span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="inline-flex items-center gap-1">
+                                <Eye className="h-3 w-3" />
+                                <ViewsCounter postId={Number(post.id)} />
+                            </span>
+                        </div>
+                        {/* Actions inline on mobile */}
+                        <div className="mt-3 lg:hidden flex justify-center">
+                            <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
+                        </div>
                     </div>
                 </header>
 
                 <FloatingActions title={post.title} postId={Number(post.id)} />
                 <BackToTop />
 
-                {/* Featured banner */}
-        {post.featuredImage ? (
-                    <div className="mb-10">
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
+        {/* Featured banner */}
+    {post.featuredImage ? (
+        <div className={`mb-10 lg:w-1/2 mx-auto ${floatImage ? 'lg:hidden' : ''}`}>
+        <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow-md">
                             <Image
                                 src={post.featuredImage}
                                 alt={post.title}
                                 fill
-                                sizes="(max-width: 1024px) 100vw, 1024px"
+                sizes="(max-width: 1024px) 100vw, 50vw"
                                 className="object-cover"
                                 priority={false}
                                 quality={70}
@@ -254,135 +307,155 @@ export default async function PostPage({ params }: PageProps) {
                     </div>
                 ) : null}
 
-                {/* 🔧 FIX: Mobile TOC with better conditional rendering */}
-                {tableOfContents && tableOfContents.length > 0 && (
+                {/* Mobile/Tablet TOC (new component handles modes internally) */}
+                {mdItems && mdItems.length > 0 && (
                     <div className="lg:hidden mb-6">
-                        <Accordion type="single" collapsible>
-                            <AccordionItem value="toc">
-                                <AccordionTrigger className="text-base font-medium">
-                                    📋 On this page ({tableOfContents.length} sections)
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                    <TocList items={tableOfContents} />
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
+                        <TableOfContents items={mdItems} />
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* 🔧 FIX: Sticky TOC with better positioning */}
-                    <aside className="lg:col-span-2 self-start hidden lg:block">
+                                                            <aside className="lg:col-span-3 self-start hidden lg:block">
                         {tableOfContents && tableOfContents.length > 0 && (
                             <div className="lg:sticky top-20"> {/* Reduced from top-24 to top-20 */}
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                                     On this page
                                 </h2>
-                                <div className="rounded-md border bg-card p-4 shadow-sm">
-                                    <TocList items={tableOfContents} />
-                                </div>
-                                
-                                {/* 🚀 NEW: Quick stats in TOC sidebar */}
-                                <div className="mt-4 p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Clock className="h-3 w-3" />
-                                        <span>{readingTime}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Eye className="h-3 w-3" />
-                                        <ViewsCounter postId={Number(post.id)} />
-                                    </div>
+                                <div className="rounded-md border bg-card p-0 shadow-sm">
+                                    <TableOfContents items={mdItems} />
                                 </div>
                             </div>
                         )}
                     </aside>
 
-                    <article className="lg:col-span-8 min-w-0">
-                        {/* 🚀 NEW: Article meta info bar */}
-                        <div className="mb-6 p-4 rounded-lg bg-muted/30 border-l-4 border-primary">
-                            <div className="flex flex-wrap items-center gap-4 text-sm">
-                                <span className="font-medium">📊 Article Info:</span>
-                                <span>{wordCount} words</span>
-                                <span>•</span>
-                                <span>{readingTime}</span>
-                                <span>•</span>
-                                {/* <span>Updated {new Date(post.modified || post.date).toLocaleDateString()}</span> */}
-                            </div>
-                        </div>
+                                        <article className="lg:col-span-6 min-w-0">
+                        {/* Meta info bar removed to avoid duplication */}
+
+                                                                                                {/* Optional float image on desktop */}
+                                                                                                {floatImage && post.featuredImage ? (
+                                                                                                    <figure className="hidden lg:block float-left mr-6 mb-4 w-[320px] xl:w-[360px]">
+                                                                                                        <div className="relative w-full aspect-[4/5] overflow-hidden rounded-lg shadow-md">
+                                                                                                            <Image src={post.featuredImage} alt={post.title} fill sizes="360px" className="object-cover" />
+                                                                                                        </div>
+                                                                                                    </figure>
+                                                                                                ) : null}
 
                                                 { (post as any).content_raw ? (
                                                     <MarkdownRenderer
                                                         markdown={(post as any).content_raw as string}
-                                                        className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-4 [&>figure]:my-6 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
+                                                                                                                className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-3 [&>figure]:my-5 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-3 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-3 [&>ol]:mb-3 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
                                                     />
                                                 ) : (
                                                     <div
-                                                        className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-4 [&>figure]:my-6 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-4 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-4 [&>ol]:mb-4 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
+                                                                                                                className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-3 [&>figure]:my-5 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-3 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-3 [&>ol]:mb-3 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
                                                         dangerouslySetInnerHTML={{ __html: contentLinked }}
                                                     />
                                                 )}
                         {/* Client decorators for anchors, code copy, quote share */}
                         <ContentDecorators selector=".wp-content" />
 
-                        {/* 🚀 NEW: Article tags section */}
-                        {post.tags && post.tags.length > 0 && (
-                            <div className="mt-8 pt-6 border-t">
-                                <h3 className="text-sm font-semibold text-muted-foreground mb-3">TAGS</h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {post.tags.map(tag => (
-                                        <Link key={tag.id} href={`/tag/${tag.slug}`}>
-                                            <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors">
-                                                #{tag.name}
-                                            </Badge>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Tags hidden on post view */}
                     </article>
 
-                    {/* Enhanced Related sidebar */}
-                    <aside className="lg:col-span-2 self-start">
-                                                    <div className="bg-card p-6 rounded-lg shadow-lg">
+                                        {/* Enhanced Right sidebar: Related, Recommended, Popular, Recent, Author latest */}
+                                        <aside className="lg:col-span-3 self-start">
+                                                <div className="bg-card p-6 rounded-lg shadow-lg">
                                                         <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Failed to load related posts.</div>}>
-                                                            <RelatedPostsSidebar
-                                                                    currentPostId={Number(post.id)}
-                                                                    currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
-                                                                    currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
-                                                            />
+                                                                <RelatedPostsSidebar
+                                                                                currentPostId={Number(post.id)}
+                                                                                currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
+                                                                                currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
+                                                                />
                                                         </ErrorBoundary>
-                                                    </div>
-
-                                            {/* 🚀 NEW: Author's latest posts */}
-                                            {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (
-                                                <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
-                                                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">More from the author</h3>
-                                                    <ul className="space-y-3">
-                                                        {latestByAuthor.map((p: any) => (
-                                                            <li key={p.id}>
-                                                                <Link href={`/blog/${p.slug}`} className="text-sm hover:underline line-clamp-2">{p.title?.rendered || p.title}</Link>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
                                                 </div>
-                                            )}
 
-                        {/* 🚀 NEW: Newsletter signup in sidebar */}
-                        <div className="mt-6 bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-lg border">
-                            <h3 className="font-semibold mb-2">📬 Stay Updated</h3>
-                            <p className="text-sm text-muted-foreground mb-4">Get the latest posts delivered right to your inbox.</p>
-                            <div className="space-y-2">
-                                <input 
-                                    type="email" 
-                                    placeholder="Enter your email" 
-                                    className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                                <button className="w-full bg-primary text-primary-foreground px-3 py-2 text-sm rounded-md hover:bg-primary/90 transition-colors">
-                                    Subscribe
-                                </button>
-                            </div>
-                        </div>
-                    </aside>
+                                                {/* Recommended Posts */}
+                                                {recommended.length > 0 && (
+                                                    <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
+                                                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Recommended Posts</h3>
+                                                        <ul className="space-y-4">
+                                                            {recommended.map(r => (
+                                                                <li key={r.id}>
+                                                                    <Link href={`/blog/${r.slug}`} className="group flex gap-3">
+                                                                        {r.featuredImage ? (
+                                                                            <div className="relative w-20 h-16 flex-shrink-0 overflow-hidden rounded">
+                                                                                <Image src={r.featuredImage} alt={r.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                                                                            </div>
+                                                                        ) : null}
+                                                                        <div className="min-w-0">
+                                                                            <div className="text-sm font-medium group-hover:text-primary line-clamp-2">{r.title}</div>
+                                                                            {r.excerpt ? <div className="text-xs text-muted-foreground line-clamp-2 mt-1">{r.excerpt}</div> : null}
+                                                                        </div>
+                                                                    </Link>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+
+                                                {/* Popular Posts */}
+                                                {popular.length > 0 && (
+                                                    <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
+                                                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Popular Posts</h3>
+                                                        <ul className="space-y-4">
+                                                            {popular.map(p => (
+                                                                <li key={p.id}>
+                                                                    <Link href={`/blog/${p.slug}`} className="group flex gap-3">
+                                                                        {p.featuredImage ? (
+                                                                            <div className="relative w-20 h-16 flex-shrink-0 overflow-hidden rounded">
+                                                                                <Image src={p.featuredImage} alt={p.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                                                                            </div>
+                                                                        ) : null}
+                                                                        <div className="min-w-0">
+                                                                            <div className="text-sm font-medium group-hover:text-primary line-clamp-2">{p.title}</div>
+                                                                            {p.excerpt ? <div className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.excerpt}</div> : null}
+                                                                        </div>
+                                                                    </Link>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+
+                                                {/* Recent Posts */}
+                                                {recent.length > 0 && (
+                                                    <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
+                                                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Recent Posts</h3>
+                                                        <ul className="space-y-4">
+                                                            {recent.map(p => (
+                                                                <li key={p.id}>
+                                                                    <Link href={`/blog/${p.slug}`} className="group flex gap-3">
+                                                                        {p.featuredImage ? (
+                                                                            <div className="relative w-20 h-16 flex-shrink-0 overflow-hidden rounded">
+                                                                                <Image src={p.featuredImage} alt={p.title} fill className="object-cover transition-transform group-hover:scale-105" />
+                                                                            </div>
+                                                                        ) : null}
+                                                                        <div className="min-w-0">
+                                                                            <div className="text-sm font-medium group-hover:text-primary line-clamp-2">{p.title}</div>
+                                                                            {p.excerpt ? <div className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.excerpt}</div> : null}
+                                                                        </div>
+                                                                    </Link>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+
+                                                {/* Author's latest posts */}
+                                                {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (
+                                                        <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
+                                                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">More from the author</h3>
+                                                                <ul className="space-y-3">
+                                                                        {latestByAuthor.map((p: any) => (
+                                                                                <li key={p.id}>
+                                                                                        <Link href={`/blog/${p.slug}`} className="text-sm hover:underline line-clamp-2">{p.title?.rendered || p.title}</Link>
+                                                                                </li>
+                                                                        ))}
+                                                                </ul>
+                                                        </div>
+                                                )}
+                                        </aside>
                 </div>
 
                 <Separator className="my-12" />
@@ -426,82 +499,15 @@ export default async function PostPage({ params }: PageProps) {
 
                 <Separator className="my-12" />
 
-                {/* Comments section */}
+                {/* Comments section */
+                }
                 <div className="max-w-4xl mx-auto">
                                         <Suspense fallback={<div className="text-sm text-muted-foreground">Loading comments...</div>}> 
                                             <CommentsSection postId={Number(post.id)} />
                                         </Suspense>
                 </div>
 
-                {/* 🚀 ENHANCED: Recommended posts with rich cards */}
-                {recommended.length > 0 ? (
-                    <div className="mt-12">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold">📚 Recommended for you</h2>
-                            <Link href="/blog" className="text-sm text-primary hover:underline">
-                                View all posts →
-                            </Link>
-                        </div>
-                        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                            {recommended.map(r => (
-                                <Link key={r.id} href={`/blog/${r.slug}`} className="group">
-                                    <div className="h-full rounded-lg border bg-card overflow-hidden transition-all hover:-translate-y-1 hover:shadow-lg">
-                                        {/* Featured image for recommendations */}
-                                        {r.featuredImage && (
-                                            <div className="relative aspect-video w-full overflow-hidden">
-                                                <Image
-                                                    src={r.featuredImage}
-                                                    alt={r.title}
-                                                    fill
-                                                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="p-4">
-                                            <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-2 mb-2">
-                                                {r.title}
-                                            </h3>
-                                            {r.excerpt && (
-                                                <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
-                                                    {r.excerpt}
-                                                </p>
-                                            )}
-                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                <span>{r.authorName || 'Unknown'}</span>
-                                                <div className="flex items-center gap-3">
-                                                    {r.date && (
-                                                        <span>{new Date(r.date).toLocaleDateString()}</span>
-                                                    )}
-                                                    {r.readingTime && (
-                                                        <span className="flex items-center gap-1">
-                                                            <Clock className="h-3 w-3" />
-                                                            {r.readingTime}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                ) : (
-                    /* 🚀 NEW: Fallback when no recommendations */
-                    <div className="mt-12">
-                        <h2 className="text-2xl font-bold mb-4">📚 Explore More</h2>
-                        <div className="bg-muted/30 p-8 rounded-lg text-center">
-                            <p className="text-muted-foreground mb-4">Looking for more great content?</p>
-                            <Link 
-                                href="/blog" 
-                                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 rounded-md hover:bg-primary/90 transition-colors"
-                            >
-                                Browse All Posts →
-                            </Link>
-                        </div>
-                    </div>
-                )}
+                {/* Bottom explore sections moved to right sidebar per layout spec */}
             </div>
 
         </>

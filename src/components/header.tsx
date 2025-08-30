@@ -140,7 +140,21 @@ export function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" aria-label="User menu">
-                      {user.username}
+                      {(() => {
+                        const uname = user.username || ''
+                        const dname = user.displayName || ''
+                        // If short username (<=10), show full
+                        if (uname && uname.length <= 10) return `Hi, ${uname}`
+                        // If displayName is long, use first + last initial
+                        if (dname && dname.trim().includes(' ')) {
+                          const parts = dname.trim().split(/\s+/)
+                          const first = parts[0]
+                          const last = parts[parts.length - 1]
+                          return `Hi, ${first} ${last?.charAt(0) || ''}.`
+                        }
+                        // Else show first two chars of username
+                        return `Hi, ${(uname || dname).slice(0, 2)}`
+                      })()}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
