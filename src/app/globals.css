@@ -122,6 +122,10 @@ body {
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Ensure post content wraps normally and occupies available width */
 .wp-content {
   /* Prevent unintended multi-column or narrow measure effects */

@@ -30,6 +30,14 @@ Legend:
   - Endpoint: GET /api/wp/posts?page={n}&per_page={k}&_embed=1
   - Roles: public
 
+- Related posts (sidebar and within article)
+  - Endpoint: GET /api/wp/related?categories={csv}&tags={csv}&exclude={id}&per_page={k}
+  - Roles: public
+
+- Single post (SSR fetch)
+  - Endpoint: server helper getPostBySlug -> WordPress /wp/v2/posts?slug={slug}
+  - Roles: public
+
 ## Editor (New / Edit) — planned wiring
 
 - Save Draft
@@ -47,10 +55,20 @@ Legend:
   - Body: partial post fields (e.g., { title, content, status })
   - Roles: author (own posts), editor, administrator
 
-## Comments — future
+## Comments — implemented
 
-- List/Create will require dedicated routes: /api/wp/comments (GET/POST)
-  - Roles: list: public; create: subscriber+
+- List comments
+  - Endpoint: GET /api/wp/comments?post={postId}&order={desc|asc}&page={n}&per_page={k}
+  - Upstream: /wp-json/wp/v2/comments
+  - Roles: public
+  - Notes: component supports client-side sort and search; server returns latest first by default.
+
+- Create comment
+  - Endpoint: POST /api/wp/comments
+  - Body: { postId: number, content: string, parent?: number }
+  - Upstream: POST /wp-json/wp/v2/comments (Authorization: Bearer wpToken)
+  - Roles: subscriber, contributor, author, editor, administrator
+  - UI: Composer is role-gated; guests see login prompt; disabled state respected.
 
 ## Media — existing
 
@@ -62,3 +80,28 @@ Notes
 
 - All protected routes use the server-side session’s wpToken to call upstream WordPress. The token is never exposed to the browser.
 - Server pages for /admin and /dashboard must also enforce role guards.
+
+## Floating actions / Reader UX
+
+- Share
+  - Endpoint: none (Web Share API / clipboard)
+  - Roles: public
+
+- Bookmark (planned)
+  - Endpoint: POST /api/user/bookmarks { postId } and GET /api/user/bookmarks
+  - Storage: WP user meta via custom endpoint or app DB
+  - Roles: subscriber+
+  - UI: Button is shown but disabled for unauthorized users (role-gated)
+
+- Print
+  - Endpoint: none (window.print)
+  - Roles: public
+
+## Not covered by core WP (requires custom endpoints or meta)
+
+- Reactions (likes/hearts) for posts/comments
+  - Suggested: POST /api/reactions; store counts in post/comment meta; list via GET
+- View counts
+  - Suggested: POST /api/metrics/view; aggregate/report via GET; or server-side tracking
+- Bookmarks/saves & follows
+  - Suggested: /api/user/bookmarks, /api/user/follows; store in user meta or app DB

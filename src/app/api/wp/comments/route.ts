@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 
 import type { NextRequest } from 'next/server'
 import { createHmac } from 'crypto'
+import { cookies } from 'next/headers'
+import { verifySession } from '@/lib/jwt'
 
 export async function GET(req: NextRequest) {
   const WP = process.env.WP_URL
@@ -47,6 +49,35 @@ export async function GET(req: NextRequest) {
   return new Response(text, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'X-Upstream-Url': out.toString() } })
 }
 
-export async function POST() {
-  return new Response(JSON.stringify({ message: 'Not implemented' }), { status: 501 })
+// Create a comment (requires authenticated user)
+export async function POST(req: NextRequest) {
+  const WP = process.env.WP_URL
+  if (!WP) return new Response('WP_URL env required', { status: 500 })
+
+  // Require authenticated session
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+  if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
+  let claims: any
+  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
+  const wpToken = (claims as any).wpToken
+  if (!wpToken) return new Response('Missing upstream token', { status: 401 })
+
+  // Parse and validate body
+  let body: any = {}
+  try { body = await req.json() } catch { body = {} }
+  const content = (body?.content ?? '').toString().trim()
+  const postId = Number(body?.postId)
+  const parent = body?.parent ? Number(body.parent) : undefined
+  if (!content || !postId) return new Response('content and postId are required', { status: 400 })
+
+  // Forward to WP REST API
+  const wpRes = await fetch(new URL('/wp-json/wp/v2/comments', WP), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
+    body: JSON.stringify({ content, post: postId, parent }),
+    cache: 'no-store',
+  } as RequestInit)
+  const text = await wpRes.text()
+  return new Response(text, { status: wpRes.status, headers: { 'Content-Type': wpRes.headers.get('Content-Type') || 'application/json' } })
 }

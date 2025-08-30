@@ -1,1 +1,6 @@
-export { GET, POST, runtime, dynamic } from '../../../../src/app/api/wp/comments/route'
+// Define Next.js route config locally so it's recognized (avoid re-exporting these)
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Re-export handlers from the shared implementation
+export { GET, POST } from '../../../../src/app/api/wp/comments/route'
