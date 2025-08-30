@@ -1,3 +1,37 @@
+export type WordPressUser = {
+  id: number
+  slug: string
+  name?: string
+  display_name?: string
+  description?: string
+  avatar_urls?: Record<string, string>
+  url?: string
+}
+
+function getSiteOrigin() {
+  if (typeof window !== 'undefined' && window.location) {
+    return window.location.origin
+  }
+  const site = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
+  return String(site).replace(/\/$/, '') || 'http://localhost:3000'
+}
+
+export async function getUsers(params?: Record<string, string | number | boolean>): Promise<WordPressUser[]> {
+  const origin = getSiteOrigin()
+  const url = new URL('/api/wp/users', origin)
+  if (params) {
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v))
+  }
+  const res = await fetch(url.toString(), { cache: 'no-store' })
+  if (!res.ok) return []
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data) ? data : []
+}
+
+export async function getUserBySlug(slug: string): Promise<WordPressUser | null> {
+  const list = await getUsers({ slug })
+  return list[0] || null
+}
 import { logWPError } from './log'
 
 // Centralized caching knobs

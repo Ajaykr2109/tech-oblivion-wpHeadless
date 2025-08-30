@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { getUsers } from "@/lib/wp";
 
 type AvatarUrls = Record<string, string>;
 type ProfileFields = Record<string, unknown> | null | undefined;
@@ -23,21 +24,20 @@ export default function AuthorsList() {
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+  async function load() {
       setLoading(true);
       setError(null);
       try {
-        const url = new URL("/api/wp/proxy", window.location.origin);
-        const params = new URLSearchParams();
-        params.set("path", "wp/v2/users");
-        // brackets are intentionally included; URLSearchParams will encode them
-        params.set("query[context]", "view");
-        url.search = params.toString();
-
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (!cancelled) setAuthors(Array.isArray(data) ? data : []);
+        const users = await getUsers({ context: "view" });
+        const mapped: Author[] = (users || []).map((u) => ({
+          id: u.id,
+          name: u.name || u.display_name || u.slug || String(u.id),
+          slug: u.slug || String(u.id),
+          description: u.description || "",
+          avatar_urls: u.avatar_urls || {},
+          profile_fields: undefined,
+        }));
+        if (!cancelled) setAuthors(mapped);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load authors");
       } finally {
