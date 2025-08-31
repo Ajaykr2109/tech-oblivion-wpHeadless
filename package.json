@@ -10,8 +10,10 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "check-env": "node ./scripts/validateEnv.js"
+  "test": "vitest",
+  "check-env": "node ./scripts/validateEnv.js",
+  "build:docs": "tsx ./scripts/generateRoleMatrix.ts",
+  "audit:rbac": "tsx ./scripts/auditRoles.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
@@ -94,6 +96,7 @@
     "patch-package": "^8.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
+  "tsx": "^4.19.2",
     "typescript": "^5",
     "vitest": "^1.6.1"
   }

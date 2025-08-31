@@ -252,9 +252,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                         <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
                     </div>
                     <div className="max-w-3xl mx-auto text-center">
-                       <h1 className="max-w-4xl mx-auto text-3xl md:text-5xl font-bold tracking-tight mb-6 break-words leading-tight text-center">
-                        {post.title}
-                       </h1>
+                        <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 break-words leading-snug">
+                            {post.title}
+                        </h1>
 
                         <div className="flex flex-wrap items-center justify-center gap-3 text-muted-foreground text-sm">
                             {/* Categories as badges */}

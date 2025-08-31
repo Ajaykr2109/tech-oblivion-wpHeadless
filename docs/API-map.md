@@ -1,5 +1,161 @@
 # Frontend API to WordPress REST Mapping
 
+# Frontend API → WordPress REST Mapping
+
+This document maps the **Next.js frontend API routes** to their corresponding **WordPress REST endpoints**.
+Role-based access markers show who can access each route.
+
+## 📑 Table of Contents
+
+* [Auth](#auth)
+* [Users](#users)
+* [Posts](#posts)
+* [Comments](#comments)
+* [Media](#media)
+* [Taxonomies](#taxonomies)
+* [Admin / Site Settings](#admin--site-settings)
+* [Plugins & Themes](#plugins--themes)
+* [Site Health](#site-health)
+* [SEO Tools](#seo-tools)
+* [Misc (MU)](#misc-mu)
+* [Site Utilities](#site-utilities)
+* [Conventions](#conventions)
+
+---
+
+## Auth
+
+* ✅ `POST /api/auth/login` → `POST {WP}/jwt-auth/v1/token`
+* ✅ `GET/POST /api/auth/logout` → clears FE session
+* 🔑 `GET /api/auth/me` → `GET {WP}/wp/v2/users/me?context=edit` (requires JWT/cookie)
+* ✅ `POST /api/auth/register` → `POST {WP}/fe-auth/v1/register` (if enabled)
+
+---
+
+## Users
+
+* 👑 `GET /api/wp/users` → `GET {WP}/wp/v2/users?{query}`
+* ✅ `GET /api/wp/users/[slug]` → `GET {WP}/fe-auth/v1/public-user/{slug}`
+* 🔑 `GET/POST/PUT /api/wp/users/me` → `{WP}/wp/v2/users/me`
+* 🔑 `GET /api/wp/users/avatar` → `GET {WP}/wp/v2/media/{id}`
+
+**Admin-only:**
+
+* 👑 `POST /api/wp/users` → `POST {WP}/wp/v2/users`
+* 👑 `PATCH /api/wp/users/[id]` → `PUT/PATCH {WP}/wp/v2/users/{id}`
+* 👑 `DELETE /api/wp/users/[id]` → `DELETE {WP}/wp/v2/users/{id}`
+
+---
+
+## Posts
+
+* ✅ `GET /api/wp/posts` → `GET {WP}/wp/v2/posts`
+* 🖊 `POST /api/wp/posts` → `POST {WP}/wp/v2/posts` (Contributor+, needs JWT)
+* 🖊 `PATCH /api/wp/posts/[id]` → `PATCH {WP}/wp/v2/posts/{id}` (Author/Editor+)
+* ✅ `GET /api/wp/related` → related posts
+* ✅ `GET /api/wp/search` → search
+
+**Admin-only:**
+
+* 👑 `DELETE /api/wp/posts/[id]`
+* 👑 `GET /api/wp/posts/[id]/revisions`
+
+---
+
+## Comments
+
+* ✅ `GET /api/wp/comments` → `GET {WP}/wp/v2/comments`
+* 🔑 `POST /api/wp/comments` → add comment (Subscriber+)
+
+**Moderation (Editor+/Admin):**
+
+* 🖊 `PATCH /api/wp/comments/[id] { status: approve|hold }`
+* 👑 `PATCH /api/wp/comments/[id] { status: spam }`
+* 👑 `DELETE /api/wp/comments/[id]`
+
+---
+
+## Media
+
+* ✅ `GET /api/wp/media/list` → `GET {WP}/wp/v2/media`
+* ✅ `GET /api/wp/media/[...slug]` → media fetch
+
+**Creators (Author+/Editor):**
+
+* 🖊 `POST /api/wp/media` → upload
+* 🖊 `PATCH /api/wp/media/[id]` → update alt/title
+* 👑 `DELETE /api/wp/media/[id]`
+
+---
+
+## Taxonomies
+
+* ✅ `GET /api/wp/categories`
+* ✅ `GET /api/wp/tags`
+
+**Admin-only:**
+
+* 👑 `POST /api/wp/categories`
+* 👑 `PATCH /api/wp/categories/[id]`
+* 👑 `DELETE /api/wp/categories/[id]`
+* (same pattern for tags)
+
+---
+
+## Admin / Site Settings
+
+* 👑 `GET /api/wp/settings` → `GET {WP}/wp/v2/settings`
+* 👑 `PATCH /api/wp/settings` → update site settings
+
+---
+
+## Plugins & Themes
+
+* 👑 `GET /api/wp/themes` → list themes
+* 👑 `GET /api/wp/plugins` → list plugins
+* 👑 `POST /api/wp/plugins/[id]` → activate/deactivate
+
+---
+
+## Site Health
+
+* 👑 `GET /api/wp/site-health/background-updates`
+* 👑 `GET /api/wp/site-health/directory-sizes`
+
+---
+
+## SEO Tools
+
+* 📈 `GET /yoast/v1/get_head` → SEO meta for URL
+* 📈 `GET /yoast/v1/semrush/related_keyphrases` (SEO Manager only)
+* 📈 `POST /yoast/v1/indexing/posts` (SEO Manager/Admin)
+* 📈 `GET /google-site-kit/v1/...` (SEO Manager/Admin)
+
+---
+
+## Misc (MU)
+
+* 🔑 `POST /api/wp/track-view` → log post view
+* 🔑 `GET /api/wp/bookmarks` → list user bookmarks
+* 🔑 `POST /api/wp/bookmarks` → toggle bookmark
+
+---
+
+## Site Utilities
+
+* ✅ `GET /robots.txt`
+* ✅ `GET /sitemap.xml`
+
+---
+
+## Conventions
+
+* Public endpoints: no auth
+* Authenticated: JWT or cookie session
+* Creator/editor/admin: must have WP capabilities (`edit_posts`, `publish_posts`, etc.)
+* SEO roles: scoped to Yoast/Site Kit APIs
+* Admin-only: requires `manage_options`
+
 Perfect — this is essentially your **API gateway spec** between Next.js and WordPress. Right now it’s **user-focused** (auth, posts, bookmarks, etc.). For an **admin-level view**, we need to bring in:
 
 * **User management** (all users, role management)
