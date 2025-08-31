@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 
 const sidebarNavLinks = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/analytics', label: 'Analytics', icon: LayoutDashboard },
   { href: '/admin/posts', label: 'Posts', icon: FileText },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/comments', label: 'Comments', icon: MessageSquare },

@@ -5,19 +5,14 @@
 @layer base {
   :root {
     /* Light Mode Palette */
-    /* Background: #F9FAFB */
     --background: 210 20% 98%;
-    /* Text Primary: #111827 */
     --foreground: 215 28% 17%;
-    /* Surface: #FFFFFF */
     --card: 0 0% 100%;
     --card-foreground: 215 28% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 215 28% 17%;
-    /* Buttons/Links base: indigo #3B82F6 */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    /* Secondary text */
     --secondary: 210 16% 96%;
     --secondary-foreground: 215 16% 46%;
     --muted: 210 16% 96%;
@@ -26,10 +21,8 @@
     --accent-foreground: 215 28% 17%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    /* Border / Divider: #E5E7EB */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    /* Ring uses primary */
     --ring: 217 91% 60%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
@@ -41,19 +34,14 @@
 
   .dark {
     /* Dark Mode Palette */
-    /* Background: #0F172A (slate 950) */
     --background: 222 47% 7%;
-    /* Text Primary: #F1F5F9 */
     --foreground: 210 40% 98%;
-    /* Surface: #1E293B */
     --card: 215 28% 17%;
     --card-foreground: 210 40% 98%;
     --popover: 215 28% 17%;
     --popover-foreground: 210 40% 98%;
-    /* Primary indigo */
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
-    /* Secondary text */
     --secondary: 217 19% 27%;
     --secondary-foreground: 214 20% 80%;
     --muted: 217 19% 27%;
@@ -62,7 +50,6 @@
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
-    /* Border / Divider: #334155 */
     --border: 215 28% 24%;
     --input: 215 28% 24%;
     --ring: 217 91% 60%;
@@ -73,6 +60,7 @@
     --chart-5: 340 75% 55%;
   }
 }
+
 /* Accent gradient utilities */
 .heading-accent {
   position: relative;
@@ -86,6 +74,8 @@
   border-radius: 9999px;
   background: linear-gradient(90deg, #6ee7f9, #3b82f6, #8b5cf6, #d946ef);
 }
+
+/* Buttons */
 .btn-gradient-hover {
   background-image: linear-gradient(90deg, #3b82f6, #8b5cf6);
   background-size: 200% 100%;
@@ -103,7 +93,6 @@
 
 @layer base {
   * {
-    /* Use variable directly to avoid @apply resolution issues */
     border-color: hsl(var(--border));
   }
   body {
@@ -126,12 +115,13 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Reader toolbar placement under sticky header (approx.) */
+/* Reader toolbar placement */
 :root {
   --header-height: 64px;
   --reader-toolbar-top: calc(var(--header-height) + 8px);
 }
 
+/* Sticky reader toolbar */
 .reader-toolbar-sticky {
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -141,34 +131,31 @@ html {
   pointer-events: none;
 }
 
-/* Ensure site content clears the sticky header */
+/* Reduce giant spacing under header */
 main#main-content {
-  padding-top: clamp(56px, 8vh, 88px);
-}
-
-/* Provide bottom safe area so floating buttons don't collide with footer */
-main#main-content {
+  padding-top: 64px; /* fixed instead of clamp */
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
 }
 
-/* Ensure post content wraps normally and occupies available width */
+/* Remove unnecessary max-width from profile/hero sections */
+.profile-header,
+.page-hero {
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* Article content comfortable width */
 .wp-content {
-  /* Prevent unintended multi-column or narrow measure effects */
   word-break: normal;
   overflow-wrap: anywhere;
   white-space: normal;
-  /* Keep comfortable line length */
   max-width: 90ch;
   margin-left: auto;
   margin-right: auto;
-}
-
-/* Reader font scaling (controlled by ReaderToolbar via --reader-scale) */
-.wp-content {
   font-size: calc(1rem * (var(--reader-scale, 100) / 100));
 }
 
-/* Extra polish for markdown-like content */
+/* Markdown polish */
 .wp-content pre {
   overflow-x: auto;
   padding: 1rem;
@@ -197,7 +184,7 @@ main#main-content {
   height: auto;
 }
 
-/* Smooth anchor positioning for TOC, account for sticky header */
+/* TOC anchors */
 .wp-content h1[id],
 .wp-content h2[id],
 .wp-content h3[id],
@@ -206,8 +193,6 @@ main#main-content {
 .wp-content h6[id] {
   scroll-margin-top: calc(var(--header-height) + 24px);
 }
-
-/* Active heading highlight inside article */
 .wp-content h2.heading-active,
 .wp-content h3.heading-active {
   text-decoration: underline;
@@ -215,9 +200,7 @@ main#main-content {
   text-underline-offset: 4px;
 }
 
-/* Ensure headings scale proportionally with reader zoom
-  Using em keeps sizes relative to .wp-content base font-size,
-  which itself is controlled by --reader-scale. */
+/* Headings scale with zoom */
 .wp-content h1 {
   font-size: 2em;
   line-height: 1.1;
@@ -243,7 +226,7 @@ main#main-content {
   line-height: 1.45;
 }
 
-/* Better focus styles for links/buttons */
+/* Focus styles */
 a:focus-visible,
 button:focus-visible {
   outline: none;
@@ -252,7 +235,7 @@ button:focus-visible {
   border-radius: 0.375rem;
 }
 
-/* TOC links: remove default blue focus outline and rely on underline/state styles */
+/* TOC links */
 .toc-link {
   outline: none !important;
 }
@@ -283,9 +266,7 @@ button:focus-visible {
   z-index: 1000;
 }
 
-/* Conditional visibility for 4th post in list layout.
-   - Default: show only first 3 posts inside .feed-conditional-4
-   - Add .show-4 on the container to reveal the 4th item intentionally. */
+/* Feed conditional show */
 .feed-conditional-4 .grid > :nth-child(n + 4) {
   display: none;
 }
@@ -293,7 +274,7 @@ button:focus-visible {
   display: block;
 }
 
-/* Pretty scrollbars for TOC (and any .toc-scroll area) */
+/* Scrollbars */
 .toc-scroll {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
