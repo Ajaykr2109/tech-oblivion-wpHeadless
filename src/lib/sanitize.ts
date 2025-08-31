@@ -1,4 +1,4 @@
-import sanitizeHtml from 'sanitize-html'
+import sanitizeHtml, { SanitizeOptions } from 'sanitize-html'
 
 import { decodeEntities } from './text'
 
@@ -7,7 +7,7 @@ const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','bloc
 // Do NOT include 'script' or 'style' in allowedTags
 export const allowedTags = baseAllowedTags.concat(['img','figure','figcaption','iframe'])
 
-export const allowedAttributes: any = {
+export const allowedAttributes: Record<string, string[] | true> = {
   a: ['href','name','target','rel'],
   img: ['src','alt','title','width','height','srcset','sizes','loading','decoding'],
   iframe: ['src','width','height','title','allow','allowfullscreen','frameborder'],
@@ -19,28 +19,49 @@ export const allowedAttributes: any = {
 export function sanitizeWP(html: string) {
   const WP = process.env.WP_URL ?? ''
 
-  const rewriteIfWP = (src?: string) => src
+  const rewriteIfWP = (src: string): string => src
 
-  return sanitizeHtml(html, {
+  // Define transforms separately to avoid narrow return-type inference on inline literals
+  const transforms: NonNullable<SanitizeOptions['transformTags']> = {
+    a(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
+      const out: Record<string, string> = {}
+      for (const [k, v] of Object.entries(attribs)) {
+        if (typeof v === 'string') out[k] = v
+      }
+      out.rel = 'noopener noreferrer'
+  return { tagName: 'a', attribs: out } as { tagName: string; attribs: Record<string, string> }
+    },
+    img(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
+      // Build a fresh string-only attribs object using typed entries
+      const out: Record<string, string> = {}
+      for (const [k, v] of Object.entries(attribs)) {
+        if (typeof v === 'string') out[k] = v
+      }
+      if (Object.prototype.hasOwnProperty.call(out, 'src')) {
+        // Only rewrite if src exists; never introduce undefined
+        out.src = rewriteIfWP(out.src)
+      }
+  return { tagName: 'img', attribs: out } as { tagName: string; attribs: Record<string, string> }
+    },
+    iframe(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
+      const out: Record<string, string> = {}
+      for (const [k, v] of Object.entries(attribs)) {
+        if (typeof v === 'string') out[k] = v
+      }
+  return { tagName: 'iframe', attribs: out } as { tagName: string; attribs: Record<string, string> }
+    },
+  }
+
+  const options: SanitizeOptions = {
     allowedTags,
     allowedAttributes,
-    allowedSchemes: ['http','https','mailto','tel'],
+    // Use by-tag schemes to satisfy our types shim and keep behavior explicit
     allowedSchemesAppliedToAttributes: ['href','src'],
     allowProtocolRelative: false,
     allowedSchemesByTag: { iframe: ['http','https'] },
-    transformTags: {
-      a: (tag: any, attribs: any) => ({
-        tagName: 'a',
-        attribs: { ...attribs, rel: 'noopener noreferrer' }
-      }),
-      img: (tag: any, attribs: any) => ({
-        tagName: 'img',
-        attribs: { ...attribs, src: rewriteIfWP(attribs.src) }
-      }),
-  iframe: (tag: any, attribs: any) => ({ tagName: 'iframe', attribs }),
-    },
+    transformTags: transforms,
   // Post-process style attributes embedded in CSS text (if any) to rewrite url(...) references
-  textFilter: (text: string) => {
+    textFilter: (text: string) => {
       if (!WP) return text
       return text.replace(/url\(([^)]+)\)/g, (m, g1) => {
         const raw = g1.trim().replace(/^['"]|['"]$/g, '')
@@ -55,7 +76,8 @@ export function sanitizeWP(html: string) {
         }
       })
     },
-  })
+  }
+  return sanitizeHtml(html, options)
 }
 
 export function renderUpdatesSummary(html: string, maxWords = 50) {

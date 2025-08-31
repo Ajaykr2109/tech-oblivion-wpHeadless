@@ -1,12 +1,18 @@
 import { createHmac } from 'crypto'
 
-import { NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
 
 import { verifySession } from '@/lib/jwt';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+type SessionClaims = {
+  roles?: string[]
+  wpToken?: string
+  wpUserId?: string | number
+}
 
 export async function GET(req: NextRequest) {
   const WP = process.env.WP_URL
@@ -52,10 +58,12 @@ export async function GET(req: NextRequest) {
       const cookieStore = await cookies()
       const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
       if (sessionCookie?.value) {
-        const claims: any = await verifySession(sessionCookie.value)
+        const claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims
         if (claims?.wpToken) authHeader = `Bearer ${claims.wpToken}`
       }
-    } catch {}
+    } catch {
+      // TODO: implement better logging for session parse errors
+    }
   }
   const res = await fetch(out, { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
   if (!res.ok) {
@@ -74,35 +82,44 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const roles: string[] = (claims.roles as any) || []
+  let claims: SessionClaims
+  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
   }
-  const wpToken = (claims as any).wpToken
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
   // Parse body; if tags are names, resolve to IDs
   const raw = await req.text()
-  let bodyJson: any
+  let bodyJson: unknown
   try { bodyJson = raw ? JSON.parse(raw) : {} } catch { bodyJson = {} }
-  if (Array.isArray(bodyJson?.tags) && bodyJson.tags.length && typeof bodyJson.tags[0] === 'string') {
+  if (
+    bodyJson &&
+    typeof bodyJson === 'object' &&
+    'tags' in (bodyJson as Record<string, unknown>) &&
+    Array.isArray((bodyJson as { tags: unknown[] }).tags) &&
+    (bodyJson as { tags: unknown[] }).tags.length > 0 &&
+    typeof (bodyJson as { tags: unknown[] }).tags[0] === 'string'
+  ) {
     try {
-      const names: string[] = bodyJson.tags
+      const names: string[] = (bodyJson as { tags: string[] }).tags
       const resolveRes = await fetch(new URL('/api/wp/tags/resolve', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names }), cache: 'no-store'
-      } as any)
+      })
       if (resolveRes.ok) {
         const j = await resolveRes.json()
-        bodyJson.tags = Array.isArray(j?.ids) ? j.ids : []
+  ;(bodyJson as { tags: unknown }).tags = Array.isArray(j?.ids) ? j.ids : []
       }
-    } catch {}
+    } catch {
+      // TODO: handle tag resolve errors gracefully
+    }
   }
   const res = await fetch(new URL('/wp-json/wp/v2/posts', WP), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
-    body: JSON.stringify(bodyJson),
+    body: JSON.stringify(bodyJson ?? {}),
   })
   const text = await res.text()
   return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
@@ -119,13 +136,13 @@ export async function PATCH(req: NextRequest) {
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const roles: string[] = (claims.roles as any) || []
+  let claims: SessionClaims
+  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
   }
-  const wpToken = (claims as any).wpToken
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
   // Optional: ownership check for authors by fetching the post first
@@ -133,31 +150,40 @@ export async function PATCH(req: NextRequest) {
     const postRes = await fetch(new URL(`/wp-json/wp/v2/posts/${id}`, WP), { headers: { Authorization: `Bearer ${wpToken}` } })
     if (postRes.ok) {
       const post = await postRes.json()
-      if (post?.author && String(post.author) !== String(claims.wpUserId)) {
+  if ((post as Record<string, unknown>)?.author && String((post as Record<string, unknown>).author) !== String(claims.wpUserId)) {
         return new Response('Forbidden', { status: 403 })
       }
     }
   }
 
   const raw = await req.text()
-  let bodyJson: any
+  let bodyJson: unknown
   try { bodyJson = raw ? JSON.parse(raw) : {} } catch { bodyJson = {} }
-  if (Array.isArray(bodyJson?.tags) && bodyJson.tags.length && typeof bodyJson.tags[0] === 'string') {
+  if (
+    bodyJson &&
+    typeof bodyJson === 'object' &&
+    'tags' in (bodyJson as Record<string, unknown>) &&
+    Array.isArray((bodyJson as { tags: unknown[] }).tags) &&
+    (bodyJson as { tags: unknown[] }).tags.length > 0 &&
+    typeof (bodyJson as { tags: unknown[] }).tags[0] === 'string'
+  ) {
     try {
-      const names: string[] = bodyJson.tags
+      const names: string[] = (bodyJson as { tags: string[] }).tags
       const resolveRes = await fetch(new URL('/api/wp/tags/resolve', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names }), cache: 'no-store'
-      } as any)
+      })
       if (resolveRes.ok) {
         const j = await resolveRes.json()
-        bodyJson.tags = Array.isArray(j?.ids) ? j.ids : []
+  ;(bodyJson as { tags: unknown }).tags = Array.isArray(j?.ids) ? j.ids : []
       }
-    } catch {}
+    } catch {
+      // TODO: handle tag resolve errors gracefully
+    }
   }
   const res = await fetch(new URL(`/wp-json/wp/v2/posts/${id}`, WP), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
-    body: JSON.stringify(bodyJson),
+    body: JSON.stringify(bodyJson ?? {}),
   })
   const text = await res.text()
   return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
@@ -174,13 +200,13 @@ export async function DELETE(req: NextRequest) {
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const roles: string[] = (claims.roles as any) || []
+  let claims: SessionClaims
+  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
   }
-  const wpToken = (claims as any).wpToken
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
   const controller = new AbortController()
@@ -193,8 +219,9 @@ export async function DELETE(req: NextRequest) {
     })
     const text = await res.text()
     return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
-  } catch (e: any) {
-    const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Upstream error')
+  } catch (e: unknown) {
+    const err = e as { name?: string; message?: string }
+    const msg = err?.name === 'AbortError' ? 'Upstream timeout' : (err?.message || 'Upstream error')
     return new Response(JSON.stringify({ error: msg }), { status: 504, headers: { 'Content-Type': 'application/json' } })
   } finally {
     clearTimeout(to)

@@ -29,16 +29,18 @@ export default function CommentsSection({ postId }: { postId: number }) {
   const [sort, setSort] = useState<'new' | 'old'>('new')
   const [query, setQuery] = useState('')
 
-  function mapWpToComment(wpc: any): Comment {
-    const name = (wpc?.author_name || wpc?.author?.name || 'Anonymous') as string
-    const avatars = wpc?.author_avatar_urls || {}
-    const avatar = avatars['48'] || avatars[48] || avatars['96'] || avatars[96] || avatars['24'] || avatars[24] || ''
-    const contentHtml = (wpc?.content?.rendered ?? wpc?.content ?? '') as string
+  function mapWpToComment(wpc: unknown): Comment {
+    const obj = (wpc && typeof wpc === 'object') ? (wpc as Record<string, unknown>) : {}
+    const name = (typeof obj.author_name === 'string' ? obj.author_name : (obj.author && typeof obj.author === 'object' && typeof (obj.author as Record<string, unknown>).name === 'string' ? (obj.author as Record<string, unknown>).name : 'Anonymous')) as string
+    const avatars = (obj.author_avatar_urls && typeof obj.author_avatar_urls === 'object' ? obj.author_avatar_urls as Record<string | number, unknown> : {})
+    const avatar = String(avatars['48'] || avatars[48] || avatars['96'] || avatars[96] || avatars['24'] || avatars[24] || '')
+    const contentField = (obj.content && typeof obj.content === 'object' ? (obj.content as Record<string, unknown>).rendered : obj.content)
+    const contentHtml = typeof contentField === 'string' ? contentField : ''
     const contentText = typeof contentHtml === 'string' ? contentHtml.replace(/<[^>]*>/g, '').trim() : ''
-    const createdAt = (wpc?.date || wpc?.date_gmt || new Date().toISOString()) as string
+    const createdAt = String(obj.date || obj.date_gmt || new Date().toISOString())
     return {
-      id: wpc?.id ?? wpc?.comment_ID ?? String(Math.random()),
-      author: { name, avatar, id: typeof wpc?.author === 'number' ? wpc.author : undefined },
+      id: (obj.id as string | number | undefined) ?? (obj.comment_ID as string | number | undefined) ?? String(Math.random()),
+      author: { name, avatar, id: typeof obj.author === 'number' ? (obj.author as number) : undefined },
       content: contentText,
       createdAt,
     }
@@ -64,9 +66,9 @@ export default function CommentsSection({ postId }: { postId: number }) {
               const url = `${site}/api/wp/users?include=${ids.join(',')}&per_page=${Math.min(ids.length, 100)}`
               const ur = await fetch(url, { cache: 'no-store' })
               if (ur.ok) {
-                const users = await ur.json().catch(() => []) as any[]
+        const users = await ur.json().catch(() => []) as Array<Record<string, unknown>>
                 const map = new Map<number, string>()
-                users.forEach(u => { if (u?.id && u?.slug) map.set(Number(u.id), String(u.slug)) })
+        users.forEach(u => { if (typeof u.id === 'number' && typeof u.slug === 'string') map.set(Number(u.id), String(u.slug)) })
                 setComments(mapped.map(c => ({
                   ...c,
                   author: { ...c.author, slug: c.author?.id ? map.get(c.author.id) : undefined }
@@ -74,7 +76,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
               } else {
                 setComments(mapped)
               }
-            } catch {
+      } catch {
               setComments(mapped)
             }
           } else {
@@ -83,7 +85,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
         } else if (!cancelled) {
           setComments([])
         }
-      } catch {
+    } catch {
         if (!cancelled) setComments([])
       } finally {
         if (!cancelled) setLoading(false)
@@ -126,8 +128,10 @@ export default function CommentsSection({ postId }: { postId: number }) {
             const rr = await fetch(`/api/wp/comments?post=${postId}`, { cache: 'no-store' })
             const data = await rr.json().catch(() => [])
             const arr = Array.isArray(data) ? data : []
-            setComments(arr.map((d: any) => mapWpToComment(d)))
-          } catch {}
+            setComments(arr.map((d: unknown) => mapWpToComment(d)))
+          } catch {
+            // TODO: implement fetch error handling
+          }
         }
       }
     } finally {
@@ -143,7 +147,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
         </div>
         <div className="flex items-center gap-2">
           <Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search comments" className="w-40 md:w-64" />
-          <Select value={sort} onValueChange={(v)=>setSort(v as any)}>
+          <Select value={sort} onValueChange={(v)=>setSort(v as 'new' | 'old')}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Sort" />
             </SelectTrigger>

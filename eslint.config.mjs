@@ -5,6 +5,7 @@ import reactPlugin from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import a11y from 'eslint-plugin-jsx-a11y'
 import importPlugin from 'eslint-plugin-import'
+import nextPlugin from '@next/eslint-plugin-next'
 
 export default [
   {
@@ -16,6 +17,12 @@ export default [
       '.turbo/**',
       'coverage/**',
       'public/**/*.min.*',
+      // Config and build scripts that shouldn't be linted by TS project service
+      'eslint.config.mjs',
+      'postcss.config.mjs',
+      'tailwind.config.js',
+      'tailwind.config.ts',
+      'scripts/validateEnv.js',
     ],
   },
   js.configs.recommended,
@@ -26,6 +33,7 @@ export default [
       'react-hooks': reactHooks,
       'jsx-a11y': a11y,
       import: importPlugin,
+      '@next/next': nextPlugin,
     },
     languageOptions: {
       ecmaVersion: 2023,
@@ -33,6 +41,8 @@ export default [
       parserOptions: {
         projectService: true,
         tsconfigRootDir: process.cwd(),
+        // Allow non-project files (like config .mjs) to be linted without TS project association
+        allowDefaultProject: true,
       },
     },
     settings: {
@@ -50,6 +60,8 @@ export default [
       'import/order': ['warn', { 'newlines-between': 'always', groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'] }],
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Ensure the rule used in code comments exists; we can tune later
+      '@next/next/no-img-element': 'warn',
     },
   },
 ]

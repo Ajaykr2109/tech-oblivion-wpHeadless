@@ -1,0 +1,2655 @@
+// ==== FILE: app\layout.tsx ====
+export { default, generateMetadata } from '../src/app/layout'
+
+// ==== FILE: app\loading.tsx ====
+import React from 'react'
+
+import { PostCardSkeleton } from '@/components/post-card-skeleton'
+
+export default function RootLoading() {
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <PostCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ==== FILE: app\not-found.tsx ====
+import Link from 'next/link'
+
+export default function NotFound() {
+  return (
+    <div className="container mx-auto px-4 py-24 text-center">
+      <h1 className="text-4xl font-bold mb-4">Page not found</h1>
+      <p className="text-muted-foreground mb-8">The page you’re looking for doesn’t exist.</p>
+      <Link href="/" className="bg-primary text-primary-foreground px-4 py-2 rounded">Back to Home</Link>
+    </div>
+  )
+}
+
+// ==== FILE: app\page.tsx ====
+export { default } from "../src/app/page";
+export * from "../src/app/page";
+
+// ==== FILE: app\about\page.tsx ====
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+export default function AboutPage() {
+  return (
+    <section className="container mx-auto px-4 py-12 max-w-2xl animate-fade-in">
+      <div className="flex flex-col items-center bg-card/60 rounded-xl shadow-lg p-8 mb-8">
+        <Avatar className="h-24 w-24 mb-4 ring-4 ring-primary/30">
+          <AvatarImage src="https://avatars.githubusercontent.com/u/10296482?v=4" alt="Ajay Chaturvedi" />
+          <AvatarFallback>AC</AvatarFallback>
+        </Avatar>
+        <h1 className="text-3xl font-bold mb-1 text-center">Ajay Chaturvedi</h1>
+        <p className="text-muted-foreground mb-4 text-center">Founder, TechOblivion</p>
+        <p className="mb-6 text-lg text-center">I’m Ajay, passionate about technology and problem-solving. Through <span className="font-semibold">TechOblivion</span>, I share my journey, projects, and ideas to inspire and build together.</p>
+        <div className="flex flex-wrap justify-center gap-3 mb-2">
+          <a href="https://techoblivion.in/" className="btn-link" target="_blank" rel="noopener noreferrer">🌐 Website</a>
+          <a href="https://github.com/Ajaykr2109" className="btn-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://www.facebook.com/ajaykrchaturvedi/" className="btn-link" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a href="https://x.com/ChaturvediKrAj" className="btn-link" target="_blank" rel="noopener noreferrer">X (Twitter)</a>
+          <a href="https://www.linkedin.com/in/ajaykrchaturvedi/" className="btn-link" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <a href="https://www.youtube.com/@tech.oblivion" className="btn-link" target="_blank" rel="noopener noreferrer">YouTube</a>
+        </div>
+      </div>
+      <div className="bg-muted/40 rounded-lg p-6 shadow-sm">
+        <h2 className="text-xl font-semibold mb-2">About TechOblivion</h2>
+        <p className="mb-2">TechOblivion is a platform dedicated to sharing knowledge, projects, and inspiration in technology. Whether you’re a developer, enthusiast, or just curious, you’ll find something to spark your interest.</p>
+        <ul className="list-disc list-inside text-muted-foreground mb-2">
+          <li>Project showcases & tutorials</li>
+          <li>Tech blogs & insights</li>
+          <li>Community-driven learning</li>
+        </ul>
+        <p className="text-sm text-muted-foreground">© 2025 Tech Oblivion. All Rights Reserved.</p>
+      </div>
+    </section>
+  );
+}
+
+// ==== FILE: app\account\layout.tsx ====
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { User as UserIcon, LayoutDashboard, Shield, Image as ImageIcon, Settings } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+
+const sidebarNavLinks = [
+  { href: '/account', label: 'Overview', icon: LayoutDashboard },
+  { href: '/account/profile', label: 'Profile', icon: UserIcon },
+  { href: '/account/avatar', label: 'Avatar', icon: ImageIcon },
+  { href: '/account/security', label: 'Security', icon: Shield },
+  { href: '/account/settings', label: 'Preferences', icon: Settings },
+]
+
+export default function AccountLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
+  return (
+    <div className="flex min-h-screen">
+      <aside className="w-64 flex-shrink-0 border-r bg-card/50 p-4">
+        <div className="flex h-full flex-col">
+          <div className="mb-8 flex items-center gap-2 px-2 font-bold">
+            <Link href="/" className="font-bold">
+              tech.oblivion
+            </Link>
+          </div>
+          <nav className="flex flex-col gap-2">
+            {sidebarNavLinks.map((link) => {
+              const isActive = pathname === link.href
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  )}
+                >
+                  <link.icon className="h-4 w-4" />
+                  <span>{link.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+      </aside>
+      <main className="flex-1 overflow-auto bg-background">{children}</main>
+    </div>
+  )
+}
+
+// ==== FILE: app\account\page.tsx ====
+import { redirect } from 'next/navigation'
+
+import { getSessionUser } from '@/lib/auth'
+
+import AccountCentral from '../../src/app/account/page'
+
+export default async function AccountPageWrapper() {
+const user = await getSessionUser()
+if (!user) redirect('/login?next=/account')
+return <AccountCentral />
+}
+
+// ==== FILE: app\account\avatar\page.tsx ====
+import { redirect } from 'next/navigation'
+
+import { getSessionUser } from '@/lib/auth'
+
+import AccountAvatarPage from '../../../src/app/account/avatar/page'
+
+export default async function AccountAvatarWrapper() {
+const user = await getSessionUser()
+if (!user) redirect('/login?next=/account/avatar')
+return <AccountAvatarPage />
+}
+
+// ==== FILE: app\account\profile\page.tsx ====
+import { redirect } from 'next/navigation'
+
+import { getSessionUser } from '@/lib/auth'
+
+import AccountProfilePage from '../../../src/app/account/profile/page'
+
+export default async function AccountProfileWrapper() {
+const user = await getSessionUser()
+if (!user) redirect('/login?next=/account/profile')
+return <AccountProfilePage />
+}
+
+// ==== FILE: app\account\security\page.tsx ====
+export default function SecurityPage() {
+  return <div className="p-6">Security settings coming soon.</div>
+}
+
+// ==== FILE: app\account\settings\page.tsx ====
+export default function PreferencesPage() {
+  return <div className="p-6">Preferences coming soon.</div>
+}
+
+// ==== FILE: app\admin\layout.tsx ====
+
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { LayoutDashboard, FileText, Users, MessageSquare, SettingsIcon, ImageIcon, Tags, FolderCog, PlugIcon, Palette, Activity, TestTubes } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+import { cn } from '@/lib/utils'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { useMe } from '@/hooks/useRoleGate'
+import { mapToApiRole } from '@/lib/rbac'
+import checkAccess from '@/lib/checkAccess'
+
+type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
+type Item = { href: string; label: string; icon: IconType; key: string }
+type Group = { label: string; items: Item[] }
+
+const RAW_GROUPS: Group[] = [
+  {
+    label: 'Overview',
+    items: [
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, key: 'dashboard' },
+      { href: '/admin/analytics', label: 'Analytics', icon: Activity, key: 'analytics' },
+    ],
+  },
+  {
+    label: 'Content',
+    items: [
+      { href: '/admin/posts', label: 'Posts', icon: FileText, key: 'posts' },
+      { href: '/admin/media', label: 'Media', icon: ImageIcon, key: 'media' },
+      { href: '/admin/categories', label: 'Categories', icon: FolderCog, key: 'categories' },
+      { href: '/admin/tags', label: 'Tags', icon: Tags, key: 'tags' },
+      { href: '/admin/comments', label: 'Comments', icon: MessageSquare, key: 'comments' },
+    ],
+  },
+  {
+    label: 'People',
+    items: [
+      { href: '/admin/users', label: 'Users', icon: Users, key: 'users' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { href: '/admin/settings', label: 'Settings', icon: SettingsIcon, key: 'settings' },
+      { href: '/admin/plugins', label: 'Plugins', icon: PlugIcon, key: 'plugins' },
+      { href: '/admin/themes', label: 'Themes', icon: Palette, key: 'themes' },
+      { href: '/admin/site-health', label: 'Site Health', icon: Activity, key: 'site-health' },
+      { href: '/admin/debug', label: 'Debug/Test', icon: TestTubes, key: 'debug' },
+    ],
+  },
+]
+
+// Associate keys with RBAC-capable endpoints for gating
+const KEY_TO_ENDPOINT: Record<string, { path: string; method: string; action: 'read' | 'write' | 'delete' | 'moderate' }[]> = {
+  analytics: [
+    { path: '/api/analytics/summary', method: 'GET', action: 'read' },
+  ],
+  posts: [
+    { path: '/api/wp/posts', method: 'POST', action: 'write' },
+  ],
+  media: [
+    { path: '/api/wp/media', method: 'POST', action: 'write' },
+  ],
+  categories: [
+    { path: '/api/wp/categories', method: 'POST', action: 'write' },
+  ],
+  tags: [
+    { path: '/api/wp/tags', method: 'POST', action: 'write' },
+  ],
+  comments: [
+    { path: '/api/wp/comments/[id]', method: 'PATCH', action: 'moderate' },
+  ],
+  users: [
+    { path: '/api/wp/users', method: 'GET', action: 'read' },
+  ],
+  settings: [
+    { path: '/api/wp/settings', method: 'GET', action: 'read' },
+  ],
+  plugins: [
+    { path: '/api/wp/plugins', method: 'GET', action: 'read' },
+  ],
+  themes: [
+    { path: '/api/wp/themes', method: 'GET', action: 'read' },
+  ],
+  'site-health': [
+    { path: '/api/wp/site-health/background-updates', method: 'GET', action: 'read' },
+  ],
+  debug: [
+    { path: '/api/_debug', method: 'GET', action: 'read' },
+    { path: '/api/test', method: 'GET', action: 'read' },
+  ],
+  dashboard: [
+    { path: '/api/admin', method: 'GET', action: 'read' },
+  ],
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const pathname = usePathname()
+  const { me } = useMe()
+  const apiRole = mapToApiRole(me?.roles)
+
+  // Build groups filtered by RBAC matrix; also dedupe by key
+  const filtered: Group[] = RAW_GROUPS.map((g) => {
+    const uniq = new Map<string, Item>()
+    for (const it of g.items) {
+      if (uniq.has(it.key)) continue
+      const endpoints = KEY_TO_ENDPOINT[it.key] || []
+      const allowed = endpoints.length === 0 || endpoints.some((e) => checkAccess(apiRole, e.path, e.method, e.action))
+      if (allowed) uniq.set(it.key, it)
+    }
+    return { label: g.label, items: Array.from(uniq.values()) }
+  }).filter((g) => g.items.length > 0)
+
+  return (
+    <div className="flex min-h-screen">
+      <aside className="w-64 flex-shrink-0 border-r bg-card/50 p-4">
+        <div className="flex h-full flex-col">
+          <div className="mb-8 flex items-center gap-2 px-2 font-bold">
+            <Link href="/" className="font-bold">
+              tech.oblivion
+            </Link>
+            <div className="ml-auto"><ThemeToggle /></div>
+          </div>
+          <nav className="flex flex-col gap-4">
+            {filtered.map((group) => (
+              <div key={group.label}>
+                <div className="px-3 pb-1 text-xs font-medium uppercase text-muted-foreground">{group.label}</div>
+                <div className="flex flex-col gap-1">
+                  <AnimatePresence initial={false}>
+                    {group.items.map((link) => {
+                      const isActive = pathname === link.href
+                      return (
+                        <motion.div
+                          key={link.href}
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <Link
+                            href={link.href}
+                            className={cn(
+                              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                              isActive
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                            )}
+                          >
+                            <link.icon className="h-4 w-4" />
+                            <span>{link.label}</span>
+                          </Link>
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ))}
+          </nav>
+        </div>
+      </aside>
+      <main className="flex-1 overflow-auto bg-background">
+        {children}
+      </main>
+    </div>
+  )
+}
+
+// ==== FILE: app\admin\page.tsx ====
+import { redirect } from 'next/navigation'
+
+export const runtime = 'nodejs'
+
+export default function AdminHomePage() {
+  redirect('/admin/dashboard')
+}
+
+// ==== FILE: app\admin\analytics\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() {
+  return <AdminDashboard sectionKey="analytics" />
+}
+
+// ==== FILE: app\admin\categories\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="categories" /> }
+
+// ==== FILE: app\admin\comments\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="comments" /> }
+
+// ==== FILE: app\admin\comments\pageClient.tsx ====
+"use client"
+
+import { useMemo, useState } from 'react'
+import { Reply, Trash2 } from 'lucide-react'
+
+import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
+import { TableCell } from '@/components/ui/table'
+import SelectableTable from '@/components/admin/SelectableTable'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+
+const dummyComments = [
+  { id: 1, author: "Alex Johnson", avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d", text: "This was an incredibly insightful article. The section on server components really cleared things up for me. Thanks!", post: "A Deep Dive into React Server Components", date: "2024-07-29" },
+  { id: 2, author: "Maria Garcia", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026703d", text: "I'm not sure I agree with point number 3. Have you considered the performance implications on larger-scale applications?", post: "The Future of AI in Web Development", date: "2024-07-28" },
+  { id: 3, author: "Sam Lee", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", text: "Great post! Do you have a GitHub repository with the code examples?", post: "Mastering Tailwind CSS for Modern UIs", date: "2024-07-28" },
+]
+
+export default function CommentsClient() {
+  const [selected, setSelected] = useState<number[]>([])
+  const header = useMemo(()=>[
+    'Author', 'Comment', 'Post', 'Date', 'Actions'
+  ], [])
+  const rows = useMemo(()=> dummyComments.map(c => ({
+    id: c.id,
+    cells: [
+      <div className="flex items-center gap-3" key="author">
+        <Avatar>
+          <AvatarImage src={c.avatar} alt={c.author} />
+          <AvatarFallback>{c.author.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <span className="font-medium">{c.author}</span>
+      </div>,
+      <span className="text-muted-foreground" key="text">{c.text}</span>,
+      <span key="post">{c.post}</span>,
+      <span key="date">{c.date}</span>,
+      <div className="flex justify-end gap-2" key="actions">
+        <Button variant="outline" size="sm"><Reply className="mr-2 h-4 w-4" /> Reply</Button>
+        <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>
+      </div>
+    ]
+  })), [])
+
+  const onAction = async (action: BulkAction) => {
+    if (selected.length === 0) return
+    const res = await fetch('/api/wp/comments/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selected, action })
+    })
+    if (!res.ok) throw new Error('Bulk action failed')
+  }
+
+  return (
+    <div>
+      <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
+      <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
+    </div>
+  )
+}
+
+// ==== FILE: app\admin\dashboard\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default async function Page() {
+  return <AdminDashboard sectionKey="dashboard" />
+}
+
+// ==== FILE: app\admin\debug\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="debug" /> }
+
+// ==== FILE: app\admin\media\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="media" /> }
+
+// ==== FILE: app\admin\plugins\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="plugins" /> }
+
+// ==== FILE: app\admin\posts\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="posts" /> }
+
+// ==== FILE: app\admin\posts\new\edit\page.tsx ====
+export default function NewPostEditPage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-semibold mb-2">New Post Editor</h1>
+      <p className="text-sm text-muted-foreground">Inline editor coming soon. Use Posts section tiles to create and autosave drafts.</p>
+    </div>
+  )
+}
+
+// ==== FILE: app\admin\posts[id]\edit\page.tsx ====
+import { notFound } from 'next/navigation'
+
+import PostEditorPageClient from '@/components/admin/PostEditorPageClient'
+
+export const runtime = 'nodejs'
+
+async function fetchPost(id: string) {
+  const res = await fetch(${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/wp/posts?id=${id}, { cache: 'no-store' })
+  if (!res.ok) return null
+  const p: unknown = await res.json()
+  return p
+}
+
+export default async function EditPostPage({ params }: { params: { id: string } }) {
+  const { id } = params
+  if (!id) notFound()
+  // Role gate via Roles Matrix API (single source of truth)
+  const rmRes = await fetch('/api/roles/matrix', { cache: 'no-store' })
+  if (!rmRes.ok) notFound()
+  const matrix: unknown = await rmRes.json()
+  if (!matrix || typeof matrix !== 'object' || !('can' in matrix) || typeof (matrix as {can: unknown}).can !== 'object' || !(matrix as {can: {posts?: unknown}}).can?.posts || typeof (matrix as {can: {posts: unknown}}).can.posts !== 'object' || !((matrix as {can: {posts: {edit?: unknown}}}).can.posts as {edit?:unknown})?.edit) {
+    notFound()
+  }
+  const post = await fetchPost(id)
+  if (!post || typeof post !== 'object') notFound()
+
+  const postObj = post as Record<string, unknown>
+  const titleObj = postObj.title as { rendered?: string } | string
+  const contentObj = postObj.content as { rendered?: string } | string
+  const excerptObj = postObj.excerpt as { rendered?: string } | string
+
+  const title = typeof titleObj === 'string' ? titleObj : titleObj?.rendered || ''
+  const content = typeof contentObj === 'string' ? contentObj : contentObj?.rendered || ''
+  const excerpt = typeof excerptObj === 'string' ? excerptObj : excerptObj?.rendered || ''
+  const status = typeof postObj.status === 'string' ? postObj.status : 'draft'
+
+  return (
+    <PostEditorPageClient postId={Number(id)} initial={{ title, content, excerpt, status }} />
+  )
+}
+
+// ==== FILE: app\admin\settings\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="settings" /> }
+
+// ==== FILE: app\admin\site-health\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="site-health" /> }
+
+// ==== FILE: app\admin\tags\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="tags" /> }
+
+// ==== FILE: app\admin\themes\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="themes" /> }
+
+// ==== FILE: app\admin\users\page.tsx ====
+import AdminDashboard from '@/components/admin/AdminDashboard'
+
+export const runtime = 'nodejs'
+
+export default function Page() { return <AdminDashboard sectionKey="users" /> }
+
+// ==== FILE: app\admin\users\pageClient.tsx ====
+"use client"
+
+import { useMemo, useState } from 'react'
+import { MoreHorizontal, Search, UserPlus } from 'lucide-react'
+
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
+import SelectableTable from '@/components/admin/SelectableTable'
+
+const dummyUsers = [
+  { id: 1, name: "Jane Doe", email: "jane.doe@example.com", role: "Administrator", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d" },
+  { id: 2, name: "John Smith", email: "john.smith@example.com", role: "Editor", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d" },
+  { id: 3, name: "Emily White", email: "emily.white@example.com", role: "Author", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d" },
+  { id: 4, name: "Chris Green", email: "chris.green@example.com", role: "Subscriber", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d" },
+];
+
+export default function UsersClient() {
+  const [selected, setSelected] = useState<number[]>([])
+  const header = useMemo(()=>['User','Role','Actions'],[])
+  const rows = useMemo(()=> dummyUsers.map(u => ({
+    id: u.id,
+    cells: [
+      <div className="flex items-center gap-3" key="user">
+        <Avatar>
+          <AvatarImage src={u.avatar} alt={u.name} />
+          <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="font-medium">{u.name}</p>
+          <p className="text-sm text-muted-foreground">{u.email}</p>
+        </div>
+      </div>,
+      <Badge variant="outline" key="role">{u.role}</Badge>,
+      <div key="actions" className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem>Edit User</DropdownMenuItem>
+            <DropdownMenuItem>View Profile</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500">Delete User</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ]
+  })), [])
+
+  const onAction = async (action: BulkAction) => {
+    if (action !== 'delete' || selected.length === 0) return
+    const res = await fetch('/api/wp/users/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selected })
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-8">
+        <Button><UserPlus className="mr-2 h-4 w-4" /> Add User</Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Users</CardTitle>
+          <div className="mt-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input placeholder="Search users by name or email..." className="pl-10" />
+            </div>
+            <Select>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
+                <SelectItem value="author">Author</SelectItem>
+                <SelectItem value="subscriber">Subscriber</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
+          <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ==== FILE: app\admin\users\UsersClient.tsx ====
+"use client"
+
+import { useMemo, useState } from 'react'
+import { MoreHorizontal, Search, UserPlus } from 'lucide-react'
+
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
+import SelectableTable from '@/components/admin/SelectableTable'
+
+const dummyUsers = [
+  { id: 1, name: "Jane Doe", email: "jane.doe@example.com", role: "Administrator", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d" },
+  { id: 2, name: "John Smith", email: "john.smith@example.com", role: "Editor", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d" },
+  { id: 3, name: "Emily White", email: "emily.white@example.com", role: "Author", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d" },
+  { id: 4, name: "Chris Green", email: "chris.green@example.com", role: "Subscriber", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d" },
+];
+
+export default function UsersClient() {
+  const [selected, setSelected] = useState<number[]>([])
+  const header = useMemo(()=>['User','Role','Actions'],[])
+  const rows = useMemo(()=> dummyUsers.map(u => ({
+    id: u.id,
+    cells: [
+      <div className="flex items-center gap-3" key="user">
+        <Avatar>
+          <AvatarImage src={u.avatar} alt={u.name} />
+          <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="font-medium">{u.name}</p>
+          <p className="text-sm text-muted-foreground">{u.email}</p>
+        </div>
+      </div>,
+      <Badge variant="outline" key="role">{u.role}</Badge>,
+      <div key="actions" className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem>Edit User</DropdownMenuItem>
+            <DropdownMenuItem>View Profile</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500">Delete User</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ]
+  })), [])
+
+  const onAction = async (action: BulkAction) => {
+    if (action !== 'delete' || selected.length === 0) return
+    const res = await fetch('/api/wp/users/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: selected })
+    })
+    if (!res.ok) throw new Error('Bulk delete failed')
+  }
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-8">
+        <Button><UserPlus className="mr-2 h-4 w-4" /> Add User</Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All Users</CardTitle>
+          <div className="mt-4 flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input placeholder="Search users by name or email..." className="pl-10" />
+            </div>
+            <Select>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
+                <SelectItem value="editor">Editor</SelectItem>
+                <SelectItem value="author">Author</SelectItem>
+                <SelectItem value="subscriber">Subscriber</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
+          <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ==== FILE: app\api\admin\route.ts ====
+import { NextResponse } from 'next/server'
+
+import { requireRole } from '../../../src/lib/auth'
+
+export async function GET() {
+  try {
+    await requireRole('administrator')
+    return NextResponse.json({ ok: true })
+  } catch (err: unknown) {
+    const message = (err instanceof Error) ? err.message : 'Forbidden'
+    const status = (err instanceof Error && 'status' in err) ? (err as {status: number}).status : 403
+    return NextResponse.json({ message: message || 'Forbidden' }, { status: status ?? 403 })
+  }
+}
+
+// ==== FILE: app\api\analytics\check\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  try {
+    const url = apiMap.analytics.check
+    if (!url) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+    return await fetchWithAuth(req, url)
+  } catch (err: unknown) {
+    if (err instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('analytics.check unexpected error:', err)
+    return new Response(JSON.stringify({ error: 'proxy_error', message: 'Failed to check analytics' }), { status: 502, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\analytics\countries\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const base = apiMap.analytics.countries
+  if (!base) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+  const inUrl = new URL(req.url)
+  const period = inUrl.searchParams.get('period') || 'month'
+  const u = new URL(base)
+  u.searchParams.set('period', period)
+  return fetchWithAuth(req, u.toString())
+}
+
+// ==== FILE: app\api\analytics\devices\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const base = apiMap.analytics.devices
+  if (!base) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+  const inUrl = new URL(req.url)
+  const period = inUrl.searchParams.get('period') || 'month'
+  const u = new URL(base)
+  u.searchParams.set('period', period)
+  return fetchWithAuth(req, u.toString())
+}
+
+// ==== FILE: app\api\analytics\export\route.ts ====
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+function toCSV(rows: unknown[], headers?: string[]) {
+  if (!Array.isArray(rows) || rows.length === 0) return ''
+  const firstRow = rows[0]
+  if (typeof firstRow !== 'object' || firstRow === null) return ''
+
+  const cols = headers || Object.keys(firstRow)
+  const esc = (v: unknown) => {
+    if (v == null) return ''
+    const s = String(v)
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
+    return s
+  }
+  const out = [cols.join(',')]
+  for (const r of rows) {
+    if (typeof r !== 'object' || r === null) continue
+    out.push(cols.map(c => esc((r as Record<string, unknown>)[c])).join(','))
+  }
+  return out.join('\n')
+}
+
+export async function GET(req: Request) {
+  const inUrl = new URL(req.url)
+  const type = inUrl.searchParams.get('type') || 'views'
+  const period = inUrl.searchParams.get('period') || 'month'
+  const postId = inUrl.searchParams.get('postId') || ''
+
+  let api = ''
+  if (type === 'views') {
+    api = /api/analytics/views?period=${encodeURIComponent(period)}${postId ? &postId=${encodeURIComponent(postId)} : ''}
+  } else if (type === 'top-posts') {
+    api = /api/analytics/top-posts?period=${encodeURIComponent(period)}
+  } else if (type === 'devices') {
+  api = /api/analytics/summary?period=${encodeURIComponent(period)}
+  } else if (type === 'countries') {
+  api = /api/analytics/summary?period=${encodeURIComponent(period)}
+  } else if (type === 'referers') {
+  api = /api/analytics/summary?period=${encodeURIComponent(period)}
+  } else {
+    return new Response('unknown type', { status: 400 })
+  }
+
+  const origin = inUrl.origin
+  const res = await fetch(new URL(api, origin), { headers: { cookie: req.headers.get('cookie') || '' } })
+  if (!res.ok) return new Response(await res.text(), { status: res.status })
+  const data: unknown = await res.json()
+  let csv = ''
+
+  if (typeof data !== 'object' || data === null) {
+    return new Response('Invalid data from upstream API', { status: 502 });
+  }
+
+  const dataObj = data as Record<string, unknown>
+
+  if (type === 'views') {
+    const series = 'series' in dataObj && Array.isArray(dataObj.series) ? dataObj.series : []
+    csv = toCSV(series, ['date','views'])
+  } else if (type === 'top-posts') {
+    csv = toCSV(Array.isArray(data) ? data : [], ['id','slug','title','views'])
+  } else if (type === 'devices') {
+    const devices = 'devices' in dataObj && Array.isArray(dataObj.devices) ? dataObj.devices : []
+    csv = toCSV(devices, ['device_type','count'])
+  } else if (type === 'countries') {
+    const countries = 'countries' in dataObj && Array.isArray(dataObj.countries) ? dataObj.countries : []
+    csv = toCSV(countries, ['country_code','count'])
+  } else if (type === 'referers') {
+    const referers = 'referers' in dataObj && Array.isArray(dataObj.referers) ? dataObj.referers : []
+    csv = toCSV(referers, ['source','count','category'])
+  }
+  return new Response(csv, { status: 200, headers: { 'Content-Type': 'text/csv', 'Content-Disposition': attachment; filename="${type}-${period}.csv" } })
+}
+
+// ==== FILE: app\api\analytics\referers\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const base = apiMap.analytics.referers
+  if (!base) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+  const inUrl = new URL(req.url)
+  const period = inUrl.searchParams.get('period') || 'month'
+  const u = new URL(base)
+  u.searchParams.set('period', period)
+  return fetchWithAuth(req, u.toString())
+}
+
+// ==== FILE: app\api\analytics\sessions\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const base = apiMap.analytics.sessions
+  if (!base) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+  const inUrl = new URL(req.url)
+  const period = inUrl.searchParams.get('period') || 'month'
+  const u = new URL(base)
+  u.searchParams.set('period', period)
+  return fetchWithAuth(req, u.toString())
+}
+
+// ==== FILE: app\api\analytics\sessions\summary\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-analytics/v1/sessions/summary)
+}
+
+// ==== FILE: app\api\analytics\sessions\timeseries\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-analytics/v1/sessions/timeseries)
+}
+
+// ==== FILE: app\api\analytics\stream\route.ts ====
+import { getWpTokenFromRequest } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return new Response('WP_URL not set', { status: 500 })
+  const token = await getWpTokenFromRequest(req)
+  if (!token) return new Response('Unauthorized', { status: 401 })
+  const upstream = await fetch(${WP}/wp-json/fe-analytics/v1/stream, {
+    headers: {
+      Authorization: Bearer ${token},
+      Cookie: Authorization=Bearer ${token},
+      Accept: 'text/event-stream',
+    },
+  })
+  if (!upstream.body) return new Response('No stream', { status: 502 })
+  return new Response(upstream.body, { headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' } })
+}
+
+// ==== FILE: app\api\analytics\summary\route.ts ====
+import { cookies } from 'next/headers'
+
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
+import { SessionClaims, verifySession } from '@/lib/jwt'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  try {
+    // Derive wpToken from session cookie (or fall back to request parsing in fetchWithAuth)
+    let wpToken: string | null = null
+    try {
+      const store = await cookies()
+      const sessionCookie = store.get(process.env.SESSION_COOKIE_NAME ?? 'session')?.value
+      if (sessionCookie) {
+        const claims = await verifySession(sessionCookie)
+        wpToken = claims?.wpToken || null
+      }
+    } catch (_e) {
+      // ignore cookie/verify errors; fetchWithAuth will throw if no token
+// TODO: implement
+    }
+    const inUrl = new URL(req.url)
+    const period = inUrl.searchParams.get('period') || 'month'
+    const refresh = inUrl.searchParams.get('refresh') || ''
+
+    const { analytics } = apiMap
+    const endpoints = {
+      views: analytics.views,
+      devices: analytics.devices,
+      countries: analytics.countries,
+      referers: analytics.referers,
+    }
+    if (!endpoints.views) {
+      return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    const buildUrl = (base: string) => {
+      const u = new URL(base)
+      u.searchParams.set('period', period)
+      if (refresh) u.searchParams.set('refresh', refresh)
+      return u.toString()
+    }
+
+    // Fetch concurrently; apply light ISR-style caching
+    const tokenOrReq = wpToken || req
+    const [viewsRes, devicesRes, countriesRes, referersRes] = await Promise.all([
+      fetchWithAuth(tokenOrReq, buildUrl(endpoints.views), { next: { revalidate: 60 } }),
+      endpoints.devices ? fetchWithAuth(tokenOrReq, buildUrl(endpoints.devices), { next: { revalidate: 60 } }) : Promise.resolve(new Response('{}', { status: 204 })),
+      endpoints.countries ? fetchWithAuth(tokenOrReq, buildUrl(endpoints.countries), { next: { revalidate: 60 } }) : Promise.resolve(new Response('{}', { status: 204 })),
+      endpoints.referers ? fetchWithAuth(tokenOrReq, buildUrl(endpoints.referers), { next: { revalidate: 60 } }) : Promise.resolve(new Response('{}', { status: 204 })),
+    ])
+
+    const parseJSON = async (r: Response) => {
+      if (!r || r.status === 204) return null
+      const t = await r.text()
+      try { return t ? JSON.parse(t) : null } catch { return { raw: t } }
+    }
+
+    const [views, devices, countries, referers] = await Promise.all([
+      parseJSON(viewsRes),
+      parseJSON(devicesRes),
+      parseJSON(countriesRes),
+      parseJSON(referersRes),
+    ])
+
+    const status = Math.max(viewsRes.status, devicesRes.status, countriesRes.status, referersRes.status)
+    const body = { summary: { views, devices, countries, referers } }
+    if (status === 401 || status === 403) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Not authorized to view analytics' }), { status, headers: { 'Content-Type': 'application/json' } })
+    }
+    return new Response(JSON.stringify(body), { status: status >= 400 ? 502 : 200, headers: { 'Content-Type': 'application/json' } })
+  } catch (err: unknown) {
+    if (err instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
+    }
+    const message = (err instanceof Error) ? err.message : 'Failed to fetch analytics summary'
+    console.error('analytics.summary unexpected error:', err)
+    return new Response(JSON.stringify({ error: 'proxy_error', message }), { status: 502, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\analytics\top-posts\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  try {
+    const base = apiMap.analytics.topPosts
+    if (!base) {
+      return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    }
+    const inUrl = new URL(req.url)
+    const period = inUrl.searchParams.get('period') || 'month'
+    const limit = inUrl.searchParams.get('limit') || '10'
+    const u = new URL(base)
+    u.searchParams.set('period', period)
+    u.searchParams.set('limit', limit)
+
+    // Light caching to reduce WP load
+    const resp = await fetchWithAuth(req, u.toString(), { next: { revalidate: 60 } })
+    return resp
+  } catch (err: unknown) {
+    const message = (err instanceof Error) ? err.message : 'Failed to fetch top posts'
+    return new Response(JSON.stringify({ error: 'proxy_error', message }), { status: 502, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\analytics\views\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  try {
+    const base = apiMap.analytics.views
+    if (!base) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+    const inUrl = new URL(req.url)
+    const period = inUrl.searchParams.get('period') || 'month'
+    const postId = inUrl.searchParams.get('postId')
+    const u = new URL(base)
+    u.searchParams.set('period', period)
+    if (postId) u.searchParams.set('post_id', postId)
+    return await fetchWithAuth(req, u.toString())
+  } catch (err: unknown) {
+    if (err instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('analytics.views unexpected error:', err)
+    return new Response(JSON.stringify({ error: 'proxy_error', message: 'Failed to fetch analytics views' }), { status: 502, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\auth\login\route.ts ====
+import { z } from 'zod'
+
+import { signSession } from '../../../../src/lib/jwt'
+import { logWPError } from '../../../../src/lib/log'
+import { validateCsrf, validateCsrfFromRequest } from '../../../../src/lib/csrf'
+
+const schema = z.object({ identifier: z.string().min(1), password: z.string().min(1) })
+
+type WpTokenResponse = {
+  token: string;
+  user_email: string;
+  user_nicename: string;
+  user_display_name: string;
+  user_id?: number;
+};
+
+type WpUserMeResponse = {
+  roles?: string[];
+}
+
+export async function POST(req: Request) {
+  // CSRF double-submit protection
+  const csrfHeader = req.headers.get('x-csrf-token') || undefined
+  // Validate via cookies() or directly from request headers; accept either for robustness
+  const ok = validateCsrf(csrfHeader) || validateCsrfFromRequest(req, csrfHeader)
+  if (!ok) {
+    console.warn('CSRF validation failed', {
+      hasHeader: Boolean(csrfHeader),
+      hasCookieHeader: Boolean(req.headers.get('cookie')),
+    })
+    return new Response(JSON.stringify({ error: 'Invalid CSRF' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+  }
+  const body = await req.json()
+  const { identifier, password } = schema.parse(body)
+  let data: unknown;
+  
+  try {
+    // Direct fetch to WordPress JWT endpoint
+    const wpUrl = process.env.WP_URL || 'http://example.com'
+    // Add a timeout to avoid hanging requests
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10000)
+    const response = await fetch(${wpUrl}/wp-json/jwt-auth/v1/token, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'tech-oblivion-fe/1.0',
+      },
+      body: JSON.stringify({ username: identifier, password }),
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeout))
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      logWPError('jwt-auth-failed', { 
+        status: response.status, 
+        statusText: response.statusText,
+        body: JSON.stringify(errorData)
+      })
+      
+      if (response.status === 403) {
+        return new Response(JSON.stringify({ 
+          error: 'Invalid credentials', 
+          message: 'Username or password is incorrect' 
+        }), { 
+          status: 401, 
+          headers: { 'Content-Type': 'application/json' } 
+        })
+      }
+      
+      return new Response(JSON.stringify({ 
+        error: 'WordPress authentication failed', 
+        details: errorData 
+      }), { 
+        status: response.status, 
+        headers: { 'Content-Type': 'application/json' } 
+      })
+    }
+
+    data = await response.json()
+    
+  } catch (err: unknown) {
+    const error = err as Error
+    console.error('WordPress connection error:', error)
+    logWPError('wordpress-connection-error', { 
+      statusText: error.message,
+      body: error.stack || ''
+    })
+    
+    return new Response(JSON.stringify({ 
+      error: 'Unable to reach WordPress backend', 
+      details: error.message 
+    }), { 
+      status: 502, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+  }
+
+  if (typeof data !== 'object' || data === null || !('token' in data)) {
+    return new Response(JSON.stringify({ error: 'Invalid response from WordPress' }), { status: 502, headers: { 'Content-Type': 'application/json' } });
+  }
+
+  // JWT auth endpoint returns token and user info
+  const { token, user_email, user_nicename, user_display_name, user_id } = data as WpTokenResponse;
+
+  // Try to enrich roles via WP /users/me (requires edit context)
+  let wpRoles: string[] | undefined = undefined
+  try {
+    const wpUrl = process.env.WP_URL || 'http://example.com'
+    const meResp = await fetch(${wpUrl}/wp-json/wp/v2/users/me?context=edit, {
+      headers: {
+        'Authorization': Bearer ${token},
+        'User-Agent': 'tech-oblivion-fe/1.0',
+      },
+      cache: 'no-store',
+    })
+    if (meResp.ok) {
+      const meJson = (await meResp.json()) as WpUserMeResponse;
+      if (meJson && Array.isArray(meJson.roles)) {
+        wpRoles = meJson.roles
+      }
+    }
+  } catch (_e) {
+    // ignore; fallback to default below
+// TODO: implement
+  }
+
+  // Create session with the user data from JWT response
+  // IMPORTANT: include the upstream WP JWT as wpToken so protected proxy routes can authenticate.
+  const sessionToken = await signSession({ 
+    sub: String(user_id || user_nicename), 
+    username: user_nicename, 
+    email: user_email, 
+  	roles: Array.isArray(wpRoles) && wpRoles.length ? wpRoles : ['subscriber'],
+    wpUserId: user_id,
+    displayName: user_display_name,
+    wpToken: token,
+  })
+
+  // Only set Secure on HTTPS; using it on HTTP drops the cookie and causes auth loops
+  const xfProto = req.headers.get('x-forwarded-proto')
+  const isHttps = (xfProto ? xfProto.split(',')[0].trim() : '') === 'https' || new URL(req.url).protocol === 'https:'
+  const cookie = ${process.env.SESSION_COOKIE_NAME || 'session'}=${sessionToken}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax; ${isHttps ? 'Secure; ' : ''}HttpOnly
+  
+  return new Response(JSON.stringify({ 
+    user: {
+      id: (data as WpTokenResponse).user_id || user_nicename,
+      username: user_nicename,
+      email: user_email,
+      displayName: user_display_name
+    },
+    token 
+  }), { status: 200, headers: { 'Set-Cookie': cookie, 'Content-Type': 'application/json' } })
+}
+
+// ==== FILE: app\api\auth\logout\route.ts ====
+export async function POST(req: Request) {
+  const xfProto = req.headers.get('x-forwarded-proto')
+  const isHttps = (xfProto ? xfProto.split(',')[0].trim() : '') === 'https' || new URL(req.url).protocol === 'https:'
+  const cookie = ${process.env.SESSION_COOKIE_NAME || 'session'}=; Path=/; Max-Age=0; SameSite=Lax; ${isHttps ? 'Secure; ' : ''}HttpOnly
+  return new Response(null, { status: 204, headers: { 'Set-Cookie': cookie } })
+}
+
+export async function GET(req: Request) {
+  const xfProto = req.headers.get('x-forwarded-proto')
+  const isHttps = (xfProto ? xfProto.split(',')[0].trim() : '') === 'https' || new URL(req.url).protocol === 'https:'
+  const cookie = ${process.env.SESSION_COOKIE_NAME || 'session'}=; Path=/; Max-Age=0; SameSite=Lax; ${isHttps ? 'Secure; ' : ''}HttpOnly
+  const url = new URL(req.url)
+  const redirect = url.searchParams.get('redirect') || '/'
+  return new Response(null, { status: 302, headers: { 'Set-Cookie': cookie, Location: redirect } })
+}
+
+// ==== FILE: app\api\auth\me\route.ts ====
+import { createHash } from 'crypto'
+
+import { SessionClaims, verifySession } from '../../../../src/lib/jwt'
+
+type UserProfile = {
+  id: string | number;
+  username: string;
+  email: string;
+  displayName: string;
+  roles: string[];
+  avatar_urls?: Record<string, string>;
+  url?: string;
+  description?: string;
+  nickname?: string;
+  locale?: string;
+  profile_fields?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+  website?: string;
+}
+
+export async function GET(req: Request) {
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(new RegExp(${process.env.SESSION_COOKIE_NAME || 'session'}=([^;]+)))
+  const token = match?.[1]
+  if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  try {
+    const claims = await verifySession(token)
+  	const user: UserProfile = {
+      id: claims.wpUserId ?? claims.sub,
+      username: claims.username,
+      email: claims.email,
+      displayName: claims.displayName ?? claims.username,
+      roles: Array.isArray(claims.roles) ? claims.roles : [],
+    }
+    // Enrich with live WP profile data (avatar, url, description, updated roles) when possible
+    const WP = process.env.WP_URL
+    const wpToken = claims.wpToken
+    if (WP && wpToken) {
+      try {
+        const url = new URL('/wp-json/wp/v2/users/me', WP)
+        url.searchParams.set('context', 'edit')
+  // Ask WP for profile_fields (plugin) along with core profile fields
+  url.searchParams.set('_fields', 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta')
+        const res = await fetch(url, { headers: { Authorization: Bearer ${wpToken} }, cache: 'no-store' })
+        if (res.ok) {
+          const wp: unknown = await res.json()
+          if (typeof wp === 'object' && wp !== null) {
+          	const wpUser = wp as Record<string, unknown>
+          	if (Array.isArray(wpUser.roles)) user.roles = wpUser.roles as string[]
+          	if (typeof wpUser.email === 'string') user.email = wpUser.email
+          	if (typeof wpUser.name === 'string') user.displayName = wpUser.name
+          	if (typeof wpUser.avatar_urls === 'object' && wpUser.avatar_urls !== null) user.avatar_urls = wpUser.avatar_urls as Record<string, string>
+          	if (typeof wpUser.url === 'string') user.url = wpUser.url
+          	if (typeof wpUser.description === 'string') user.description = wpUser.description
+          	if (typeof wpUser.nickname === 'string') user.nickname = wpUser.nickname
+          	if (typeof wpUser.locale === 'string') user.locale = wpUser.locale
+          	// Prefer profile_fields; keep meta for legacy UIs
+          	if (typeof wpUser.profile_fields === 'object' && wpUser.profile_fields !== null) user.profile_fields = wpUser.profile_fields as Record<string, unknown>
+          	if (typeof wpUser.meta === 'object' && wpUser.meta !== null) user.meta = wpUser.meta as Record<string, unknown>
+          }
+        }
+      } catch {
+        // ignore enrichment failures; return base user
+// TODO: implement
+      }
+    }
+    // Compute gravatar fallback if avatar not present but email exists
+    if (!user.avatar_urls && user.email) {
+      const md5 = createHash('md5').update(String(user.email).trim().toLowerCase()).digest('hex')
+      const g = (s: number): string => https://secure.gravatar.com/avatar/${md5}?s=${s}&d=identicon
+      user.avatar_urls = { '24': g(24), '48': g(48), '96': g(96), '128': g(128) }
+    }
+  // Do not synthesize socials anymore; FE derives from user.profile_fields (or meta fallback). Provide website fallback separately.
+  if (user.url) user.website = user.url
+    return new Response(JSON.stringify({ user }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  } catch {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+  }
+}
+
+// ==== FILE: app\api\auth\register\route.ts ====
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+
+import { wpFetch } from '../../../../src/lib/fetcher'
+import { logWPError } from '../../../../src/lib/log'
+import { CSRF_COOKIE } from '../../../../src/lib/csrf'
+
+const bodySchema = z.object({ email: z.string().email(), password: z.string().min(6), username: z.string().optional() })
+
+export async function POST(req: Request) {
+  const origin = req.headers.get('origin')
+  // same-origin only
+  if (origin && origin !== process.env.NEXT_PUBLIC_SITE_URL) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+
+  const headerCsrf = req.headers.get('x-csrf-token') || undefined
+  const cookie = req.headers.get('cookie') || ''
+  // simple double-submit check
+  if (!cookie.includes(${CSRF_COOKIE}=) || !headerCsrf) return NextResponse.json({ message: 'Invalid CSRF' }, { status: 403 })
+
+  const payload = await req.json().catch(() => null)
+  const parsed = bodySchema.safeParse(payload)
+  if (!parsed.success) return NextResponse.json({ message: 'Invalid input', details: parsed.error.format() }, { status: 400 })
+
+  try {
+    const res = await wpFetch('/wp-json/fe-auth/v1/register', { method: 'POST', body: parsed.data })
+    return NextResponse.json(res, { status: 201 })
+  } catch (err: unknown) {
+    const error = err as { status?: number, message?: string, details?: unknown }
+    // log WP errors for diagnostics
+    logWPError('register', { status: error.status, statusText: error.message, body: typeof error.details === 'string' ? String(error.details).slice(0, 2000) : JSON.stringify(error.details || '').slice(0, 2000) })
+    return NextResponse.json({ message: error.message ?? 'Error', details: error.details }, { status: error.status ?? 500 })
+  }
+}
+
+// ==== FILE: app\api\core\endpoints\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json([], { status: 200 })
+  // Generic discovery: list all WP REST routes; restrict to fe-* namespaces
+  const res = await fetchWithAuth(req, ${WP}/wp-json)
+  try {
+    const j: unknown = await res.json()
+    const out: { method: string; route: string }[] = []
+    if (j && typeof j === 'object' && 'routes' in j && typeof (j as {routes: unknown}).routes === 'object' && (j as {routes: object}).routes) {
+      for (const [route, meta] of Object.entries((j as {routes: object}).routes)) {
+if (typeof meta === 'object' && meta && 'methods' in meta && Array.isArray((meta as {methods: unknown}).methods)) {
+const methods: string[] = (meta as {methods: string[]}).methods || []
+        	methods.forEach(m => out.push({ method: m, route: /api${route}.replace(/^/+/, '/') }))
+}
+      }
+    }
+    return Response.json(out)
+  } catch {
+    return Response.json([], { status: 200 })
+  }
+}
+
+// ==== FILE: app\api\csrf\route.ts ====
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+
+import { CSRF_COOKIE, generateCsrfToken } from '../../../src/lib/csrf'
+
+export async function GET() {
+  const store = cookies()
+  const existing = store.get(CSRF_COOKIE)
+  if (existing?.value) {
+    return NextResponse.json({ token: existing.value }, { status: 200 })
+  }
+  const token = generateCsrfToken()
+  const res = NextResponse.json({ token }, { status: 200 })
+  res.headers.append('Set-Cookie', ${CSRF_COOKIE}=${token}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax)
+  return res
+}
+
+// ==== FILE: app\api\media-cache\route.ts ====
+import { NextRequest } from 'next/server'
+
+import { cacheImage } from '@/lib/mediaCache'
+
+export const runtime = 'nodejs'
+
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get('url')
+  if (!url) return Response.json({ error: 'missing url' }, { status: 400 })
+  try {
+    const local = await cacheImage(url)
+    return Response.json({ url: local })
+  } catch (e: unknown) {
+    const message = (e instanceof Error) ? e.message : String(e)
+    return Response.json({ error: message }, { status: 502 })
+  }
+}
+
+// ==== FILE: app\api\media-cache\image\route.ts ====
+import { NextRequest } from 'next/server'
+
+import { cacheImage } from '@/lib/mediaCache'
+
+export const runtime = 'nodejs'
+
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get('url')
+  if (!url) return new Response('missing url', { status: 400 })
+  try {
+    const local = await cacheImage(url)
+    return new Response(null, { status: 302, headers: { Location: local, 'Cache-Control': 'public, max-age=31536000, immutable' } })
+  } catch {
+    return new Response('bad upstream', { status: 502 })
+  }
+}
+
+// ==== FILE: app\api\metrics\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics)
+}
+
+export async function POST(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const body = await req.text()
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } })
+}
+
+// ==== FILE: app\api\metrics\layout\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/layout)
+}
+
+export async function POST(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const body = await req.text()
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/layout, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } })
+}
+
+export async function DELETE(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/layout, { method: 'DELETE' })
+}
+
+// ==== FILE: app\api\metrics\layout\default\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function POST(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const body = await req.text()
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/layout/default, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } })
+}
+
+// ==== FILE: app\api\metrics\variables\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(_req: Request) {
+  // Virtual vars can be enriched on FE; for now proxy a WP endpoint if present, else return a basic set
+  if (WP) {
+    try { return await fetchWithAuth(_req, ${WP}/wp-json/fe-metrics/v1/variables) } catch {
+      // TODO: implement metrics variable upstream fallback logging
+    }
+  }
+  return Response.json([
+    { name: 'views', endpoint: '/api/analytics/views' },
+    { name: 'sessions', endpoint: '/api/analytics/sessions' },
+    { name: 'comments', endpoint: '/api/wp/comments' },
+    { name: 'users', endpoint: '/api/wp/users' },
+  ])
+}
+
+// ==== FILE: app\api\metrics[id]\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics/${params.id})
+}
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const body = await req.text()
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics/${params.id}, { method: 'PUT', body, headers: { 'Content-Type': 'application/json' } })
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics/${params.id}, { method: 'DELETE' })
+}
+
+// ==== FILE: app\api\metrics[id]\eval\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-metrics/v1/metrics/${params.id}/eval)
+}
+
+// ==== FILE: app\api\revalidate\route.ts ====
+import { revalidateTag } from 'next/cache'
+
+export async function POST(req: Request) {
+  let body: unknown = {}
+  try { body = await req.json() } catch (_e: unknown) { /* ignore */ }
+  const url = new URL(req.url)
+  const b = (typeof body === 'object' && body) ? (body as Record<string, unknown>) : {}
+  const secret = url.searchParams.get('secret') || b?.secret
+  if (secret !== process.env.NEXT_REVALIDATE_SECRET) return new Response('Forbidden', { status: 403 })
+
+  const { slug, page, taxonomy, all } = b || {}
+  const revalidated: string[] = []
+
+  try {
+    // Prefer tag-based revalidation if available
+    if (typeof revalidateTag === 'function') {
+      if (all) {
+        // broad sweep
+        revalidateTag('wp:posts')
+        revalidated.push('/')
+        revalidated.push('/blogs')
+      }
+      // always refresh list on demand
+      revalidateTag('wp:posts')
+      revalidated.push('/')
+      if (typeof slug === 'string' && slug) {
+        revalidateTag(wp:post:${slug})
+        revalidated.push(/blogs/${slug})
+      }
+      if (typeof page === 'string' && page) {
+        revalidateTag(wp:page:${page})
+        revalidated.push(/pages/${page})
+      }
+      if (typeof taxonomy === 'string' && taxonomy) {
+        // optional future taxonomy tagging, kept for parity
+        revalidateTag(wp:tax:${taxonomy})
+      }
+      return new Response(JSON.stringify({ revalidated, now: Date.now() }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    // Fallback: return the list for an external revalidator to act on
+    revalidated.push('/')
+    revalidated.push('/blogs')
+    if (typeof slug === 'string' && slug) revalidated.push(/blogs/${slug})
+  return new Response(JSON.stringify({ revalidated, now: Date.now() }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  } catch (e: unknown) {
+    const msg = (e && typeof e === 'object' && 'message' in e) ? String((e as Error).message) : String(e)
+  return new Response(JSON.stringify({ message: msg || 'fail', error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\roles\matrix\route.ts ====
+import { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
+
+import { SessionClaims, verifySession } from '@/lib/jwt'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Minimal roles matrix focused on editing capabilities
+// This can be extended or wired to WP capabilities if needed
+export async function GET(_req: NextRequest) {
+  const cookieStore = cookies()
+  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+  let roles: string[] = []
+  if (sessionCookie?.value) {
+    try {
+      const claims = await verifySession(sessionCookie.value)
+      roles = claims?.roles || []
+    } catch {
+// TODO: implement
+}
+  }
+  const matrix = {
+    roles,
+    can: {
+      posts: {
+        create: roles.some(r => ['author','editor','administrator'].includes(r)),
+        edit: roles.some(r => ['author','editor','administrator'].includes(r)),
+        delete: roles.some(r => ['editor','administrator'].includes(r)),
+        publish: roles.some(r => ['editor','administrator'].includes(r)),
+        requestPublish: roles.some(r => ['author','editor','administrator'].includes(r)),
+      }
+    }
+  }
+  return Response.json(matrix, { headers: { 'Cache-Control': 'no-store' } })
+}
+
+// ==== FILE: app\api\test\route.ts ====
+export const runtime = 'nodejs'
+
+export async function GET() {
+  return Response.json({ status: 'ok' })
+}
+
+// ==== FILE: app\api\test-wp\route.ts ====
+export async function GET() {
+  try {
+    console.log('Testing WordPress connection...')
+    
+    // Test basic WordPress REST API
+    const wpUrl = process.env.WP_URL || 'http://example.com'
+    console.log('WordPress URL:', wpUrl)
+    
+    const testResponse = await fetch(${wpUrl}/wp-json/wp/v2/posts?per_page=1, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Next.js/15.3.3'
+      }
+    })
+    
+    console.log('Basic API Response:', testResponse.status, testResponse.statusText)
+    
+    if (!testResponse.ok) {
+      const errorText = await testResponse.text()
+      console.log('Basic API Error:', errorText)
+      return new Response(JSON.stringify({ 
+        error: 'WordPress basic API failed', 
+        status: testResponse.status,
+        statusText: testResponse.statusText,
+        details: errorText
+      }), { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      })
+    }
+    
+    const basicData = await testResponse.json()
+    console.log('Basic API Success, posts count:', Array.isArray(basicData) ? basicData.length : 'not array')
+    
+    // Test JWT endpoint availability
+    const jwtResponse = await fetch(${wpUrl}/wp-json/jwt-auth/v1/token, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Next.js/15.3.3'
+      },
+      body: JSON.stringify({ username: 'test', password: 'test' })
+    })
+    
+    console.log('JWT Response:', jwtResponse.status, jwtResponse.statusText)
+    const jwtData = await jwtResponse.json()
+    console.log('JWT Response Data:', jwtData)
+    
+    return new Response(JSON.stringify({ 
+      success: true,
+      wpUrl,
+      basicApiStatus: testResponse.status,
+      jwtApiStatus: jwtResponse.status,
+      jwtResponse: jwtData,
+      message: 'WordPress connection test completed'
+    }), { 
+      status: 200, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+    
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('WordPress connection test failed:', err)
+    return new Response(JSON.stringify({ 
+      error: 'Connection test failed', 
+      details: err.message,
+      stack: err.stack
+    }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+  }
+}
+
+// ==== FILE: app\api\wp\bookmarks\route.ts ====
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
+
+function getWpBase() {
+  const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
+  if (!WP) throw new Error('WP_URL env required')
+  return WP.replace(//$/, '')
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const postId = searchParams.get('postId') || searchParams.get('post_id')
+    const expand = searchParams.get('expand')
+    const base = getWpBase()
+    if (postId) {
+      const url = new URL('/wp-json/fe-auth/v1/bookmarks/check', base)
+      url.searchParams.set('post_id', String(postId))
+      return await fetchWithAuth(req, url.toString())
+    }
+    const url = new URL('/wp-json/fe-auth/v1/bookmarks', base)
+    if (expand) url.searchParams.set('expand', expand)
+    return await fetchWithAuth(req, url.toString())
+  } catch (e: unknown) {
+    if (e instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Login required to use bookmarks' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('bookmarks.GET unexpected error:', e)
+const message = (e instanceof Error) ? e.message : String(e)
+    return new Response(JSON.stringify({ error: 'server_error', detail: message }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    let body: unknown;
+    try { body = await req.json() } catch { body = null }
+const postIdNum = (body && typeof body === 'object') ? ((body as Record<string, unknown>).postId ?? (body as Record<string, unknown>).post_id) : 0
+    const postId = Number(postIdNum ?? 0)
+    if (!postId || !Number.isFinite(postId)) {
+      return new Response(JSON.stringify({ error: 'postId required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    }
+    const base = getWpBase()
+    const url = new URL('/wp-json/fe-auth/v1/bookmarks/toggle', base)
+    return await fetchWithAuth(req, url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: postId }),
+    })
+  } catch (e: unknown) {
+    if (e instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Login required to save bookmarks' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('bookmarks.POST unexpected error:', e)
+const message = (e instanceof Error) ? e.message : String(e)
+    return new Response(JSON.stringify({ error: 'server_error', detail: message }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// ==== FILE: app\api\wp\comments\route.ts ====
+// Define Next.js route config locally so it's recognized (avoid re-exporting these)
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Re-export handlers from the shared implementation
+export { GET, POST } from '../../../../src/app/api/wp/comments/route'
+
+// ==== FILE: app\api\wp\comments\bulk\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+import { apiMap } from '@/lib/wpAPIMap'
+import { requireAccess } from '@/lib/requireAccess'
+
+export const runtime = 'nodejs'
+
+export async function POST(req: Request) {
+  await requireAccess({ path: '/api/wp/comments/[id]', method: 'PATCH', action: 'moderate' })
+  // Proxy to MU endpoint defined in apiMap.comments.bulk
+  return fetchWithAuth(req, apiMap.comments.bulk, { method: 'POST', body: await req.text(), headers: { 'Content-Type': 'application/json' } })
+}
+
+// ==== FILE: app\api\wp\media\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function GET(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const url = new URL(${WP}/wp-json/fe-media/v1/media)
+  const inUrl = new URL(req.url)
+  inUrl.searchParams.forEach((v, k) => url.searchParams.set(k, v))
+  return fetchWithAuth(req, url.toString())
+}
+
+export async function POST(req: Request) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  // Pass through multipart form-data
+  const body = await req.arrayBuffer()
+  const headers: HeadersInit = { 'Content-Type': req.headers.get('content-type') || 'application/octet-stream' }
+  return fetchWithAuth(req, ${WP}/wp-json/fe-media/v1/media, { method: 'POST', body, headers })
+}
+
+// ==== FILE: app\api\wp\media\count\route.ts ====
+import { getWpTokenFromRequest } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const WP = process.env.WP_URL
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const inUrl = new URL(req.url)
+  const mediaType = inUrl.searchParams.get('media_type') || ''
+  const u = new URL('/wp-json/wp/v2/media', WP)
+  u.searchParams.set('per_page', '1')
+  if (mediaType) u.searchParams.set('media_type', mediaType)
+
+  const token = await getWpTokenFromRequest(req)
+  const headers: Record<string, string> = {
+    'User-Agent': 'techoblivion-fe/1.0',
+    'Accept': 'application/json',
+  }
+  if (token) headers.Authorization = Bearer ${token}
+
+  const res = await fetch(u.toString(), { cache: 'no-store', headers })
+  const total = res.headers.get('x-wp-total')
+  return Response.json({ count: total ? Number(total) : (res.ok ? 0 : null) }, { status: res.ok ? 200 : res.status })
+}
+
+// ==== FILE: app\api\wp\media[...slug]\route.ts ====
+import type { NextRequest } from 'next/server'
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(_req: NextRequest, { params }: { params: { slug?: string[]; path?: string[] } }) {
+  const segs = (params?.slug ?? params?.path ?? []) as string[]
+  if (!Array.isArray(segs) || segs.length === 0) {
+    return new Response('Bad path', { status: 400 })
+  }
+  const WP = (process.env.WP_URL || 'http://example.com').replace(//+$/, '')
+  let origin = ${WP}/${segs.join('/')}
+  if (segs[0] === 'absolute') {
+    const encoded = segs.slice(1).join('/')
+    try {
+      const full = decodeURIComponent(encoded)
+      const u = new URL(full)
+      if (u.protocol === 'http:' || u.protocol === 'https:') origin = full
+    } catch {
+// TODO: implement
+}
+  }
+
+  const headers: Record<string, string> = {
+    Accept: 'image/,/*;q=0.8',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    Referer: 'http://example.com/',
+  }
+  let upstream: Response
+  try {
+    upstream = await fetch(origin, { cache: 'no-store', headers })
+  } catch (_err: unknown) {
+    return placeholder('upstream-fetch-error')
+  }
+  if (!upstream.ok) {
+    return upstream.status === 404 ? new Response('Not found', { status: 404 }) : placeholder(upstream-status-${upstream.status})
+  }
+  const ct = upstream.headers.get('content-type')?.toLowerCase() ?? ''
+  const ab = await upstream.arrayBuffer()
+  if (!ct.startsWith('image/')) {
+    return placeholder('bad-content-type', { 'X-Upstream-Content-Type': ct || 'unknown' })
+  }
+  return new Response(ab, { headers: { 'Content-Type': ct || 'application/octet-stream', 'Cache-Control': 'public, max-age=31536000, immutable' } })
+}
+
+function placeholder(reason: string, extra?: Record<string, string>) {
+  const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBA6m+Vb8AAAAASUVORK5CYII='
+  const body = Buffer.from(b64, 'base64')
+  return new Response(body, { status: 200, headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300', 'X-Proxy-Status': reason, ...(extra || {}) } })
+}
+
+// ==== FILE: app\api\wp\media[id]\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+const WP = (process.env.WP_URL || '').replace(//$/, '')
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  return fetchWithAuth(req, ${WP}/wp-json/fe-media/v1/media/${params.id}, { method: 'DELETE' })
+}
+
+// ==== FILE: app\api\wp\popular\route.ts ====
+import { NextRequest, NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+type PopularItem = { id: number } | { post_id: number }
+type WpPost = {
+id: number;
+slug: string;
+title: { rendered: string } | string;
+excerpt: { rendered: string };
+_embedded?: {
+'wp:featuredmedia'?: { source_url: string }[];
+author?: { name: string }[];
+};
+featured_media_url?: string;
+jetpack_featured_media_url?: string;
+date: string;
+}
+
+export async function GET(_req: NextRequest) {
+  const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
+  if (!WP) return NextResponse.json({ error: 'WP_URL missing' }, { status: 500 })
+
+  const { searchParams } = new URL(_req.url)
+  const range = (searchParams.get('range') || 'month').toLowerCase() // day|week|month|all
+  const limit = Math.min(Math.max(Number(searchParams.get('limit') || 6), 1), 12)
+
+  // Try WordPress Popular Posts REST API first
+  const base = new URL('/wp-json/wordpress-popular-posts', WP.replace(//$/, ''))
+  const wppUrl = new URL('/v1/popular-posts', base)
+  wppUrl.searchParams.set('range', ['day','week','month','all'].includes(range) ? range : 'month')
+  wppUrl.searchParams.set('limit', String(limit))
+
+  let ids: number[] = []
+  try {
+    const wppRes = await fetch(wppUrl.toString(), { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
+    if (wppRes.ok) {
+      const items = (await wppRes.json()) as PopularItem[]
+      ids = (items || []).map((i) => Number('id' in i ? i.id : i.post_id)).filter((n) => Number.isFinite(n))
+    }
+  } catch {
+// TODO: implement
+}
+
+  // Fallback: empty or failed -> use latest posts as a reasonable default
+  let posts: WpPost[] = []
+  try {
+    if (ids.length) {
+      const detailsUrl = new URL('/wp-json/wp/v2/posts', WP)
+      detailsUrl.searchParams.set('include', ids.join(','))
+      detailsUrl.searchParams.set('_embed', '1')
+      detailsUrl.searchParams.set('per_page', String(limit))
+      const res = await fetch(detailsUrl.toString(), { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
+      if (res.ok) {
+        posts = await res.json()
+        // Keep the order of ids from WPP
+        const order = new Map(ids.map((id, idx) => [id, idx]))
+        posts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+      }
+    } else {
+      const latestUrl = new URL('/wp-json/wp/v2/posts', WP)
+      latestUrl.searchParams.set('_embed', '1')
+      latestUrl.searchParams.set('per_page', String(limit))
+      const res = await fetch(latestUrl.toString(), { headers: { Accept: 'application/json' }, next: { revalidate: 300 } })
+      if (res.ok) posts = await res.json()
+    }
+  } catch (e) {
+    return NextResponse.json({ error: 'Upstream error', detail: String(e) }, { status: 502 })
+  }
+
+  const simplified = posts.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: typeof p.title === 'string' ? p.title : p.title?.rendered || '',
+    excerpt: (p.excerpt?.rendered || '').replace(/<[^\>]+>/g, ''),
+    featuredImage: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || p.featured_media_url || p.jetpack_featured_media_url || '',
+    authorName: p._embedded?.author?.[0]?.name || '',
+    date: p.date || '',
+  }))
+  return NextResponse.json(simplified, { status: 200, headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=600' } })
+}
+
+// ==== FILE: app\api\wp\posts\route.ts ====
+// Define Next.js route config locally so it's recognized
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// Re-export handlers from the shared implementation
+export { GET, POST, PATCH } from '../../../../src/app/api/wp/posts/route'
+
+import { NextRequest } from 'next/server'
+
+export async function DELETE(req: NextRequest) {
+const upstream = process.env.WP_URL || process.env.WP_BASE
+if (!upstream) return new Response(JSON.stringify({ error: 'WP_URL/WP_BASE env required' }), { status: 500 })
+const url = new URL(req.url)
+const id = url.searchParams.get('id')
+if (!id) return new Response(JSON.stringify({ error: 'Missing id' }), { status: 400 })
+
+// Forward Authorization if present, else fallback
+const authHeader = req.headers.get('authorization') || (process.env.WP_AUTH_TOKEN ? `Bearer ${process.env.WP_AUTH_TOKEN}` : undefined)
+const controller = new AbortController()
+const to = setTimeout(() => controller.abort(), 10_000)
+try {
+	const res = await fetch(new URL(`/wp-json/wp/v2/posts/${id}`, upstream), {
+		method: 'DELETE',
+		headers: { ...(authHeader ? { Authorization: authHeader } : {}), 'Content-Type': 'application/json' },
+		signal: controller.signal,
+	})
+	const text = await res.text()
+	return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
+} catch (e: unknown) {
+	const err = e as Error
+	const msg = err?.name === 'AbortError' ? 'Upstream timeout' : (err?.message || 'Upstream error')
+	return new Response(JSON.stringify({ error: msg }), { status: 504 })
+} finally {
+	clearTimeout(to)
+}
+}
+
+// ==== FILE: app\api\wp\posts\count\route.ts ====
+import { getWpTokenFromRequest } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const WP = process.env.WP_URL
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const inUrl = new URL(req.url)
+  const status = inUrl.searchParams.get('status') || ''
+  const u = new URL('/wp-json/wp/v2/posts', WP)
+  u.searchParams.set('per_page', '1')
+  if (status) u.searchParams.set('status', status)
+
+  // Include auth when available; required for non-public statuses like draft/pending
+  const token = await getWpTokenFromRequest(req)
+  const headers: Record<string, string> = {
+    'User-Agent': 'techoblivion-fe/1.0',
+    'Accept': 'application/json',
+  }
+  if (token) headers.Authorization = Bearer ${token}
+  if (!token && status && status !== 'publish') {
+    return Response.json({ error: 'unauthorized', message: 'Login required for non-public post statuses' }, { status: 401 })
+  }
+
+  const res = await fetch(u.toString(), { cache: 'no-store', headers })
+  const total = res.headers.get('x-wp-total')
+  return Response.json({ count: total ? Number(total) : (res.ok ? 0 : null) }, { status: res.ok ? 200 : res.status })
+}
+
+// ==== FILE: app\api\wp\related\route.ts ====
+import { NextRequest, NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+
+type WpPostSimple = {
+id: number;
+slug: string;
+title?: {
+rendered?: string;
+};
+}
+
+export async function GET(req: NextRequest) {
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) return NextResponse.json({ error: 'WP_URL missing' }, { status: 500 })
+
+  const { searchParams } = new URL(req.url)
+  const categories = searchParams.get('categories') || ''
+  const tags = searchParams.get('tags') || ''
+  const exclude = searchParams.get('exclude') || ''
+  const per_page = searchParams.get('per_page') || '5'
+
+  const url = new URL('/wp-json/wp/v2/posts', WP)
+  url.searchParams.set('_embed', '1')
+  if (categories) url.searchParams.set('categories', categories)
+  if (tags) url.searchParams.set('tags', tags)
+  if (exclude) url.searchParams.set('exclude', exclude)
+  url.searchParams.set('per_page', per_page)
+
+  const res = await fetch(url.toString(), {
+    headers: { 'Accept': 'application/json', 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)' },
+    next: { revalidate: Number(process.env.WP_CACHE_TTL || 300) },
+  })
+  if (!res.ok) {
+    const body = await res.text()
+    return NextResponse.json({ error: 'Upstream error', status: res.status, message: body }, { status: 502 })
+  }
+  const data: unknown = await res.json()
+  const simplified = (Array.isArray(data) ? data as WpPostSimple[] : []).map(p => ({ id: p.id, slug: p.slug, title: { rendered: p.title?.rendered || '' } }))
+  return NextResponse.json(simplified, { status: 200 })
+}
+
+// ==== FILE: app\api\wp\search\route.ts ====
+import { NextRequest, NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: NextRequest) {
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) return NextResponse.json({ error: 'WP_URL missing' }, { status: 500 })
+  const { searchParams } = new URL(req.url)
+  const q = searchParams.get('q') || ''
+  if (!q) return NextResponse.json([], { status: 200 })
+
+  const url = new URL('/wp-json/wp/v2/posts', WP)
+  url.searchParams.set('_embed', '0')
+  url.searchParams.set('search', q)
+  url.searchParams.set('per_page', '10')
+  const res = await fetch(url.toString(), {
+    headers: { 'Accept': 'application/json', 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)' },
+    next: { revalidate: Number(process.env.WP_CACHE_TTL || 300) },
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    return NextResponse.json({ error: 'Upstream error', status: res.status, message: body }, { status: 502 })
+  }
+  const data = await res.json()
+  return NextResponse.json(data, { status: 200 })
+}
+
+// ==== FILE: app\api\wp\site-health\background-updates\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+
+export async function GET(req: Request) {
+  return fetchWithAuth(req, apiMap.siteHealth.backgroundUpdates)
+}
+
+// ==== FILE: app\api\wp\site-health\directory-sizes\route.ts ====
+import { apiMap } from '@/lib/wpAPIMap'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+
+export async function GET(req: Request) {
+  return fetchWithAuth(req, apiMap.siteHealth.directorySizes)
+}
+
+// ==== FILE: app\api\wp\track-view\route.ts ====
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+export async function POST(req: Request) {
+  const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
+  if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+  let body: unknown;
+  try { body = await req.json() } catch { body = null }
+const postIdNum = (body && typeof body === 'object') ? ((body as Record<string, unknown>).postId ?? (body as Record<string, unknown>).post_id) : 0;
+  const postId = Number(postIdNum ?? 0)
+  if (!postId || !Number.isFinite(postId)) {
+    return new Response(JSON.stringify({ error: 'postId required' }), { status: 400 })
+  }
+  const url = new URL('/wp-json/fe-auth/v1/track-view', WP.replace(//$/, ''))
+  try {
+    const incomingCookies = req.headers.get('cookie') || ''
+    const ua = req.headers.get('user-agent') || 'techoblivion-next-proxy'
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim()
+    const r = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        // Forward cookies to allow WP to detect logged-in users
+        ...(incomingCookies ? { cookie: incomingCookies } : {}),
+        'User-Agent': ua,
+        ...(ip ? { 'X-Forwarded-For': ip } : {}),
+      },
+      cache: 'no-store',
+      body: JSON.stringify({ post_id: postId })
+    })
+    const text = await r.text()
+    if (!r.ok) {
+      return new Response(text || JSON.stringify({ error: 'wp error' }), { status: r.status })
+    }
+    return new Response(text || '{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
+  } catch (e: unknown) {
+    return new Response(JSON.stringify({ error: 'upstream error', detail: String(e) }), { status: 502 })
+  }
+}
+
+// ==== FILE: app\api\wp\users\route.ts ====
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+import { createHmac } from 'crypto'
+
+type LiteUser = {
+  id: number
+  slug: string
+  name?: string
+  description?: string
+  avatar_urls?: Record<string, string>
+  social?: { twitter: string | null; linkedin: string | null; github: string | null }
+}
+
+function normalizeUrl(u?: string | null): string | null {
+  if (!u) return null
+  const s = String(u).trim()
+  if (!s) return null
+  if (/^https?:///i.test(s)) return s
+  return https://${s}
+}
+
+function deriveSocial(u: unknown): { twitter: string | null; linkedin: string | null; github: string | null } {
+  if (u && typeof u === 'object') {
+    const obj = u as Record<string, unknown>
+    const social = obj.social
+    if (social && typeof social === 'object') {
+      const s = social as Record<string, unknown>
+      return {
+        twitter: normalizeUrl(typeof s.twitter === 'string' ? s.twitter : null),
+        linkedin: normalizeUrl(typeof s.linkedin === 'string' ? s.linkedin : null),
+        github: normalizeUrl(typeof s.github === 'string' ? s.github : null),
+      }
+    }
+    const pf = typeof obj.profile_fields === 'object' && obj.profile_fields
+      ? (obj.profile_fields as Record<string, unknown>)
+      : null
+    const get = (k: string) => (pf && typeof pf[k] === 'string') ? (pf[k] as string) : undefined
+    const tw = (typeof obj.twitter_url === 'string' ? obj.twitter_url : undefined) || get('twitter_url') || get('twitter') || get('x')
+    const ln = (typeof obj.linkedin_url === 'string' ? obj.linkedin_url : undefined) || get('linkedin_url') || get('linkedin')
+    const gh = (typeof obj.github_url === 'string' ? obj.github_url : undefined) || get('github_url') || get('github')
+    return { twitter: normalizeUrl(tw || null), linkedin: normalizeUrl(ln || null), github: normalizeUrl(gh || null) }
+  }
+  return { twitter: null, linkedin: null, github: null }
+}
+
+function sanitize(u: unknown): LiteUser {
+  const obj = (u && typeof u === 'object') ? (u as Record<string, unknown>) : {}
+  const idRaw = obj.id
+  const slugRaw = (obj.slug ?? obj.user_nicename)
+  const nameRaw = (obj.name ?? obj.display_name)
+  const descRaw = obj.description
+  const avatarRaw = obj.avatar_urls
+  return {
+    id: Number(typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw ?? 0), 10) || 0),
+    slug: String(typeof slugRaw === 'string' ? slugRaw : ''),
+    name: typeof nameRaw === 'string' ? nameRaw : '',
+    description: typeof descRaw === 'string' ? descRaw : '',
+    avatar_urls: (avatarRaw && typeof avatarRaw === 'object') ? (avatarRaw as Record<string, string>) : {},
+    social: deriveSocial(u),
+  }
+}
+
+function chunk<T>(arr: T[], size = 100): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size))
+  return out
+}
+
+// Fallback utilities for general /api/wp/users queries (search, paging, etc.)
+type AnyObj = Record<string, unknown>
+function signProxy(method: string, path: string, body: string, secret: string) {
+  const ts = String(Math.floor(Date.now() / 1000))
+  const base = ${method.toUpperCase()}\n${path}\n${ts}\n${body || ''}
+  const sig = createHmac('sha256', secret).update(base).digest('base64')
+  return { ts, sign: sig }
+}
+function authHeader() {
+  const user = process.env.WP_API_USER
+  const appPass = process.env.WP_API_APP_PASSWORD
+  if (!user || !appPass) return undefined
+  const token = Buffer.from(${user}:${appPass}).toString('base64')
+  return Basic ${token}
+}
+function sanitizeUser(u: AnyObj) {
+  return {
+    id: u?.id,
+    slug: u?.slug,
+    name: u?.name ?? u?.display_name,
+    display_name: u?.display_name,
+    description: u?.description ?? '',
+    avatar_urls: u?.avatar_urls ?? {},
+    url: u?.url ?? '',
+    social: deriveSocial(u),
+  }
+}
+
+export async function GET(req: Request) {
+  const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
+  if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+
+  const url = new URL(req.url)
+  const includeParam = url.searchParams.get('include') || ''
+  const ids = includeParam
+    .split(',')
+    .map(s => parseInt(s, 10))
+    .filter(n => Number.isFinite(n) && n > 0)
+
+  // If include[] requested, serve minimal fast list
+  if (ids.length > 0) {
+    const base = WP.replace(//$/, '')
+    const perPage = 100
+    const idChunks = chunk(ids, perPage)
+
+  const results: unknown[] = []
+    await Promise.all(idChunks.map(async (group) => {
+      const u = new URL('/wp-json/wp/v2/users', base)
+      group.forEach(id => u.searchParams.append('include[]', String(id)))
+      u.searchParams.set('per_page', String(perPage))
+      u.searchParams.set('context', 'view')
+      u.searchParams.set('_fields', 'id,slug,name,description,avatar_urls,social')
+      const res = await fetch(u.toString(), { cache: 'no-store' })
+      if (res.ok) {
+        const arr = await res.json().then(x => Array.isArray(x) ? x : []).catch(() => [])
+        results.push(...arr)
+      }
+    }))
+
+  const map = new Map<number, unknown>((results as Array<Record<string, unknown>>).map((u) => [Number(u.id), u]))
+    const ordered = ids.map(id => map.get(id)).filter(Boolean)
+    const out = ordered.map(sanitize)
+    return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }
+
+  // Otherwise, preserve existing generic behavior (search, paging, etc.)
+  const base = WP.replace(//$/, '')
+  const urlIn = new URL(req.url)
+  const allowed = new Set([
+    'context', 'search', 'slug', 'page', 'per_page', 'include', 'exclude', 'orderby', 'order'
+  ])
+  const qEntries: [string, string][] = []
+  urlIn.searchParams.forEach((v, k) => {
+    if (allowed.has(k)) qEntries.push([k, v])
+  })
+  if (!qEntries.find(([k]) => k === 'context')) qEntries.push(['context', 'view'])
+
+  const secret = process.env.FE_PROXY_SECRET || ''
+  const path = 'wp/v2/users'
+  let upstreamTried: string | undefined
+  if (secret) {
+    try {
+      const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)
+      proxy.searchParams.set('path', path)
+      for (const [k, v] of qEntries) proxy.searchParams.set(query[${k}], v)
+      const { ts, sign } = signProxy('GET', path, '', secret)
+      const pres = await fetch(proxy.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
+      upstreamTried = proxy.toString()
+      if (pres.ok) {
+        const arr = await pres.json().catch(() => null)
+        const list = Array.isArray(arr) ? arr : []
+        return new Response(JSON.stringify(list.map(sanitizeUser)), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'X-Upstream-Url': upstreamTried }
+        })
+      }
+      if ([400, 401, 404].includes(pres.status)) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'X-Upstream-Url': upstreamTried }
+        })
+      }
+    } catch (_e) {
+      // fall through
+// TODO: implement
+    }
+  }
+
+  const direct = new URL('/wp-json/wp/v2/users', base)
+  for (const [k, v] of qEntries) direct.searchParams.set(k, v)
+  const headers: Record<string, string> = {}
+  const basic = authHeader()
+  if (basic) {
+    headers.Authorization = basic
+  }
+  const dres = await fetch(direct.toString(), { headers, cache: 'no-store' })
+  upstreamTried = direct.toString()
+  if (!dres.ok) {
+    if ([400, 401, 404].includes(dres.status)) {
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'X-Upstream-Url': upstreamTried }
+      })
+    }
+    return new Response(JSON.stringify({ error: Upstream ${dres.status} }), { status: 502, headers: { 'X-Upstream-Url': upstreamTried! } })
+  }
+  const data = await dres.json().catch(() => null)
+  const list = Array.isArray(data) ? data : []
+  return new Response(JSON.stringify(list.map(sanitizeUser)), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json', 'X-Upstream-Url': upstreamTried }
+  })
+}
+
+// ==== FILE: app\api\wp\users\avatar\route.ts ====
+import { cookies } from 'next/headers'
+
+import { SessionClaims, verifySession } from '@/lib/jwt'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: Request) {
+  const WP = process.env.WP_URL
+  if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
+
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+  if (!sessionCookie?.value) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+
+  let claims: SessionClaims
+  try { claims = await verifySession(sessionCookie.value) } catch { return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) }
+  const wpToken = claims?.wpToken
+  if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+
+  // Parse form-data
+  const form = await req.formData()
+  const file = form.get('file') as File | null
+  if (!file) return new Response(JSON.stringify({ error: 'Missing file' }), { status: 400 })
+
+  const arrayBuf = await file.arrayBuffer()
+  const filename = file.name || 'avatar.jpg'
+  const contentType = file.type || 'application/octet-stream'
+
+  // Upload to WP Media Library
+  const mediaUrl = new URL('/wp-json/wp/v2/media', WP)
+  const uploadRes = await fetch(mediaUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: Bearer ${wpToken},
+      'Content-Type': contentType,
+      'Content-Disposition': attachment; filename="${filename}",
+    },
+    body: arrayBuf,
+  })
+  if (!uploadRes.ok) {
+    const text = await uploadRes.text().catch(() => '')
+    return new Response(JSON.stringify({ error: 'Upload failed', detail: text.slice(0, 1000) }), { status: uploadRes.status })
+  }
+  const media: unknown = await uploadRes.json()
+  const mediaId = (media && typeof media === 'object' && 'id' in media) ? (media as {id: unknown}).id : null;
+  const mediaUrlOut = (media && typeof media === 'object' && 'source_url' in media) ? (media as {source_url: unknown}).source_url : null;
+
+  // Best-effort: try to set a local avatar via common plugin meta
+  let avatarSet = false
+  try {
+    const userPatchUrl = new URL('/wp-json/wp/v2/users/me', WP)
+    const patchRes = await fetch(userPatchUrl, {
+      method: 'POST', // WP REST Users supports POST for update
+      headers: {
+        Authorization: Bearer ${wpToken},
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        meta: {
+          // Simple Local Avatars plugin support (if registered in REST):
+          simple_local_avatar: { media_id: mediaId },
+          // WP User Avatar (deprecated) possible key:
+          wp_user_avatar: mediaId,
+        },
+      }),
+    })
+    avatarSet = patchRes.ok
+  } catch {
+    // ignore and fall back to returning the uploaded image
+// TODO: implement
+  }
+
+  return new Response(
+    JSON.stringify({ id: mediaId, url: mediaUrlOut, setInProfile: avatarSet }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  )
+}
+
+// ==== FILE: app\api\wp\users\bulk-delete\route.ts ====
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+import { apiMap } from '@/lib/wpAPIMap'
+import { requireAccess } from '@/lib/requireAccess'
+
+export const runtime = 'nodejs'
+
+export async function POST(req: Request) {
+  await requireAccess({ path: '/api/wp/users/[id]', method: 'DELETE', action: 'delete' })
+  // Expect body: { ids: number[] }
+  const body = await req.text()
+  // No WP bulk endpoint by default; this is placeholder returning 501 unless MU endpoint exists.
+  const target = apiMap.users?.bulkDelete
+  if (!target) return new Response(JSON.stringify({ error: 'Not implemented' }), { status: 501 })
+  return fetchWithAuth(req, target, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } })
+}
+
+// ==== FILE: app\api\wp\users\count\route.ts ====
+import { getWpTokenFromRequest } from '@/lib/fetchWithAuth'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const WP = process.env.WP_URL
+  if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
+  const token = await getWpTokenFromRequest(req)
+  if (!token) return Response.json({ error: 'unauthorized', message: 'Login required' }, { status: 401 })
+
+  const u = new URL('/wp-json/wp/v2/users', WP)
+  u.searchParams.set('per_page', '1')
+  u.searchParams.set('context', 'edit')
+  u.searchParams.set('_fields', 'id')
+  const res = await fetch(u.toString(), { cache: 'no-store', headers: { Authorization: Bearer ${token}, Accept: 'application/json' } })
+  const total = res.headers.get('x-wp-total')
+  return Response.json({ count: total ? Number(total) : (res.ok ? 0 : null) }, { status: res.ok ? 200 : res.status })
+}
+
+// ==== FILE: app\api\wp\users\me\route.ts ====
+import { SessionClaims, verifySession } from '@/lib/jwt'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: Request) {
+  const WP = process.env.WP_URL
+  if (!WP) return new Response(JSON.stringify({ error: 'config', message: 'WP_URL env required' }), { status: 500 })
+
+  // Extract session token from cookie header (align with /api/auth/me)
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(new RegExp(${process.env.SESSION_COOKIE_NAME || 'session'}=([^;]+)))
+  const token = match?.[1]
+  if (!token) return new Response(JSON.stringify({ error: 'unauthorized', message: 'Missing session cookie' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+
+  let claims: SessionClaims
+  try { claims = await verifySession(token) } catch {
+    return new Response(JSON.stringify({ error: 'unauthorized', message: 'Invalid session token' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+  }
+  const wpToken = claims?.wpToken
+  if (!wpToken) return new Response(JSON.stringify({ error: 'unauthorized', message: 'Missing wpToken in session' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+
+  // Include profile_fields exposed by FE Auth Bridge plugin (and meta for backward compat)
+  const fields = 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta'
+  // Try MU plugin proxy first
+  const proxyUrl = new URL('/wp-json/fe-auth/v1/proxy', WP)
+  proxyUrl.searchParams.set('path', 'wp/v2/users/me')
+  proxyUrl.searchParams.set('context', 'edit')
+  proxyUrl.searchParams.set('_fields', fields)
+  let res = await fetch(proxyUrl, {
+    headers: {
+      Authorization: Bearer ${wpToken},
+      // Some proxies read cookies; pass token also as cookie for compatibility
+      Cookie: Authorization=Bearer ${wpToken},
+    },
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    // Fallback to direct WP REST
+    const url = new URL('/wp-json/wp/v2/users/me', WP)
+    url.searchParams.set('context', 'edit')
+    url.searchParams.set('_fields', fields)
+    res = await fetch(url, { headers: { Authorization: Bearer ${wpToken} }, cache: 'no-store' })
+  }
+  const text = await res

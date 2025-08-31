@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
@@ -7,64 +7,81 @@ import { Button } from '@/components/ui/button'
 import type { Widget } from './WidgetRegistry'
 import CrewMan from './CrewMan'
 
-function NumberTile({ endpoint, pick }: { endpoint: string; pick: (j: any) => number | string | undefined }) {
+function NumberTile({ endpoint, pick }: { endpoint: string; pick: (j: unknown) => number | string | undefined }) {
   const [val, setVal] = useState<number | string | undefined>('—')
   useEffect(() => {
     let alive = true
     ;(async () => {
-      try { const r = await fetch(endpoint, { cache: 'no-store' }); const j = r.ok ? await r.json() : null; if (alive) setVal(pick(j)) } catch {}
+      try {
+        const r = await fetch(endpoint, { cache: 'no-store' })
+        const j = r.ok ? await r.json() : null
+        if (alive) setVal(pick(j))
+      } catch {
+        // TODO: implement fetch error handling
+      }
     })()
     return () => { alive = false }
   }, [endpoint, pick])
   return <div className="text-2xl font-semibold">{val ?? '—'}</div>
 }
 
-export default function TileRenderer({ widget }: { widget: Widget }) {
-  const { type } = widget
-  // Role gating is assumed to be enforced server-side on API routes; client UI can be extended later
-  if (type === 'api_tester') return <CrewMan />
+function ChartTile({ endpoint }: { endpoint: string }) {
+  const [data, setData] = useState<unknown[]>([])
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const r = await fetch(endpoint, { cache: 'no-store' })
+        const j: unknown = r.ok ? await r.json() : []
+        const series = Array.isArray(j) ? j : (typeof j === 'object' && j && Array.isArray((j as Record<string, unknown>).series) ? (j as Record<string, unknown>).series as unknown[] : [])
+        if (mounted) setData(series)
+      } catch {
+        // TODO: implement fetch error handling
+      }
+    })()
+    return () => { mounted = false }
+  }, [endpoint])
+  return <pre className="text-xs overflow-auto h-full">{JSON.stringify(data.slice(-10), null, 2)}</pre>
+}
 
-  if (type === 'tile') {
-    if (widget.id === 'sessions_count') {
-      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.count} />
-    }
-    if (widget.id === 'avg_duration') {
-      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.avg_duration ? Math.round(j.avg_duration) + 's' : '—'} />
-    }
-    if (widget.id.endsWith('_count') || widget.endpoint?.includes('/count')) {
-      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.count ?? j?.length ?? '—'} />
-    }
-    return <div className="text-xs text-muted-foreground">Tile: {widget.title}</div>
-  }
-
-  if (type === 'chart') {
-    const [data, setData] = useState<any[]>([])
-    useEffect(() => { (async () => { try { const r = await fetch(widget.endpoint!, { cache: 'no-store' }); const j = r.ok ? await r.json() : []; setData(Array.isArray(j) ? j : (j?.series || [])) } catch {} })() }, [widget.endpoint])
-    return <pre className="text-xs overflow-auto h-full">{JSON.stringify(data.slice(-10), null, 2)}</pre>
-  }
-
-  if (type === 'table') {
-    const [rows, setRows] = useState<any[]>([])
-    useEffect(() => { (async () => { try { const r = await fetch(widget.endpoint!, { cache: 'no-store' }); const j = r.ok ? await r.json() : []; setRows(Array.isArray(j) ? j : (j?.items || [])) } catch {} })() }, [widget.endpoint])
-    return (
-      <div className="text-sm space-y-1">
-        {rows.slice(0, 8).map((row: any) => (
-          <div key={row.id || row.slug} className="flex items-center justify-between gap-2">
-            <div className="truncate">{row.title?.rendered || row.title || row.name || row.slug || row.id}</div>
-            {widget.href ? <Button asChild size="sm" variant="secondary"><Link href={`${widget.href}/${row.id}`}>Open</Link></Button> : null}
+type BasicRow = { id?: string | number; slug?: string; title?: string | { rendered?: string }; name?: string }
+function TableTile({ endpoint, href }: { endpoint: string; href?: string }) {
+  const [rows, setRows] = useState<BasicRow[]>([])
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const r = await fetch(endpoint, { cache: 'no-store' })
+        const j: unknown = r.ok ? await r.json() : []
+        const items: BasicRow[] = Array.isArray(j)
+          ? j as BasicRow[]
+          : (typeof j === 'object' && j && Array.isArray((j as Record<string, unknown>).items)
+              ? ((j as Record<string, unknown>).items as BasicRow[])
+              : [])
+        if (mounted) setRows(items)
+      } catch {
+        // TODO: implement fetch error handling
+      }
+    })()
+    return () => { mounted = false }
+  }, [endpoint])
+  return (
+    <div className="text-sm space-y-1">
+      {rows.slice(0, 8).map((row) => {
+        const key = row.id ?? row.slug ?? Math.random().toString(36)
+        const title = typeof row.title === 'object' ? (row.title?.rendered ?? '') : (row.title ?? row.name ?? row.slug ?? row.id)
+        return (
+          <div key={String(key)} className="flex items-center justify-between gap-2">
+            <div className="truncate">{title as React.ReactNode}</div>
+            {href && row.id ? (
+              <Button asChild size="sm" variant="secondary"><Link href={`${href}/${row.id}`}>Open</Link></Button>
+            ) : null}
           </div>
-        ))}
-        {!rows.length ? <div className="text-xs text-muted-foreground">No rows.</div> : null}
-      </div>
-    )
-  }
-
-  if (type === 'editor') {
-    // Minimal post editor for drafts + publish/pending flow
-    return <MiniPostEditor endpoint={widget.endpoint!} />
-  }
-
-  return <div className="text-xs text-muted-foreground">Unsupported widget.</div>
+        )
+      })}
+      {!rows.length ? <div className="text-xs text-muted-foreground">No rows.</div> : null}
+    </div>
+  )
 }
 
 function MiniPostEditor({ endpoint }: { endpoint: string }) {
@@ -117,4 +134,41 @@ function MiniPostEditor({ endpoint }: { endpoint: string }) {
       </div>
     </div>
   )
+}
+
+export default function TileRenderer({ widget }: { widget: Widget }) {
+  const { type } = widget
+  if (type === 'api_tester') return <CrewMan />
+  if (type === 'tile') {
+    if (widget.id === 'sessions_count') {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => (j && typeof j === 'object' ? (j as Record<string, unknown>).count as number | string | undefined : undefined)} />
+    }
+    if (widget.id === 'avg_duration') {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => {
+        const v = j && typeof j === 'object' ? (j as Record<string, unknown>).avg_duration : undefined
+        return typeof v === 'number' ? Math.round(v) + 's' : '—'
+      }} />
+    }
+    if (widget.id.endsWith('_count') || widget.endpoint?.includes('/count')) {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => {
+        if (Array.isArray(j)) return j.length
+        if (j && typeof j === 'object') {
+          const c = (j as Record<string, unknown>).count
+          if (typeof c === 'number') return c
+        }
+        return '—'
+      }} />
+    }
+    return <div className="text-xs text-muted-foreground">Tile: {widget.title}</div>
+  }
+  if (type === 'chart') {
+    return <ChartTile endpoint={widget.endpoint!} />
+  }
+  if (type === 'table') {
+    return <TableTile endpoint={widget.endpoint!} href={widget.href} />
+  }
+  if (type === 'editor') {
+    return <MiniPostEditor endpoint={widget.endpoint!} />
+  }
+  return <div className="text-xs text-muted-foreground">Unsupported widget.</div>
 }

@@ -1,0 +1,117 @@
+{
+  "cluster": {
+    "name": "local_ai_cluster",
+    "security": {
+      "api_key": "change-me-in-production",
+      "allowed_ips": ["192.168.1.0/24", "10.0.0.0/8", "127.0.0.1"],
+      "enable_auth": true
+    },
+    "discovery": {
+      "scan_range": "192.168.1.0/24",
+      "ports": [1234, 8080, 11434],
+      "timeout": 5,
+      "benchmark_on_discovery": true
+    },
+    "job_settings": {
+      "max_concurrent_per_node": 2,
+      "retry_attempts": 3,
+      "queue_size": 100,
+      "enable_ensemble": true,
+      "enable_job_migration": true
+    }
+  },
+  "nodes": {
+    "deku": {
+      "name": "Deku",
+      "host": "192.168.1.100",
+      "port": 1234,
+      "model": "qwen2.5:14b",
+      "gpu": "RTX 3070Ti",
+      "capabilities": ["heavy_reasoning", "complex_refactor", "deep_analysis"],
+      "max_concurrent": 2,
+      "priority_weight": 3
+    },
+    "ragnar": {
+      "name": "Ragnar",
+      "host": "192.168.1.101",
+      "port": 1234,
+      "model": "deepseek-coder:6.7b",
+      "gpu": "RTX 2060",
+      "capabilities": ["quick_fixes", "janitor_tasks", "light_refactor"],
+      "max_concurrent": 3,
+      "priority_weight": 1
+    },
+    "macair": {
+      "name": "MacAir",
+      "host": "192.168.1.102",
+      "port": 1234,
+      "model": "qwen2.5:7b",
+      "gpu": "M4",
+      "capabilities": ["medium_tasks", "balanced_work"],
+      "max_concurrent": 2,
+      "priority_weight": 2,
+      "enabled": false
+    }
+  },
+  "languages": {
+    "typescript": {
+      "extensions": [".ts", ".tsx", ".js", ".jsx"],
+      "verifiers": ["eslint", "tsc"],
+      "test_commands": ["npm test", "yarn test"],
+      "coverage_commands": ["nyc npm test"],
+      "enabled": true
+    },
+    "python": {
+      "extensions": [".py"],
+      "verifiers": ["ruff", "mypy", "pytest"],
+      "test_commands": ["pytest", "python -m pytest"],
+      "coverage_commands": ["pytest --cov"],
+      "enabled": true
+    },
+    "php": {
+      "extensions": [".php"],
+      "verifiers": ["php -l", "phpstan", "phpunit"],
+      "test_commands": ["phpunit", "composer test"],
+      "coverage_commands": ["phpunit --coverage-html"],
+      "enabled": true
+    }
+  },
+  "monitoring": {
+    "update_interval": 2,
+    "metrics_retention_hours": 24,
+    "enable_gpu_monitoring": true,
+    "enable_bandwidth_monitoring": true,
+    "alert_thresholds": {
+      "cpu_percent": 90,
+      "memory_percent": 85,
+      "gpu_memory_percent": 90
+    }
+  },
+  "web_dashboard": {
+    "enabled": true,
+    "host": "0.0.0.0",
+    "port": 8080,
+    "debug": false,
+    "auto_refresh_interval": 3000
+  },
+  "documentation": {
+    "output_dir": "./docs",
+    "auto_generate": true,
+    "include_ai_commentary": true,
+    "backup_previous": true,
+    "formats": ["markdown", "html"]
+  },
+  "backup": {
+    "enabled": true,
+    "backup_dir": "./backups",
+    "max_backups": 10,
+    "backup_before_changes": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "./logs/cluster.log",
+    "max_size_mb": 100,
+    "backup_count": 5,
+    "enable_console": true
+  }
+}

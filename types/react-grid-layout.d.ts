@@ -7,16 +7,16 @@ declare module 'react-grid-layout' {
     cols?: number
     rowHeight?: number
     layout?: Layout[]
-  // Not exhaustive; minimal props used in project
-  margin?: [number, number]
-  containerPadding?: [number, number]
+    // Not exhaustive; minimal props used in project
+    margin?: [number, number]
+    containerPadding?: [number, number]
     isDraggable?: boolean
     isResizable?: boolean
     onLayoutChange?: (layout: Layout[]) => void
     children?: React.ReactNode
   }
-  export interface WidthProviderProps extends ReactGridLayoutProps {}
-  export function WidthProvider<T extends React.ComponentType<any>>(component: T): React.ComponentType<WidthProviderProps>
-  const Grid: React.FC<ReactGridLayoutProps>
+  export type WidthProviderProps<P = unknown> = ReactGridLayoutProps & P
+  export function WidthProvider<T extends React.ComponentType<unknown>>(component: T): React.ComponentType<WidthProviderProps<React.ComponentProps<T>>>
+  const Grid: React.FunctionComponent<ReactGridLayoutProps>
   export default Grid
 }

@@ -19,7 +19,7 @@ export function useMe() {
             try {
               const j = await r.json()
               // API returns { user } wrapper
-              setMe((j && typeof j === 'object' && 'user' in j) ? (j as any).user : j)
+              setMe((j && typeof j === 'object' && 'user' in j) ? (j as { user: Me }).user : (j as Me))
             } catch { setMe(null) }
           } else setMe(null)
         }
@@ -31,15 +31,15 @@ export function useMe() {
     }
     run()
     const onFocus = () => run()
-    const onLogin = () => run()
+  const onLogin = () => run()
     window.addEventListener('focus', onFocus)
     window.addEventListener('visibilitychange', onFocus)
-    window.addEventListener('auth:login', onLogin as any)
+  window.addEventListener('auth:login', onLogin as unknown as EventListener)
     return () => {
       cancelled = true
       window.removeEventListener('focus', onFocus)
       window.removeEventListener('visibilitychange', onFocus)
-      window.removeEventListener('auth:login', onLogin as any)
+  window.removeEventListener('auth:login', onLogin as unknown as EventListener)
     }
   }, [])
   return { me, loading }
@@ -63,7 +63,7 @@ type GateProps = React.PropsWithChildren<{
 
 export function RoleGate({ action, children, as = 'div', className, disabledClassName, tooltip = true }: GateProps) {
   const { allowed, reason, loading } = useRoleGate(action)
-  const Cmp: any = as
+  const Cmp = as as keyof JSX.IntrinsicElements
   if (loading) return <Cmp className={className} aria-busy="true">{children}</Cmp>
   if (allowed) return <Cmp className={className}>{children}</Cmp>
   const merged = [className, disabledClassName || 'opacity-50 pointer-events-none select-none'].filter(Boolean).join(' ')

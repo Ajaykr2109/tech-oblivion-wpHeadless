@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     // delete all cache
     await fs.rm(CACHE_DIR, { recursive: true, force: true }).catch(() => null)
     return NextResponse.json({ ok: true, cleared: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }
 }

@@ -10,7 +10,7 @@ export type Widget = {
   refreshInterval?: number
   role?: 'user' | 'editor' | 'admin'
   pinned?: boolean
-  schema?: any
+  schema?: unknown
   href?: string
   defaultLayout: { i: string; x: number; y: number; w: number; h: number }
 }

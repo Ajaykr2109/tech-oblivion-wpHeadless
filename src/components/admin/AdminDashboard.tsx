@@ -2,24 +2,24 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 
+import GridLayout from 'react-grid-layout'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
+
+import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
+
 import Tile from './tiles/Tile'
 
 const PostEditorTile = dynamic(() => import('./tiles/PostEditorTile'), { ssr: false })
-import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
-
-import 'react-grid-layout/css/styles.css'
-import 'react-resizable/css/styles.css'
-// Use default GridLayout export; avoid WidthProvider to prevent CJS/ESM interop issues at runtime
-import GridLayout from 'react-grid-layout'
-
 // Lazy heavy tiles example (actual tiles can be split per section later)
 const CrewMan = dynamic(() => import('../dashboard/CrewMan'), { ssr: false })
 
 export type SectionKey =
   | 'dashboard' | 'analytics' | 'posts' | 'media' | 'categories' | 'tags' | 'comments' | 'users' | 'settings' | 'plugins' | 'themes' | 'site-health' | 'debug'
 
+type LayoutItem = { i: string; x: number; y: number; w: number; h: number }
 // Default layouts provided by user
-const DEFAULTS: Record<SectionKey, any[]> = {
+const DEFAULTS: Record<SectionKey, LayoutItem[]> = {
   dashboard: [
     { i: 'postsCount', x: 0, y: 0, w: 3, h: 2 },
     { i: 'usersCount', x: 3, y: 0, w: 3, h: 2 },
@@ -97,20 +97,20 @@ const cols = { lg: 12, md: 8, sm: 4 }
 
 export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey }) {
   const { loadLayout, saveLayout } = useLayoutPersistence()
-  const [layout, setLayout] = useState<any[]>(DEFAULTS[sectionKey])
+  const [layout, setLayout] = useState<LayoutItem[]>(DEFAULTS[sectionKey])
 
   // Load saved per-user layout
   useEffect(() => {
     let alive = true
     ;(async () => {
-      const saved = await loadLayout(sectionKey)
-  if (alive && saved?.length) setLayout(saved as any[])
+    const saved = await loadLayout(sectionKey)
+    if (alive && Array.isArray(saved) && saved.length) setLayout(saved as LayoutItem[])
       if (!saved?.length) setLayout(DEFAULTS[sectionKey])
     })()
     return () => { alive = false }
   }, [loadLayout, sectionKey])
 
-  const onLayoutChange = useCallback((l: any[]) => {
+  const onLayoutChange = useCallback((l: LayoutItem[]) => {
     setLayout(l)
   }, [])
 
@@ -131,8 +131,8 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
         cols={cols.lg}
         rowHeight={48}
         width={breakpoints.lg}
-        margin={[16, 16] as any}
-        containerPadding={[0, 0] as any}
+        margin={[16, 16] as [number, number]}
+        containerPadding={[0, 0] as [number, number]}
         onLayoutChange={onLayoutChange}
         layout={layout}
         isDraggable

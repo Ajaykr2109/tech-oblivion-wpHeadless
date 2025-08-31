@@ -33,6 +33,12 @@
       ],
       "react-grid-layout": [
         "./types/react-grid-layout.d.ts"
+      ],
+      "react-simple-maps": [
+        "./types/react-simple-maps.d.ts"
+      ],
+      "sanitize-html": [
+        "./types/sanitize-html.d.ts"
       ]
     }
   },
@@ -45,6 +51,11 @@
   ],
   "exclude": [
     "node_modules",
-    ".next"
+  ".next",
+  "eslint.config.mjs",
+  "postcss.config.mjs",
+  "tailwind.config.js",
+  "tailwind.config.ts",
+  "scripts/validateEnv.js"
   ]
 }

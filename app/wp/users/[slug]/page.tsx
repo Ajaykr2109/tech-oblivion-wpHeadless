@@ -16,7 +16,7 @@ export default async function UserProfilePage({ params }: { params: { slug: stri
 
   const res = await fetch(`${origin}/api/wp/users/${encodeURIComponent(params.slug)}`, {
     cache: "no-store",
-    headers: Object.assign({ Accept: 'application/json' } as any, cookie ? { cookie } : {}),
+  headers: Object.assign({ Accept: 'application/json' } as HeadersInit, cookie ? { cookie } : {}),
   });
   if (!res.ok) return notFound();
   const user = await res.json();

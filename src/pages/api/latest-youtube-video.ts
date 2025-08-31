@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const match = rssText.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
     if (!match) return res.status(404).json({ error: 'No video found' });
     return res.status(200).json({ videoId: match[1] });
-  } catch (e) {
+  } catch (_e) {
     return res.status(500).json({ error: 'Internal error' });
   }
 }

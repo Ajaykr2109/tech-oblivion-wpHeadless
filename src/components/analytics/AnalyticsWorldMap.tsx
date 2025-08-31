@@ -1,9 +1,14 @@
 "use client"
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { scaleLinear } from 'd3-scale'
 import isoCountries from 'i18n-iso-countries'
+import enCountries from 'i18n-iso-countries/langs/en.json'
+
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
+import type { GeographyType } from 'react-simple-maps'
+import type { GeographiesChildrenProps } from 'react-simple-maps'
+type LocaleData = { locale: string; countries: Record<string, string> }
 
 import { Card } from '@/components/ui/card'
 
@@ -11,9 +16,10 @@ import type { Period, CountryBreakdown } from '../../../types/analytics'
 
 // Register English locale for country mappings if needed
 try {
-  // @ts-ignore - some typings don't include this
-  isoCountries.registerLocale(require('i18n-iso-countries/langs/en.json'))
-} catch {}
+  isoCountries.registerLocale(enCountries as unknown as LocaleData)
+} catch {
+  // TODO: implement fallback if locale registration fails
+}
 
 const geoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
@@ -74,9 +80,10 @@ export default function AnalyticsWorldMap({ period }: { period: Period }) {
       <div className="w-full h-[420px]">
         <ComposableMap projectionConfig={{ scale: 140 }}>
           <Geographies geography={geoUrl}>
-            {({ geographies }: any) =>
-              geographies.map((geo: any) => {
-                const v = countsByNumeric[geo.id as unknown as string] || 0
+            {(args: GeographiesChildrenProps) =>
+              args.geographies.map((geo: GeographyType) => {
+                const key = String(geo.id ?? '').padStart(3, '0')
+                const v = countsByNumeric[key] || 0
                 return (
                   <Geography
                     key={geo.rsmKey}
@@ -84,7 +91,6 @@ export default function AnalyticsWorldMap({ period }: { period: Period }) {
                     fill={v ? color(v) : '#f1f5f9'}
                     stroke="#ffffff"
                     strokeWidth={0.4}
-                    style={{ default: { outline: 'none' }, hover: { outline: 'none', fill: '#60a5fa' }, pressed: { outline: 'none' } }}
                   />
                 )
               })

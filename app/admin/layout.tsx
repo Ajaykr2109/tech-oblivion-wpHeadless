@@ -12,7 +12,8 @@ import { useMe } from '@/hooks/useRoleGate'
 import { mapToApiRole } from '@/lib/rbac'
 import checkAccess from '@/lib/checkAccess'
 
-type Item = { href: string; label: string; icon: any; key: string }
+type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
+type Item = { href: string; label: string; icon: IconType; key: string }
 type Group = { label: string; items: Item[] }
 
 const RAW_GROUPS: Group[] = [

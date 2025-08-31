@@ -20,29 +20,43 @@ function normalizeUrl(u?: string | null): string | null {
   return `https://${s}`
 }
 
-function deriveSocial(u: any): { twitter: string | null; linkedin: string | null; github: string | null } {
-  if (u && typeof u.social === 'object' && u.social) {
-    return {
-      twitter: normalizeUrl((u.social as any).twitter ?? null),
-      linkedin: normalizeUrl((u.social as any).linkedin ?? null),
-      github: normalizeUrl((u.social as any).github ?? null),
+function deriveSocial(u: unknown): { twitter: string | null; linkedin: string | null; github: string | null } {
+  if (u && typeof u === 'object') {
+    const obj = u as Record<string, unknown>
+    const social = obj.social
+    if (social && typeof social === 'object') {
+      const s = social as Record<string, unknown>
+      return {
+        twitter: normalizeUrl(typeof s.twitter === 'string' ? s.twitter : null),
+        linkedin: normalizeUrl(typeof s.linkedin === 'string' ? s.linkedin : null),
+        github: normalizeUrl(typeof s.github === 'string' ? s.github : null),
+      }
     }
+    const pf = typeof obj.profile_fields === 'object' && obj.profile_fields
+      ? (obj.profile_fields as Record<string, unknown>)
+      : null
+    const get = (k: string) => (pf && typeof pf[k] === 'string') ? (pf[k] as string) : undefined
+    const tw = (typeof obj.twitter_url === 'string' ? obj.twitter_url : undefined) || get('twitter_url') || get('twitter') || get('x')
+    const ln = (typeof obj.linkedin_url === 'string' ? obj.linkedin_url : undefined) || get('linkedin_url') || get('linkedin')
+    const gh = (typeof obj.github_url === 'string' ? obj.github_url : undefined) || get('github_url') || get('github')
+    return { twitter: normalizeUrl(tw || null), linkedin: normalizeUrl(ln || null), github: normalizeUrl(gh || null) }
   }
-  const pf = (u && typeof u.profile_fields === 'object') ? (u.profile_fields as Record<string, unknown>) : null
-  const get = (k: string) => (pf && typeof pf[k] === 'string') ? (pf[k] as string) : undefined
-  const tw = (u?.twitter_url as string) || get('twitter_url') || get('twitter') || get('x')
-  const ln = (u?.linkedin_url as string) || get('linkedin_url') || get('linkedin')
-  const gh = (u?.github_url as string) || get('github_url') || get('github')
-  return { twitter: normalizeUrl(tw || null), linkedin: normalizeUrl(ln || null), github: normalizeUrl(gh || null) }
+  return { twitter: null, linkedin: null, github: null }
 }
 
-function sanitize(u: any): LiteUser {
+function sanitize(u: unknown): LiteUser {
+  const obj = (u && typeof u === 'object') ? (u as Record<string, unknown>) : {}
+  const idRaw = obj.id
+  const slugRaw = (obj.slug ?? obj.user_nicename)
+  const nameRaw = (obj.name ?? obj.display_name)
+  const descRaw = obj.description
+  const avatarRaw = obj.avatar_urls
   return {
-    id: Number(u?.id ?? 0),
-    slug: String(u?.slug ?? u?.user_nicename ?? ''),
-    name: u?.name ?? u?.display_name ?? '',
-    description: u?.description ?? '',
-    avatar_urls: u?.avatar_urls ?? {},
+    id: Number(typeof idRaw === 'number' ? idRaw : parseInt(String(idRaw ?? 0), 10) || 0),
+    slug: String(typeof slugRaw === 'string' ? slugRaw : ''),
+    name: typeof nameRaw === 'string' ? nameRaw : '',
+    description: typeof descRaw === 'string' ? descRaw : '',
+    avatar_urls: (avatarRaw && typeof avatarRaw === 'object') ? (avatarRaw as Record<string, string>) : {},
     social: deriveSocial(u),
   }
 }
@@ -54,7 +68,7 @@ function chunk<T>(arr: T[], size = 100): T[][] {
 }
 
 // Fallback utilities for general /api/wp/users queries (search, paging, etc.)
-type AnyObj = Record<string, any>
+type AnyObj = Record<string, unknown>
 function signProxy(method: string, path: string, body: string, secret: string) {
   const ts = String(Math.floor(Date.now() / 1000))
   const base = `${method.toUpperCase()}\n${path}\n${ts}\n${body || ''}`
@@ -98,7 +112,7 @@ export async function GET(req: Request) {
     const perPage = 100
     const idChunks = chunk(ids, perPage)
 
-    const results: any[] = []
+  const results: unknown[] = []
     await Promise.all(idChunks.map(async (group) => {
       const u = new URL('/wp-json/wp/v2/users', base)
       group.forEach(id => u.searchParams.append('include[]', String(id)))
@@ -112,7 +126,7 @@ export async function GET(req: Request) {
       }
     }))
 
-    const map = new Map<number, any>(results.map((u: any) => [Number(u.id), u]))
+  const map = new Map<number, unknown>((results as Array<Record<string, unknown>>).map((u) => [Number(u.id), u]))
     const ordered = ids.map(id => map.get(id)).filter(Boolean)
     const out = ordered.map(sanitize)
     return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -164,7 +178,10 @@ export async function GET(req: Request) {
   for (const [k, v] of qEntries) direct.searchParams.set(k, v)
   const headers: HeadersInit = {}
   const basic = authHeader()
-  if (basic) (headers as any).Authorization = basic
+  if (basic) {
+    // HeadersInit can be a Headers, array, or record; we use a record here
+    (headers as Record<string, string>).Authorization = basic
+  }
   const dres = await fetch(direct.toString(), { headers, cache: 'no-store' })
   upstreamTried = direct.toString()
   if (!dres.ok) {

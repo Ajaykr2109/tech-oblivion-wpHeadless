@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useRef } from 'react'
-import sanitizeHtml from 'sanitize-html'
 import hljs from 'highlight.js'
+
+import sanitizeHtml from 'sanitize-html'
 import 'highlight.js/styles/github-dark.css'
 
 export default function PostExcerpt({ html, clampPx }: { html: string; clampPx?: number }) {
@@ -10,9 +11,8 @@ export default function PostExcerpt({ html, clampPx }: { html: string; clampPx?:
 
   const safe = useMemo(() => {
     return sanitizeHtml(html || '', {
-      allowedTags: false, // default lista
-      allowedAttributes: false,
-      // Allow common embeds/images/links
+      allowedTags: [],
+      allowedAttributes: {},
       allowedSchemesByTag: { a: ['http', 'https', 'mailto'] },
     })
   }, [html])
@@ -21,7 +21,12 @@ export default function PostExcerpt({ html, clampPx }: { html: string; clampPx?:
     if (!containerRef.current) return
     const blocks = containerRef.current.querySelectorAll('pre code, code')
     blocks.forEach((el) => {
-      try { hljs.highlightElement(el as HTMLElement) } catch {}
+      try {
+        hljs.highlightElement(el as HTMLElement)
+      } catch (err) {
+        // Swallow highlighting errors (e.g., unknown language); keep non-empty
+        void err
+      }
     })
   }, [safe])
 

@@ -141,13 +141,14 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
               : state.nearbyIds.has(i.id) ? 'nearby'
               : state.adjacentIds.has(i.id) ? 'adjacent'
               : 'idle'
-            return (
+      type ItemState = 'active' | 'nearby' | 'adjacent' | 'idle'
+      return (
               <TOCItem
                 key={i.id}
                 id={i.id}
                 value={i.value}
                 depth={i.depth}
-                state={st as any}
+        state={st as ItemState}
                 focused={idx === focusedIndex}
                 onClick={() => setFocusedIndex(idx)}
                 minutes={sectionTimes[i.id]}
