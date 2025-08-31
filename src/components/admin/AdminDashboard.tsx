@@ -2,9 +2,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 
-import GridLayout from 'react-grid-layout'
+// Use a dynamic client-only wrapper to robustly resolve CJS/ESM exports
+import type { Layout as RGLLayout } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
+
+// Proper ResponsiveGridLayout wrapper for client-only usage
+const ResponsiveGridLayout = dynamic(async () => {
+  const mod = await import('react-grid-layout')
+  const Responsive = (mod as any).Responsive || (mod as any).default?.Responsive
+  const WidthProvider = (mod as any).WidthProvider || (mod as any).default?.WidthProvider
+  const Component = WidthProvider ? WidthProvider(Responsive) : Responsive
+  return Component as React.ComponentType<any>
+}, { ssr: false })
 
 import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
 
@@ -110,8 +120,10 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
     return () => { alive = false }
   }, [loadLayout, sectionKey])
 
-  const onLayoutChange = useCallback((l: LayoutItem[]) => {
-    setLayout(l)
+  const onLayoutChange = useCallback((current: RGLLayout[]) => {
+    // Only track lg layout for now; ResponsiveGridLayout supplies per-breakpoint
+    const cleaned: LayoutItem[] = current.map(({ i, x, y, w, h }) => ({ i, x, y, w, h }))
+    setLayout(cleaned)
   }, [])
 
   const onLayoutSave = useCallback(async () => {
@@ -121,25 +133,31 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
   // Simple placeholder tiles by id for now
   const tileIds = useMemo(() => DEFAULTS[sectionKey].map(d => d.i), [sectionKey])
 
+  const layouts = useMemo(() => ({
+    lg: layout.map((it) => ({ ...it } as RGLLayout)),
+    md: layout.map((it) => ({ ...it } as RGLLayout)),
+    sm: layout.map((it) => ({ ...it } as RGLLayout)),
+  }) as Record<string, RGLLayout[]>, [layout])
+
   return (
     <div className="p-4 space-y-3">
       <div className="flex gap-2 justify-end">
         <button onClick={onLayoutSave} className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground">Save Layout</button>
       </div>
-      <GridLayout
+      <ResponsiveGridLayout
         className="layout"
-        cols={cols.lg}
+        breakpoints={breakpoints}
+        cols={cols}
         rowHeight={48}
-        width={breakpoints.lg}
-        margin={[16, 16] as [number, number]}
-        containerPadding={[0, 0] as [number, number]}
+        margin={[16, 16]}
+        containerPadding={[0, 0]}
         onLayoutChange={onLayoutChange}
-        layout={layout}
+        layouts={layouts}
         isDraggable
         isResizable
       >
         {tileIds.map((id) => (
-          <div key={id} data-grid={layout.find(l => l.i === id)}>
+          <div key={id}>
             <Tile>
               <div className="text-sm font-semibold mb-1">{id}</div>
               {id === 'postEditor' ? (
@@ -152,7 +170,7 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
             </Tile>
           </div>
         ))}
-      </GridLayout>
+      </ResponsiveGridLayout>
     </div>
   )
 }

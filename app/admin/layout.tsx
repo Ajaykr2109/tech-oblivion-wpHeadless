@@ -3,7 +3,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, FileText, Users, MessageSquare, SettingsIcon, ImageIcon, Tags, FolderCog, PlugIcon, Palette, Activity, TestTubes } from 'lucide-react'
+// Fix lucide-react imports: use correct icon names (no *Icon suffixes)
+import { LayoutDashboard, FileText, Users, MessageSquare, Settings, Image, Tags, FolderCog, Plug, Palette, Activity, FlaskConical } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { cn } from '@/lib/utils'
@@ -28,7 +29,7 @@ const RAW_GROUPS: Group[] = [
     label: 'Content',
     items: [
       { href: '/admin/posts', label: 'Posts', icon: FileText, key: 'posts' },
-      { href: '/admin/media', label: 'Media', icon: ImageIcon, key: 'media' },
+  { href: '/admin/media', label: 'Media', icon: Image, key: 'media' },
       { href: '/admin/categories', label: 'Categories', icon: FolderCog, key: 'categories' },
       { href: '/admin/tags', label: 'Tags', icon: Tags, key: 'tags' },
       { href: '/admin/comments', label: 'Comments', icon: MessageSquare, key: 'comments' },
@@ -43,11 +44,11 @@ const RAW_GROUPS: Group[] = [
   {
     label: 'System',
     items: [
-      { href: '/admin/settings', label: 'Settings', icon: SettingsIcon, key: 'settings' },
-      { href: '/admin/plugins', label: 'Plugins', icon: PlugIcon, key: 'plugins' },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, key: 'settings' },
+  { href: '/admin/plugins', label: 'Plugins', icon: Plug, key: 'plugins' },
       { href: '/admin/themes', label: 'Themes', icon: Palette, key: 'themes' },
       { href: '/admin/site-health', label: 'Site Health', icon: Activity, key: 'site-health' },
-      { href: '/admin/debug', label: 'Debug/Test', icon: TestTubes, key: 'debug' },
+  { href: '/admin/debug', label: 'Debug/Test', icon: FlaskConical, key: 'debug' },
     ],
   },
 ]

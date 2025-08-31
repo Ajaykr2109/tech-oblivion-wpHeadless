@@ -14,7 +14,7 @@ export function extractTocFromMarkdown(markdown: string, options?: { minDepth?: 
   const items: TocItem[] = []
 
   function visit(node: Content) {
-    if ((node as any).type === 'heading') {
+    if (node.type === 'heading') {
       const h = node as unknown as Heading
       const depth = h.depth
       if (depth >= minDepth && depth <= maxDepth) {
@@ -23,8 +23,10 @@ export function extractTocFromMarkdown(markdown: string, options?: { minDepth?: 
         items.push({ id, depth, value: text })
       }
     }
-    const children = (node as any).children as Content[] | undefined
-    if (children && Array.isArray(children)) children.forEach(visit)
+    const nodeWithChildren = node as Content & { children?: Content[] }
+    if (nodeWithChildren.children && Array.isArray(nodeWithChildren.children)) {
+      nodeWithChildren.children.forEach(visit)
+    }
   }
 
   ;(tree.children as Content[]).forEach(visit)

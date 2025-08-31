@@ -1,13 +1,95 @@
 // Utility functions to generate JSON-LD schemas for SEO
+// Accepts a post-like object; we normalize safely inside
+import type { PostDetail } from './wp'
 
-export function getArticleSchema(post: any) {
-  const slug = post.slug || post?.seo?.slug || post?.uri?.replace(/^\/?blog\//, '') || '';
-  const title = post.title?.rendered || post.title || '';
-  const description = (post.excerpt?.rendered || post.excerpt || '').replace(/<[^>]+>/g, "");
-  const image = post.featuredImage?.node?.sourceUrl || post.featuredImage || "https://techoblivion.in/default-cover.jpg";
-  const authorName = post.author?.node?.name || post.authorName || "tech.oblivion";
-  const datePublished = post.date || post.publishedAt || undefined;
-  const dateModified = post.modified || post.updatedAt || datePublished;
+interface PostData {
+  slug?: string
+  title?: { rendered?: string } | string
+  excerpt?: { rendered?: string } | string
+  featuredImage?: { node?: { sourceUrl?: string } } | string | null
+  author?: { node?: { name?: string } }
+  authorName?: string | null
+  date?: string
+  publishedAt?: string
+  modified?: string
+  updatedAt?: string
+  seo?: { slug?: string } | Record<string, unknown>
+  uri?: string
+}
+
+type SchemaPost = unknown
+
+function isObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null
+}
+
+function getSlug(post: SchemaPost): string {
+  if (isObj(post) && 'slug' in post && typeof (post as any).slug === 'string') return (post as any).slug
+  const seo = (post as any).seo
+  if (seo && typeof seo.slug === 'string') return seo.slug
+  const uri = (post as any).uri
+  if (typeof uri === 'string') return uri.replace(/^\/\?blog\//, '')
+  return ''
+}
+
+function getTitle(post: SchemaPost): string {
+  const t: any = (post as any).title
+  if (typeof t === 'string') return t
+  if (t && typeof t.rendered === 'string') return t.rendered
+  return ''
+}
+
+function getExcerpt(post: SchemaPost): string {
+  const e: any = (post as any).excerpt
+  if (typeof e === 'string') return e
+  if (e && typeof e.rendered === 'string') return e.rendered
+  return ''
+}
+
+function stripHtml(input: string): string {
+  return input.replace(/<[^>]+>/g, '')
+}
+
+function getImage(post: SchemaPost): string {
+  const fi: any = (post as any).featuredImage
+  if (typeof fi === 'string') return fi
+  const nested = fi?.node?.sourceUrl
+  if (typeof nested === 'string') return nested
+  return 'https://techoblivion.in/default-cover.jpg'
+}
+
+function getAuthorName(post: SchemaPost): string {
+  const authorName = (post as any).authorName
+  if (typeof authorName === 'string' && authorName) return authorName
+  const author = (post as any).author
+  const name = author?.node?.name
+  if (typeof name === 'string' && name) return name
+  return 'tech.oblivion'
+}
+
+function getDatePublished(post: SchemaPost): string | undefined {
+  if (isObj(post) && 'date' in post && typeof (post as any).date === 'string') return (post as any).date
+  const publishedAt = (post as any).publishedAt
+  if (typeof publishedAt === 'string') return publishedAt
+  return undefined
+}
+
+function getDateModified(post: SchemaPost): string | undefined {
+  const modified = (post as any).modified
+  if (typeof modified === 'string') return modified
+  const updatedAt = (post as any).updatedAt
+  if (typeof updatedAt === 'string') return updatedAt
+  return getDatePublished(post)
+}
+
+export function getArticleSchema(post: unknown): Record<string, unknown> {
+  const slug = getSlug(post);
+  const title = getTitle(post);
+  const description = stripHtml(getExcerpt(post));
+  const image = getImage(post);
+  const authorName = getAuthorName(post);
+  const datePublished = getDatePublished(post);
+  const dateModified = getDateModified(post);
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -35,9 +117,9 @@ export function getArticleSchema(post: any) {
   };
 }
 
-export function getBreadcrumbSchema(post: any) {
-  const slug = post.slug || post?.seo?.slug || post?.uri?.replace(/^\/?blog\//, '') || '';
-  const title = post.title?.rendered || post.title || '';
+export function getBreadcrumbSchema(post: unknown): Record<string, unknown> {
+  const slug = getSlug(post);
+  const title = getTitle(post);
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -64,12 +146,17 @@ export function getBreadcrumbSchema(post: any) {
   };
 }
 
-export function getFAQSchema(faqs: any[]) {
+interface FAQ {
+  question: string
+  answer: string
+}
+
+export function getFAQSchema(faqs: FAQ[]) {
   if (!faqs?.length) return null;
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": faqs.map((faq: any) => ({
+    "mainEntity": faqs.map((faq: FAQ) => ({
       "@type": "Question",
       "name": faq.question,
       "acceptedAnswer": {
@@ -80,11 +167,11 @@ export function getFAQSchema(faqs: any[]) {
   };
 }
 
-export function getVideoSchema({ post, videoId, uploadDate }: { post: any, videoId: string, uploadDate: string }) {
+export function getVideoSchema({ post, videoId, uploadDate }: { post: unknown, videoId: string, uploadDate: string }) {
   if (!videoId) return null;
-  const title = post.title?.rendered || post.title || '';
-  const description = (post.excerpt?.rendered || post.excerpt || '').replace(/<[^>]+>/g, "");
-  const image = post.featuredImage?.node?.sourceUrl || post.featuredImage || "https://techoblivion.in/default-cover.jpg";
+  const title = getTitle(post);
+  const description = stripHtml(getExcerpt(post));
+  const image = getImage(post);
   return {
     "@context": "https://schema.org",
     "@type": "VideoObject",

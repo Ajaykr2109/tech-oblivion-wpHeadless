@@ -15,7 +15,7 @@ export async function requireAccess(opts: { path: string; method: string; action
         url.searchParams.set('context', 'edit')
         const res = await fetch(url, { headers: { Authorization: `Bearer ${(claims as any).wpToken}` }, cache: 'no-store' })
         if (res.ok) {
-          const j: any = await res.json()
+          const j: { roles?: string[] } = await res.json()
           if (Array.isArray(j?.roles) && j.roles.length) roles = j.roles
         }
       } catch {
@@ -26,7 +26,7 @@ export async function requireAccess(opts: { path: string; method: string; action
   const apiRole = mapToApiRole(roles)
   const ok = checkAccess(apiRole, opts.path, opts.method, opts.action)
   if (!ok) {
-    const err = new Error('Forbidden') as any
+    const err = new Error('Forbidden') as Error & { status: number }
     err.status = 403
     throw err
   }

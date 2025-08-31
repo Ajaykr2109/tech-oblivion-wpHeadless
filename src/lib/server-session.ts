@@ -17,13 +17,13 @@ export async function getServerSessionClaims() {
 export async function requireAnyRoleServer(roles: string[]) {
   const claims = await getServerSessionClaims()
   if (!claims) {
-    const e: any = new Error('Unauthorized')
+    const e = new Error('Unauthorized') as Error & { status: number }
     e.status = 401
     throw e
   }
-  const userRoles: string[] = (claims as any).roles || []
+  const userRoles: string[] = (claims as { roles?: string[] }).roles || []
   if (!roles.some(r => userRoles.includes(r))) {
-    const e: any = new Error('Forbidden')
+    const e = new Error('Forbidden') as Error & { status: number }
     e.status = 403
     throw e
   }

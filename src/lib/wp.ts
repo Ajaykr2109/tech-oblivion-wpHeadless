@@ -54,10 +54,19 @@ export type WPPost = {
   content: { rendered: string }
   categories?: number[]
   tags?: number[]
-  _embedded?: any
+  author?: number
+  _embedded?: {
+    'wp:featuredmedia'?: Array<{ source_url?: string }>
+    author?: Array<{ 
+      name?: string
+      slug?: string
+      avatar_urls?: Record<string, string>
+    }>
+    'wp:term'?: unknown[]
+  }
   // ACF or custom meta could surface under 'acf' or via meta fields
-  acf?: Record<string, any>
-  meta?: Record<string, any>
+  acf?: Record<string, unknown>
+  meta?: Record<string, unknown>
 }
 
 export type PostSummary = {
@@ -133,7 +142,7 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   let items = [] as WPPost[]
   try {
     items = (await res.json()) as WPPost[]
-  } catch (e: any) {
+  } catch (e: unknown) {
     logWPError('getPosts-json', { statusText: String(e), body: undefined })
     throw e
   }
@@ -145,7 +154,7 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
       excerptHtml: p.excerpt.rendered,
       // Direct WP media URL for stability
       featuredImage: _rawMediaUrl(p),
-  authorId: (p as any).author ?? null,
+      authorId: p.author ?? null,
       authorName: p._embedded?.author?.[0]?.name ?? null,
       authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
   authorSlug: p._embedded?.author?.[0]?.slug ?? null,
@@ -175,7 +184,7 @@ export async function getPostBySlug(slug: string) {
   let arr = [] as WPPost[]
   try {
     arr = (await res.json()) as WPPost[]
-  } catch (e: any) {
+  } catch (e: unknown) {
     logWPError('getPostBySlug-json', { statusText: String(e), body: undefined })
     throw e
   }
@@ -185,25 +194,39 @@ export async function getPostBySlug(slug: string) {
   const categories: { id: number; name?: string; slug?: string }[] = []
   const tags: { id: number; name?: string; slug?: string }[] = []
   // Collect taxonomy IDs if present
-  const catIds: number[] = (p as any).categories || []
-  const tagIds: number[] = (p as any).tags || []
+  const catIds: number[] = p.categories || []
+  const tagIds: number[] = p.tags || []
   // Try to enrich from _embedded terms if available
-  const embeddedTerms: any[] = p._embedded?.['wp:term'] || []
+  const embeddedTerms: unknown[] = p._embedded?.['wp:term'] || []
   const flatTerms = embeddedTerms.flat?.() || []
+  
+  type WPTerm = {
+    id: number
+    taxonomy: string
+    name?: string
+    slug?: string
+  }
+  
   for (const t of flatTerms) {
-    if (t.taxonomy === 'category' && catIds.includes(t.id)) categories.push({ id: t.id, name: t.name, slug: t.slug })
-    if (t.taxonomy === 'post_tag' && tagIds.includes(t.id)) tags.push({ id: t.id, name: t.name, slug: t.slug })
+    const term = t as WPTerm
+    if (term.taxonomy === 'category' && catIds.includes(term.id)) {
+      categories.push({ id: term.id, name: term.name, slug: term.slug })
+    }
+    if (term.taxonomy === 'post_tag' && tagIds.includes(term.id)) {
+      tags.push({ id: term.id, name: term.name, slug: term.slug })
+    }
   }
 
   // Extract SEO from ACF or meta namespaces if present
-  const metaSource = (p as any).acf || (p as any).meta || {}
+  const metaSource = p.acf || p.meta || {}
+  const meta = metaSource as Record<string, unknown>
   const seo = {
-    title: metaSource.seo_title || undefined,
-    description: metaSource.seo_description || undefined,
-    canonical: metaSource.seo_canonical || undefined,
-    ogImage: metaSource.seo_og_image || undefined,
-    twitterImage: metaSource.seo_twitter_image || undefined,
-    schemaType: metaSource.seo_schema_type || undefined,
+    title: typeof meta.seo_title === 'string' ? meta.seo_title : undefined,
+    description: typeof meta.seo_description === 'string' ? meta.seo_description : undefined,
+    canonical: typeof meta.seo_canonical === 'string' ? meta.seo_canonical : undefined,
+    ogImage: typeof meta.seo_og_image === 'string' ? meta.seo_og_image : undefined,
+    twitterImage: typeof meta.seo_twitter_image === 'string' ? meta.seo_twitter_image : undefined,
+    schemaType: typeof meta.seo_schema_type === 'string' ? meta.seo_schema_type : undefined,
   }
 
   const featuredImage = _rawMediaUrl(p)
@@ -214,7 +237,7 @@ export async function getPostBySlug(slug: string) {
     contentHtml: p.content.rendered,
     featuredImage,
     date: p.date,
-  authorId: (p as any).author ?? null,
+    authorId: p.author ?? null,
   authorName: p._embedded?.author?.[0]?.name ?? null,
   authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
   authorSlug: p._embedded?.author?.[0]?.slug ?? null,
@@ -242,10 +265,10 @@ export async function getPageContent(slug: string) {
     throw new Error(`WP page ${res.status}: ${body}`)
   }
 
-  let arr = [] as any[]
+  let arr = [] as Array<{ id: number; slug: string; content?: { rendered: string } }>
   try {
-    arr = (await res.json()) as any[]
-  } catch (e: any) {
+    arr = (await res.json()) as Array<{ id: number; slug: string; content?: { rendered: string } }>
+  } catch (e: unknown) {
     logWPError('getPageContent-json', { statusText: String(e), body: undefined })
     throw e
   }

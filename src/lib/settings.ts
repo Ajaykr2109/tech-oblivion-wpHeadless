@@ -37,7 +37,9 @@ export async function getSettings(): Promise<SiteSettings> {
     try {
       await fs.mkdir(SETTINGS_DIR, { recursive: true })
       await fs.writeFile(SETTINGS_FILE, JSON.stringify(defaults, null, 2), 'utf8')
-    } catch {}
+    } catch (error) {
+      console.warn('Failed to create settings file:', error)
+    }
     return defaults
   }
 }

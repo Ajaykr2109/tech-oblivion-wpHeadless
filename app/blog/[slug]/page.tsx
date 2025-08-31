@@ -214,11 +214,11 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             <Head>
                 <script
                     type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getArticleSchema(post)) }}
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getArticleSchema(post as unknown)) }}
                 />
                 <script
                     type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post)) }}
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post as unknown)) }}
                 />
             </Head>
             {/* Top-center reader pill (Zoom + theme), positioned respecting header */}

@@ -59,7 +59,10 @@ export default [
       'react/react-in-jsx-scope': 'off',
       'import/order': ['warn', { 'newlines-between': 'always', groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'] }],
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'error', // Back to error
+      '@typescript-eslint/no-empty-object-type': 'error',
+      'no-empty': 'error', // Back to error
       // Ensure the rule used in code comments exists; we can tune later
       '@next/next/no-img-element': 'warn',
     },

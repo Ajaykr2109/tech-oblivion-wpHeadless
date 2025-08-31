@@ -1,6 +1,6 @@
 type CacheEntry<T> = { value: T; expiresAt: number; tags: Set<string> }
 
-const store = new Map<string, CacheEntry<any>>()
+const store = new Map<string, CacheEntry<unknown>>()
 
 export function getCache<T>(key: string): T | undefined {
   const now = Date.now()

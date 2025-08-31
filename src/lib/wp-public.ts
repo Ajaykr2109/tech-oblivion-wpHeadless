@@ -19,6 +19,8 @@ export async function getUserBySlug(slug: string): Promise<PublicUser | null> {
   try {
     const data = await res.json()
     if (data && typeof data === 'object' && data.slug) return data as PublicUser
-  } catch {}
+  } catch (error) {
+    console.warn('Failed to parse user data:', error)
+  }
   return null
 }

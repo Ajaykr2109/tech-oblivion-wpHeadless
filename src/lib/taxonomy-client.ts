@@ -8,14 +8,18 @@ export async function fetchAllCategories(): Promise<WpCategory[]> {
 }
 
 export function buildCategoryTree(cats: WpCategory[]) {
-  const byId = new Map<number, any>()
-  const roots: any[] = []
-  cats.forEach(c => byId.set(c.id, { ...c, children: [] as any[] }))
+  interface CategoryNode extends WpCategory {
+    children: CategoryNode[]
+  }
+  
+  const byId = new Map<number, CategoryNode>()
+  const roots: CategoryNode[] = []
+  cats.forEach(c => byId.set(c.id, { ...c, children: [] }))
   cats.forEach(c => {
     const node = byId.get(c.id)
-    if (c.parent && byId.has(c.parent)) {
-      byId.get(c.parent).children.push(node)
-    } else {
+    if (c.parent && byId.has(c.parent) && node) {
+      byId.get(c.parent)?.children.push(node)
+    } else if (node) {
       roots.push(node)
     }
   })
