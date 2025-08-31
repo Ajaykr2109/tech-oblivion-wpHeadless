@@ -1,9 +1,5 @@
-# [DEPRECATED] API Proxy Map (moved)
-<!-- markdownlint-disable MD025 MD033 MD047 -->
-
-This file moved to: `docs/api-reference/proxy-map.md`.
-
-## API Proxy Map (generated)
+# API Proxy Map (generated)
+<!-- markdownlint-disable MD033 -->
 
 > Do not edit manually. Generated from app/api and src/app/api by scripts/generateApiMap.ts
 
@@ -60,4 +56,4 @@ This file moved to: `docs/api-reference/proxy-map.md`.
 | `/api/wp/users/me` | GET | `{WP}/wp-json/wp/v2/users/me` |
 
 _Note: This is best-effort static analysis. Dynamic endpoints or function-based apiMap entries may not be fully resolved._
-<!-- markdownlint-enable MD025 MD033 MD047 -->
+<!-- markdownlint-enable MD033 -->

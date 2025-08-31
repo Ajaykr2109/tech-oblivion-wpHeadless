@@ -1,10 +1,7 @@
-# [DEPRECATED] API Roles Matrix (moved)
+<!-- markdownlint-disable MD036 -->
+# API Roles Matrix (generated)
 
-This file moved to: `docs/api-reference/roles-matrix.md`.
-
-## API Roles Matrix (generated)
-
-> Do not edit manually. Source of truth: `src/config/apiRolesMatrix.ts`
+Do not edit manually. Source of truth: `src/config/apiRolesMatrix.ts`.
 
 | Endpoint | Method | Public | Subscriber | Contributor | Author | Editor | SEO Editor | SEO Manager | Administrator |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -73,7 +70,6 @@ This file moved to: `docs/api-reference/roles-matrix.md`.
 | `/api/wp/bookmarks` | POST | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/robots.txt` | GET | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/sitemap.xml` | GET | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `/api/_debug` | GET | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `/api/test` | GET | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 Legend: ✅ allowed (any of read/write/delete/moderate), ❌ disallowed.
+<!-- markdownlint-enable MD036 -->

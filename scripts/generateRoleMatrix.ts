@@ -45,15 +45,17 @@ function buildTable() {
   })
 
   const out = [
+    '<!-- markdownlint-disable MD036 -->',
     '# API Roles Matrix (generated)',
     '',
-    '> Do not edit manually. Source of truth: `src/config/apiRolesMatrix.ts`',
+    'Do not edit manually. Source of truth: `src/config/apiRolesMatrix.ts`.',
     '',
     `| ${header.join(' | ')} |`,
     `| ${sep.join(' | ')} |`,
     ...rows,
     '',
-    '_Legend: ✅ allowed (any of read/write/delete/moderate), ❌ disallowed_',
+    'Legend: ✅ allowed (any of read/write/delete/moderate), ❌ disallowed.',
+    '<!-- markdownlint-enable MD036 -->',
   ].join('\n')
 
   return out
@@ -61,8 +63,8 @@ function buildTable() {
 
 function main() {
   const md = buildTable()
-  const docsDir = path.resolve(process.cwd(), 'docs')
-  const target = path.join(docsDir, 'api-roles-matrix.md')
+  const docsDir = path.resolve(process.cwd(), 'docs', 'api-reference')
+  const target = path.join(docsDir, 'roles-matrix.md')
   if (!fs.existsSync(docsDir)) fs.mkdirSync(docsDir, { recursive: true })
   fs.writeFileSync(target, md, 'utf8')
   // eslint-disable-next-line no-console

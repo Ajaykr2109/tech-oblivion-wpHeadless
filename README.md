@@ -176,7 +176,7 @@ To get started, take a look at src/app/page.tsx.
 
 - The browser never talks to WordPress directly for data or auth; all requests go through Next.js server routes under `/api/wp/*` and `/api/auth/*`.
 - We store the upstream WordPress JWT token inside the server-signed session to perform privileged actions; it is never exposed to the browser.
-- See `docs/button_api_map.md` for the current mapping of UI actions to internal APIs and required roles.
+- See `docs/api-reference/button-api-map.md` for the current mapping of UI actions to internal APIs and required roles.
 
 ## Unified Admin + Analytics
 

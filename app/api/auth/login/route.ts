@@ -84,13 +84,33 @@ export async function POST(req: Request) {
   }
 
   // JWT auth endpoint returns token and user info
-  const { token, user_email, user_nicename, user_display_name, user_id, roles: wpRoles } = data as { 
+  const { token, user_email, user_nicename, user_display_name, user_id } = data as { 
     token: string; 
     user_email: string; 
     user_nicename: string; 
     user_display_name: string;
     user_id?: number;
-    roles?: string[];
+  }
+
+  // Try to enrich roles via WP /users/me (requires edit context)
+  let wpRoles: string[] | undefined = undefined
+  try {
+    const wpUrl = process.env.WP_URL || 'http://example.com'
+    const meResp = await fetch(`${wpUrl}/wp-json/wp/v2/users/me?context=edit`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'User-Agent': 'tech-oblivion-fe/1.0',
+      },
+      cache: 'no-store',
+    })
+    if (meResp.ok) {
+      const meJson: any = await meResp.json()
+      if (meJson && Array.isArray(meJson.roles)) {
+        wpRoles = meJson.roles
+      }
+    }
+  } catch (e) {
+    // ignore; fallback to default below
   }
 
   // Create session with the user data from JWT response
@@ -99,7 +119,7 @@ export async function POST(req: Request) {
     sub: String(user_id || user_nicename), 
     username: user_nicename, 
     email: user_email, 
-    roles: Array.isArray(wpRoles) && wpRoles.length ? wpRoles : ['subscriber'],
+  roles: Array.isArray(wpRoles) && wpRoles.length ? wpRoles : ['subscriber'],
     wpUserId: user_id,
     displayName: user_display_name,
     wpToken: token,

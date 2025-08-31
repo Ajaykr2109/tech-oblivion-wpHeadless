@@ -1,9 +1,5 @@
-# [DEPRECATED] API Proxy Map with Roles (moved)
-<!-- markdownlint-disable MD025 MD033 -->
-
-This file moved to: `docs/api-reference/proxy-map-with-roles.md`.
-
-## API Proxy Map with Roles (generated)
+# API Proxy Map with Roles (generated)
+<!-- markdownlint-disable MD033 -->
 
 > Do not edit manually. Generated from app/api and src/app/api and joined with src/config/apiRolesMatrix.ts
 
@@ -59,4 +55,5 @@ This file moved to: `docs/api-reference/proxy-map-with-roles.md`.
 | `/api/wp/users/me` | GET, POST, PUT | `{WP}/wp-json/fe-auth/v1/proxy`<br/>`{WP}/wp-json/wp/v2/users/me` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/api/wp/users/me` | GET | `{WP}/wp-json/wp/v2/users/me` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-_Note: Role marks use the first detected method for the route; for routes supporting multiple methods, consult docs/api-reference/roles-matrix.md for per-method details._
+_Note: Role marks use the first detected method for the route; for routes supporting multiple methods, consult roles-matrix.md for per-method details._
+<!-- markdownlint-enable MD033 -->

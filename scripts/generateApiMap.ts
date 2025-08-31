@@ -116,6 +116,7 @@ function buildTable(rows: RouteInfo[]): string {
     .map((r) => `| \`${r.path}\` | ${r.methods.join(', ')} | ${r.targets.length ? r.targets.map((t) => `\`${t}\``).join('<br/>') : '_n/a_'} |`)
   return [
     '# API Proxy Map (generated)',
+    '<!-- markdownlint-disable MD033 -->',
     '',
     '> Do not edit manually. Generated from app/api and src/app/api by scripts/generateApiMap.ts',
     '',
@@ -124,6 +125,7 @@ function buildTable(rows: RouteInfo[]): string {
     ...body,
     '',
     '_Note: This is best-effort static analysis. Dynamic endpoints or function-based apiMap entries may not be fully resolved._',
+    '<!-- markdownlint-enable MD033 -->',
   ].join('\n')
 }
 
@@ -137,7 +139,7 @@ function main() {
     rows.push({ path: toApiPath(file), methods: methods.length ? methods : ['GET'], targets })
   }
   const md = buildTable(rows)
-  const outPath = path.resolve(process.cwd(), 'docs', 'api-proxy-map.md')
+  const outPath = path.resolve(process.cwd(), 'docs', 'api-reference', 'proxy-map.md')
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, md, 'utf8')
   // eslint-disable-next-line no-console

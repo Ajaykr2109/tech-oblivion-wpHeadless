@@ -157,6 +157,7 @@ function buildTable(rows: RouteInfo[]): string {
 
   return [
     '# API Proxy Map with Roles (generated)',
+    '<!-- markdownlint-disable MD033 -->',
     '',
     '> Do not edit manually. Generated from app/api and src/app/api and joined with src/config/apiRolesMatrix.ts',
     '',
@@ -164,7 +165,8 @@ function buildTable(rows: RouteInfo[]): string {
     `| ${sep.join(' | ')} |`,
     ...body,
     '',
-    '_Note: Role marks use the first detected method for the route; for routes supporting multiple methods, consult api-roles-matrix.md for per-method details._',
+    '_Note: Role marks use the first detected method for the route; for routes supporting multiple methods, consult roles-matrix.md for per-method details._',
+    '<!-- markdownlint-enable MD033 -->',
   ].join('\n')
 }
 
@@ -178,7 +180,7 @@ function main() {
     rows.push({ path: toApiPath(file), methods: methods.length ? methods : ['GET'], targets })
   }
   const md = buildTable(rows)
-  const outPath = path.resolve(process.cwd(), 'docs', 'api-proxy-map-with-roles.md')
+  const outPath = path.resolve(process.cwd(), 'docs', 'api-reference', 'proxy-map-with-roles.md')
   fs.mkdirSync(path.dirname(outPath), { recursive: true })
   fs.writeFileSync(outPath, md, 'utf8')
   // eslint-disable-next-line no-console

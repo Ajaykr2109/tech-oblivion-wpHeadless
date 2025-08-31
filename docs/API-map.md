@@ -1,4 +1,14 @@
-# Frontend API to WordPress REST Mapping
+# [DEPRECATED] Frontend API → WordPress REST Mapping (moved)
+<!-- markdownlint-disable MD025 -->
+
+This document moved. See the new canonical docs in `docs/api-reference/`:
+
+- mapping.md — narrative overview
+- proxy-map.md — generated map
+- proxy-map-with-roles.md — generated map with RBAC
+- roles-matrix.md — generated RBAC per method
+
+## Frontend API to WordPress REST Mapping
 
 # Frontend API → WordPress REST Mapping
 
