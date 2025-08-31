@@ -1,0 +1,118 @@
+"use client"
+import React, { useEffect, useMemo, useState } from 'react'
+import type { Widget } from './WidgetRegistry'
+import CrewMan from './CrewMan'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+
+function NumberTile({ endpoint, pick }: { endpoint: string; pick: (j: any) => number | string | undefined }) {
+  const [val, setVal] = useState<number | string | undefined>('—')
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try { const r = await fetch(endpoint, { cache: 'no-store' }); const j = r.ok ? await r.json() : null; if (alive) setVal(pick(j)) } catch {}
+    })()
+    return () => { alive = false }
+  }, [endpoint, pick])
+  return <div className="text-2xl font-semibold">{val ?? '—'}</div>
+}
+
+export default function TileRenderer({ widget }: { widget: Widget }) {
+  const { type } = widget
+  // Role gating is assumed to be enforced server-side on API routes; client UI can be extended later
+  if (type === 'api_tester') return <CrewMan />
+
+  if (type === 'tile') {
+    if (widget.id === 'sessions_count') {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.count} />
+    }
+    if (widget.id === 'avg_duration') {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.avg_duration ? Math.round(j.avg_duration) + 's' : '—'} />
+    }
+    if (widget.id.endsWith('_count') || widget.endpoint?.includes('/count')) {
+      return <NumberTile endpoint={widget.endpoint!} pick={(j) => j?.count ?? j?.length ?? '—'} />
+    }
+    return <div className="text-xs text-muted-foreground">Tile: {widget.title}</div>
+  }
+
+  if (type === 'chart') {
+    const [data, setData] = useState<any[]>([])
+    useEffect(() => { (async () => { try { const r = await fetch(widget.endpoint!, { cache: 'no-store' }); const j = r.ok ? await r.json() : []; setData(Array.isArray(j) ? j : (j?.series || [])) } catch {} })() }, [widget.endpoint])
+    return <pre className="text-xs overflow-auto h-full">{JSON.stringify(data.slice(-10), null, 2)}</pre>
+  }
+
+  if (type === 'table') {
+    const [rows, setRows] = useState<any[]>([])
+    useEffect(() => { (async () => { try { const r = await fetch(widget.endpoint!, { cache: 'no-store' }); const j = r.ok ? await r.json() : []; setRows(Array.isArray(j) ? j : (j?.items || [])) } catch {} })() }, [widget.endpoint])
+    return (
+      <div className="text-sm space-y-1">
+        {rows.slice(0, 8).map((row: any) => (
+          <div key={row.id || row.slug} className="flex items-center justify-between gap-2">
+            <div className="truncate">{row.title?.rendered || row.title || row.name || row.slug || row.id}</div>
+            {widget.href ? <Button asChild size="sm" variant="secondary"><Link href={`${widget.href}/${row.id}`}>Open</Link></Button> : null}
+          </div>
+        ))}
+        {!rows.length ? <div className="text-xs text-muted-foreground">No rows.</div> : null}
+      </div>
+    )
+  }
+
+  if (type === 'editor') {
+    // Minimal post editor for drafts + publish/pending flow
+    return <MiniPostEditor endpoint={widget.endpoint!} />
+  }
+
+  return <div className="text-xs text-muted-foreground">Unsupported widget.</div>
+}
+
+function MiniPostEditor({ endpoint }: { endpoint: string }) {
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [saving, setSaving] = useState<'idle' | 'saving' | 'error' | 'ok'>('idle')
+
+  // Autosave draft every 20s if dirty
+  useEffect(() => {
+    const i = window.setInterval(async () => {
+      if (!title && !content) return
+      try {
+        await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, status: 'draft' }) })
+      } catch {}
+    }, 20000)
+    return () => window.clearInterval(i)
+  }, [endpoint, title, content])
+
+  const saveDraft = async () => {
+    setSaving('saving')
+    try {
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, status: 'draft' }) })
+      setSaving(r.ok ? 'ok' : 'error')
+    } catch { setSaving('error') }
+  }
+  const requestPublish = async () => {
+    setSaving('saving')
+    try {
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, status: 'pending' }) })
+      setSaving(r.ok ? 'ok' : 'error')
+    } catch { setSaving('error') }
+  }
+  const publishNow = async () => {
+    setSaving('saving')
+    try {
+      const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, status: 'publish' }) })
+      setSaving(r.ok ? 'ok' : 'error')
+    } catch { setSaving('error') }
+  }
+
+  return (
+    <div className="space-y-2">
+      <input className="w-full border rounded px-2 py-1" placeholder="Post title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <textarea className="w-full border rounded px-2 py-1 h-32" placeholder="Write your post…" value={content} onChange={(e) => setContent(e.target.value)} />
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={saveDraft} disabled={saving==='saving'}>Save Draft</Button>
+        <Button size="sm" variant="secondary" onClick={requestPublish} disabled={saving==='saving'}>Request Publish</Button>
+        <Button size="sm" variant="destructive" onClick={publishNow} disabled={saving==='saving'}>Publish</Button>
+        <div className="text-xs text-muted-foreground">{saving==='ok' ? 'Saved' : saving==='error' ? 'Error' : null}</div>
+      </div>
+    </div>
+  )
+}
