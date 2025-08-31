@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   
   // Prepare defaults and normalized params
   const search = new URLSearchParams(incoming.search)
+  const id = search.get('id')
   if (search.has('perPage')) {
     search.set('per_page', search.get('perPage')!)
     search.delete('perPage')
@@ -39,9 +40,11 @@ export async function GET(req: NextRequest) {
     // fall through to direct
   }
 
-  const out = new URL('/wp-json/wp/v2/posts', WP)
-  search.forEach((v, k) => out.searchParams.set(k, v))
-  const res = await fetch(out, { cache: 'no-store' })
+  const out = id ? new URL(`/wp-json/wp/v2/posts/${id}`, WP) : new URL('/wp-json/wp/v2/posts', WP)
+  if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
+  // Forward Authorization header if present
+  const authHeader = req.headers.get('authorization')
+  const res = await fetch(out, { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
   if (!res.ok) {
     if (res.status === 404 || res.status === 400) {
       return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
@@ -139,10 +142,48 @@ export async function PATCH(req: NextRequest) {
     } catch {}
   }
   const res = await fetch(new URL(`/wp-json/wp/v2/posts/${id}`, WP), {
-    method: 'PATCH',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
     body: JSON.stringify(bodyJson),
   })
   const text = await res.text()
   return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
+}
+
+// Delete a post
+export async function DELETE(req: NextRequest) {
+  const WP = process.env.WP_URL
+  if (!WP) return new Response('WP_URL env required', { status: 500 })
+  const incoming = new URL(req.url)
+  const id = incoming.searchParams.get('id')
+  if (!id) return new Response('Missing id', { status: 400 })
+
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+  if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
+  let claims: any
+  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = (claims.roles as any) || []
+  if (!roles.some(r => ['editor','administrator'].includes(r))) {
+    return new Response('Forbidden', { status: 403 })
+  }
+  const wpToken = (claims as any).wpToken
+  if (!wpToken) return new Response('Missing upstream token', { status: 401 })
+
+  const controller = new AbortController()
+  const to = setTimeout(() => controller.abort(), 10_000)
+  try {
+    const res = await fetch(new URL(`/wp-json/wp/v2/posts/${id}`, WP), {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${wpToken}` },
+      signal: controller.signal,
+    })
+    const text = await res.text()
+    return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
+  } catch (e: any) {
+    const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Upstream error')
+    return new Response(JSON.stringify({ error: msg }), { status: 504, headers: { 'Content-Type': 'application/json' } })
+  } finally {
+    clearTimeout(to)
+  }
 }

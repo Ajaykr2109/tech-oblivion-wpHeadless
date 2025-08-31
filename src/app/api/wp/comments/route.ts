@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   if (!WP) return new Response('WP_URL env required', { status: 500 })
 
   const incoming = new URL(req.url)
+  const id = incoming.searchParams.get('id')
   
   // Build query with sensible defaults
   const search = new URLSearchParams(incoming.search)
@@ -35,9 +36,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const out = new URL('/wp-json/wp/v2/comments', WP)
-  search.forEach((v, k) => out.searchParams.set(k, v))
-  const res = await fetch(out.toString(), { cache: 'no-store' })
+  const out = id ? new URL(`/wp-json/wp/v2/comments/${id}`, WP) : new URL('/wp-json/wp/v2/comments', WP)
+  if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
+  const authHeader = req.headers.get('authorization')
+  const res = await fetch(out.toString(), { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
   if (!res.ok) {
     if (res.status === 404 || res.status === 400) {
       return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
