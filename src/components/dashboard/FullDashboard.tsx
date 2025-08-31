@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+
 // @ts-ignore - module types provided via local shim
 import GridLayout from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
@@ -8,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MetricsProvider, useMetrics } from '@/contexts/metrics-context'
 import { RoleGate } from '@/hooks/useRoleGate'
+
 import MetricsDashboardControls from './MetricsDashboardControls'
 
 type LayoutItem = { i: string; x: number; y: number; w: number; h: number }

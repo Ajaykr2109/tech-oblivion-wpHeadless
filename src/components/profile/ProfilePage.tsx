@@ -5,11 +5,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
 
 const PostsTabClient = dynamic(() => import('./PostsTabClient'))
 const CommentsTabClient = dynamic(() => import('./CommentsTabClient'))

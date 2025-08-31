@@ -1,9 +1,11 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+
+import { Button } from '@/components/ui/button'
+
 import type { Widget } from './WidgetRegistry'
 import CrewMan from './CrewMan'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 function NumberTile({ endpoint, pick }: { endpoint: string; pick: (j: any) => number | string | undefined }) {
   const [val, setVal] = useState<number | string | undefined>('—')

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import { apiMap as loadedApiMap, WP_BASE } from '../src/lib/wpAPIMap'
 
 type Methods = string[]

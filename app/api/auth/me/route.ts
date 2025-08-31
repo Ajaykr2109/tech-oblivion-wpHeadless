@@ -1,6 +1,7 @@
 // cookies import removed (unused)
-import { verifySession } from '../../../../src/lib/jwt'
 import { createHash } from 'crypto'
+
+import { verifySession } from '../../../../src/lib/jwt'
 
 export async function GET(req: Request) {
   const cookieHeader = req.headers.get('cookie') || ''

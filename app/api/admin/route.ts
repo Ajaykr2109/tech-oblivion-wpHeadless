@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { requireRole } from '../../../src/lib/auth'
 
 export async function GET() {

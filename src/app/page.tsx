@@ -1,10 +1,11 @@
-import Feed from "@/components/feed"
 import Head from "next/head"
+import Link from "next/link"
+import { PlayCircle, Send, BookOpen, Rss, Edit } from "lucide-react"
+
+import Feed from "@/components/feed"
 import { getWebSiteSchema, getVideoSchema, getFAQSchema } from "@/lib/generateSchema"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import Link from "next/link"
-import { PlayCircle, Send, BookOpen, Rss, Edit } from "lucide-react"
 import HomeLatestVideoSection from "@/components/HomeLatestVideoSection"
 import { Marquee } from "@/components/marquee"
 

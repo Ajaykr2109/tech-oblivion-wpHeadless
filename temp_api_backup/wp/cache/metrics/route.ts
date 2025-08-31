@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
 import path from 'path'
+
+import { NextResponse } from 'next/server'
 
 // lightweight, process-local metrics reflected from media proxy
 // Note: metrics are process-local; in multi-instance deployments, aggregate externally.

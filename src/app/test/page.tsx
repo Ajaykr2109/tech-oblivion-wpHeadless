@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import type { WordPressPost } from '@/lib/wordpress-client'
 
 export default function TestPage() {

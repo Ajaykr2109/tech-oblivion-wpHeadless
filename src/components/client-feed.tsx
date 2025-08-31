@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { PostCard } from './post-card'
+
 import { cn } from '@/lib/utils'
 import { htmlToText } from '@/lib/text'
 // Use internal API to avoid direct browser calls to WordPress
 import type { WordPressPost } from '@/lib/wordpress-client'
+
+import { PostCard } from './post-card'
 
 type Post = {
   id: string

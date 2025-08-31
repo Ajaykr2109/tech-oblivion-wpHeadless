@@ -1,12 +1,13 @@
 "use client"
 
 import { useMemo, useState } from 'react'
+import { Reply, Trash2 } from 'lucide-react'
+
 import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import { TableCell } from '@/components/ui/table'
 import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Reply, Trash2 } from 'lucide-react'
 
 const dummyComments = [
   { id: 1, author: "Alex Johnson", avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d", text: "This was an incredibly insightful article. The section on server components really cleared things up for me. Thanks!", post: "A Deep Dive into React Server Components", date: "2024-07-29" },

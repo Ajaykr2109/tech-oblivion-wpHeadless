@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+
 import { cacheImage } from '@/lib/mediaCache'
 
 export const runtime = 'nodejs'

@@ -1,8 +1,10 @@
 "use client"
-import type { Period } from '../../../types/analytics'
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@/components/ui/card'
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts'
+
+import { Card } from '@/components/ui/card'
+
+import type { Period } from '../../../types/analytics'
 
 const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444']
 

@@ -4,8 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import { scaleLinear } from 'd3-scale'
 import isoCountries from 'i18n-iso-countries'
-import type { Period, CountryBreakdown } from '../../../types/analytics'
+
 import { Card } from '@/components/ui/card'
+
+import type { Period, CountryBreakdown } from '../../../types/analytics'
 
 // Register English locale for country mappings if needed
 try {

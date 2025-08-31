@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+
 import { getUsers } from "@/lib/wp";
 
 type AvatarUrls = Record<string, string>;

@@ -1,4 +1,5 @@
 import React from 'react'
+
 import FeedSkeleton from '@/components/feed-skeleton'
 
 // Minimal loading UI for the /blog index route

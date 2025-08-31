@@ -1,7 +1,9 @@
 "use client"
-import type { Period } from '../../../types/analytics'
 import { useQuery } from '@tanstack/react-query'
+
 import { Card } from '@/components/ui/card'
+
+import type { Period } from '../../../types/analytics'
 
 type SummaryResp = { referers?: { source: string; count: number }[] }
 

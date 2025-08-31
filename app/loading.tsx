@@ -1,4 +1,5 @@
 import React from 'react'
+
 import { PostCardSkeleton } from '@/components/post-card-skeleton'
 
 export default function RootLoading() {

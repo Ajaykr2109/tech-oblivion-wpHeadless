@@ -1,6 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
+
 import { getPostBySlug, PostDetail } from '@/lib/wp'
 import { logWPError } from '@/lib/log'
 

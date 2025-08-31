@@ -1,5 +1,6 @@
-import ClientImage from "@/components/ui/client-image";
 import Link from "next/link";
+
+import ClientImage from "@/components/ui/client-image";
 import {
   Card,
   CardContent,

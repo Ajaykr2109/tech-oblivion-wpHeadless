@@ -1,12 +1,15 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
-import type { Period } from '../../../types/analytics'
+import { motion } from 'framer-motion'
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
-import { motion } from 'framer-motion'
+
+import type { Period } from '../../../types/analytics'
+
 
 type Props = {
   period: Period

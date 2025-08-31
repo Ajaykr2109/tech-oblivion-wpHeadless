@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
+
 import { getSessionUser } from '@/lib/auth'
+
 import AccountAvatarPage from '../../../src/app/account/avatar/page'
 
 export default async function AccountAvatarWrapper() {

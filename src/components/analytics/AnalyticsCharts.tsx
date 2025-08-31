@@ -1,9 +1,11 @@
 "use client"
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Period } from '../../../types/analytics'
-import { Card } from '@/components/ui/card'
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts'
+
+import { Card } from '@/components/ui/card'
+
+import type { Period } from '../../../types/analytics'
 
 type Props = {
   period: Period

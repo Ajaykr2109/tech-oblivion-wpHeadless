@@ -1,6 +1,7 @@
 "use client"
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+
 import { decodeEntities } from '@/lib/entities'
 
 export default function TOCItem({ id, value, depth, state, onClick, focused, minutes }: {

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User as UserIcon, LayoutDashboard, Shield, Image as ImageIcon, Settings } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 const sidebarNavLinks = [

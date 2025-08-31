@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
 import fs from 'fs/promises'
 import path from 'path'
+
+import { NextResponse } from 'next/server'
 
 const CACHE_DIR = path.join(process.cwd(), '.cache', 'wp-media')
 const INVALIDATE_SECRET = process.env.WP_CACHE_INVALIDATE_SECRET || ''

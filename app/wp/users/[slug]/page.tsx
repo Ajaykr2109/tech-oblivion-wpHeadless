@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
+
 import { getSessionUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 

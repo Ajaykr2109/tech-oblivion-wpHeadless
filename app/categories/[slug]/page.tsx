@@ -1,10 +1,11 @@
 import React, { Suspense } from 'react'
+import { Search } from 'lucide-react'
+
 import Feed from '@/components/feed'
 import FeedSkeleton from '@/components/feed-skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Search } from 'lucide-react'
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   const { slug } = params

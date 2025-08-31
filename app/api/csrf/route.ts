@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+
 import { CSRF_COOKIE, generateCsrfToken } from '../../../src/lib/csrf'
 
 export async function GET() {

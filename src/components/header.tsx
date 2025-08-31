@@ -8,9 +8,10 @@ import { Menu, ChevronDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { RoleGate } from "@/hooks/useRoleGate";
+
 import { ThemeToggle } from "./theme-toggle";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "./ui/dropdown-menu";
-import { RoleGate } from "@/hooks/useRoleGate";
 
 const navLinks = [
   { href: "/", label: "Home" },

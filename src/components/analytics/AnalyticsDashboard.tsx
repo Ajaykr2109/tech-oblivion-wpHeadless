@@ -1,15 +1,19 @@
 "use client"
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
+
 import type { Period } from '../../../types/analytics'
+
 import AnalyticsHeader from './AnalyticsHeader'
 import AnalyticsCharts from './AnalyticsCharts'
 import AnalyticsTable from './AnalyticsTable'
 import AnalyticsSidebar from './AnalyticsSidebar'
 import SessionsChart from './SessionsChart'
 import AnalyticsWorldMap from './AnalyticsWorldMap'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Card } from '@/components/ui/card'
-import { useQuery } from '@tanstack/react-query'
+
 
 export default function AnalyticsDashboard() {
   const [period, setPeriod] = useState<Period>('month')

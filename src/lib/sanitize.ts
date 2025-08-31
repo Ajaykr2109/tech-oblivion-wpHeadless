@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html'
+
 import { decodeEntities } from './text'
 
 // Include heading tags so we can build TOC and preserve document structure

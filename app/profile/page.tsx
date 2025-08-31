@@ -1,8 +1,9 @@
 
+import { Twitter, Linkedin, Github } from "lucide-react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Twitter, Linkedin, Github } from "lucide-react";
 
 export default function ProfilePage() {
   // Placeholder data

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+
 import { sanitizeWP } from '../src/lib/sanitize'
 
 describe('sanitizeWP', () => {

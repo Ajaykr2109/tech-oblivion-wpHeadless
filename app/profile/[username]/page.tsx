@@ -1,11 +1,12 @@
+import { Twitter, Linkedin, Github, Edit3 } from "lucide-react";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Twitter, Linkedin, Github, Edit3 } from "lucide-react";
 import { decodeEntities } from "@/lib/text";
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { getUserBySlug } from "@/lib/wp-public";
 
@@ -78,7 +79,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   // Resolve comment post titles/slugs in one fetch
   const postIds = Array.from(new Set(commentsJson.map(c => c.post).filter(Boolean)))
-  let postMap = new Map<number, { slug: string; title: string }>()
+  const postMap = new Map<number, { slug: string; title: string }>()
   if (postIds.length) {
     const include = postIds.join(',')
     const incRes = await fetch(new URL(`/api/wp/posts?include=${include}&per_page=${Math.min(100, postIds.length)}`, SITE).toString(), { cache: 'no-store' })

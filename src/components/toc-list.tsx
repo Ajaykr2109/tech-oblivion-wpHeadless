@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react'
+
 import type { TocItem } from '@/lib/toc'
 
 type Props = { items: TocItem[] }

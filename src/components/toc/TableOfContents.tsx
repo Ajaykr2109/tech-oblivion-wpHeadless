@@ -1,10 +1,12 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+
 import { TocItem as FlatItem } from '@/lib/toc-md'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
+
 import TOCItem from './TOCItem'
 import type { TocNode, SectionTimeMap } from './types'
-import { motion, AnimatePresence } from 'framer-motion'
 
 function toHierarchy(items: FlatItem[]): TocNode[] {
   const root: TocNode = { id: 'root', depth: 1, value: 'root', children: [] }

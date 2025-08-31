@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, FileText, Users, MessageSquare, SettingsIcon, ImageIcon, Tags, FolderCog, PlugIcon, Palette, Activity, TestTubes } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useMe } from '@/hooks/useRoleGate'

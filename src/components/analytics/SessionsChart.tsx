@@ -1,7 +1,9 @@
 "use client"
 import { useQuery } from '@tanstack/react-query'
-import { Card } from '@/components/ui/card'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+
+import { Card } from '@/components/ui/card'
+
 import type { Period } from '../../../types/analytics'
 
 type SummaryResp = { sessions?: { data: { date: string; sessions: number }[] } }

@@ -1,9 +1,11 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import type { NextRequest } from 'next/server'
 import { createHmac } from 'crypto'
+
+import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
+
 import { verifySession } from '@/lib/jwt'
 
 export async function GET(req: NextRequest) {

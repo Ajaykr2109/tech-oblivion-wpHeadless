@@ -1,5 +1,6 @@
 "use client"
 import { useEffect } from 'react'
+
 import { useToast } from '@/hooks/use-toast'
 
 export default function ContentDecorators({ selector = '.wp-content' }: { selector?: string }) {

@@ -1,1 +1,1 @@
-declare module 'react-grid-layout'
+// Deprecated: redundant stub. Real types are in react-grid-layout.d.ts

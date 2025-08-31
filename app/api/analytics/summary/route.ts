@@ -1,6 +1,7 @@
+import { cookies } from 'next/headers'
+
 import { apiMap } from '@/lib/wpAPIMap'
 import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
-import { cookies } from 'next/headers'
 import { verifySession } from '@/lib/jwt'
 
 export const runtime = 'nodejs'

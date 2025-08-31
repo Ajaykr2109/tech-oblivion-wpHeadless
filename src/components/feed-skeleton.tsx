@@ -1,5 +1,7 @@
 import React from 'react'
+
 import { cn } from '@/lib/utils'
+
 import { PostCardSkeleton } from './post-card-skeleton'
 
 export default function FeedSkeleton({ layout = 'grid', count = 6 }: { layout?: 'grid' | 'list'; count?: number }) {

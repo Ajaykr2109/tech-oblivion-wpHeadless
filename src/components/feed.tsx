@@ -1,9 +1,11 @@
 
+import { Info } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { htmlToText } from "@/lib/text";
-import { PostCard } from "./post-card";
 import { getPosts } from "@/lib/wp";
-import { Info } from "lucide-react";
+
+import { PostCard } from "./post-card";
 
 type FeedProps = {
   layout?: 'grid' | 'list';

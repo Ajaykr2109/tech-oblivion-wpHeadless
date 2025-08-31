@@ -1,10 +1,11 @@
 
 import React, { Suspense } from 'react'
+import { Search, Clock, Flame } from 'lucide-react'
+
 import Feed from '@/components/feed'
 import FeedSkeleton from '@/components/feed-skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Clock, Flame } from 'lucide-react'
 
 export const dynamic = 'force-static'
 

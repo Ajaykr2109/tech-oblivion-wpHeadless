@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+
 import { apiRolesMatrix } from '../src/config/apiRolesMatrix'
 
 const API_DIRS = [

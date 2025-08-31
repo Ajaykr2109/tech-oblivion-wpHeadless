@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
 import * as log from '../log'
 
 const HTML_503 = `<!DOCTYPE html><html><head><title>Maintenance</title></head><body><p>Site under maintenance</p></body></html>`

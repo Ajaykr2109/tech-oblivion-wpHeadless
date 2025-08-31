@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react'
+
 import { Card } from '@/components/ui/card'
 import DashboardClientShell from '@/components/dashboard/DashboardClientShell'
 

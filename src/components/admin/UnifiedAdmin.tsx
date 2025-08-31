@@ -3,6 +3,7 @@ import { useRoleGate } from '@/hooks/useRoleGate'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
+
 import ModerationPanel from './moderation/ModerationPanel'
 import SettingsPanel from './settings/SettingsPanel'
 

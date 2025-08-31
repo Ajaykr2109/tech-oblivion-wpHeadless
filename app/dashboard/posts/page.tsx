@@ -1,8 +1,9 @@
+import Link from "next/link";
+import { Edit, Trash2, PlusCircle } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { dummyPosts } from "@/data/dummy-posts";
-import Link from "next/link";
-import { Edit, Trash2, PlusCircle } from "lucide-react";
 
 export default function DashboardPostsPage() {
   const userPosts = dummyPosts.slice(0, 3); // Placeholder for user-specific posts

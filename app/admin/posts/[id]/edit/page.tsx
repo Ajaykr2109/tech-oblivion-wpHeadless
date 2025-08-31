@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+
 import PostEditorPageClient from '@/components/admin/PostEditorPageClient'
 
 export const runtime = 'nodejs'
