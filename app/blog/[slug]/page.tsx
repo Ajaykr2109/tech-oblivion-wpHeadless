@@ -8,7 +8,7 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { notFound } from 'next/navigation'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
-import { Clock, Eye } from 'lucide-react'
+import { Twitter, Linkedin, Github, Clock, Eye } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +34,6 @@ import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
 import { extractTocFromMarkdown } from '@/lib/toc-md'
 import { decodeEntities } from '@/lib/entities'
-import PostAuthor from '@/components/post-author'
 
 // ToolbarPortal moved to component file
 
@@ -115,21 +114,10 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     const autoLinkTargets: AutoLinkTarget[] = []
     const contentLinked = autoLinkFirst(contentWithHeadingIds, autoLinkTargets)
 
-        // 🚀 ENHANCED: Better recommendations with more metadata
+    // 🚀 ENHANCED: Better recommendations with more metadata
     let recommended: EnhancedRecommendation[] = []
-        // Author details
-        const authorId = Number((post as any).authorId ?? 0) || 0
-        const authorSlug = (post as any).authorSlug as string | null
-        // Fetch public author profile (bio + socials)
-        let authorPublic: any = null
-        if (authorSlug) {
-            try {
-                const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-                const u = new URL(`/api/wp/users/${encodeURIComponent(authorSlug)}`, origin || 'http://localhost:3000')
-                const r = await fetch(u.toString(), { cache: 'no-store' })
-                if (r.ok) authorPublic = await r.json().catch(() => null)
-            } catch {}
-        }
+    // Try to infer author id from categories/tags data model; fallback 0 (no fetch)
+    const authorId = (post as any).author ?? 0
     const latestByAuthor = authorId ? await getLatestByAuthor(Number(authorId), Number(post.id), 3) : []
     try {
         const cats = (post.categories || []).map(c => c.id).join(',')
@@ -264,7 +252,10 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                         <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
                     </div>
                     <div className="max-w-3xl mx-auto text-center">
-                        <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-3 break-words">{post.title}</h1>
+                       <h1 className="max-w-4xl mx-auto text-3xl md:text-5xl font-bold tracking-tight mb-6 break-words leading-tight text-center">
+                        {post.title}
+                       </h1>
+
                         <div className="flex flex-wrap items-center justify-center gap-3 text-muted-foreground text-sm">
                             {/* Categories as badges */}
                             <div className="flex flex-wrap gap-2 justify-center">
@@ -485,36 +476,42 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
                 <Separator className="my-12" />
 
-                                                {/* 🚀 ENHANCED: Author box with more details */}
-                                                <div className="max-w-4xl mx-auto">
-                                                    {(() => {
-                                                        function ensureUrl(u?: string) {
-                                                            if (!u) return undefined
-                                                            const s = String(u).trim()
-                                                            if (!s) return undefined
-                                                            if (/^https?:\/\//i.test(s)) return s
-                                                            return `https://${s}`
-                                                        }
-                                                        const pf = (authorPublic && typeof authorPublic.profile_fields === 'object') ? (authorPublic.profile_fields as Record<string, unknown>) : null
-                                                        const getPF = (k: string) => (pf && typeof pf[k] === 'string' ? String(pf[k]) : undefined)
-                                                        const bio = (authorPublic?.description as string) || null
-                                                        const twitterUrl = ensureUrl(getPF('twitter') || getPF('x') || getPF('twitter_url')) || null
-                                                        const linkedinUrl = ensureUrl(getPF('linkedin') || getPF('linkedin_url')) || null
-                                                        const githubUrl = ensureUrl(getPF('github') || getPF('github_url')) || null
-                                                        return (
-                                                            <PostAuthor
-                                                                authorName={post.authorName}
-                                                                authorAvatar={post.authorAvatar}
-                                                                canonicalUrl={post.seo?.canonical || null}
-                                                                bio={bio}
-                                                                profileSlug={authorSlug}
-                                                                twitterUrl={twitterUrl}
-                                                                linkedinUrl={linkedinUrl}
-                                                                githubUrl={githubUrl}
-                                                            />
-                                                        )
-                                                    })()}
-                                                </div>
+                {/* 🚀 ENHANCED: Author box with more details */}
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-card/50 p-6 rounded-lg border flex flex-col sm:flex-row items-start gap-6">
+                        <Avatar className="h-24 w-24 ring-2 ring-primary/20">
+                            <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
+                            <AvatarFallback className="text-2xl font-bold">{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-semibold text-muted-foreground mb-1">WRITTEN BY</h3>
+                            <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
+                            <p className="text-muted-foreground mb-4">
+                                An avid writer and technologist sharing insights on modern development practices. 
+                                {/* This could be pulled from author bio field */}
+                            </p>
+                            <div className="flex items-center gap-4 mb-4">
+                                <a href={post.seo?.twitterImage ? post.seo?.canonical || '#' : '#'} aria-label="Twitter" className="text-muted-foreground hover:text-blue-500 transition-colors">
+                                    <Twitter className="h-5 w-5" />
+                                </a>
+                                <a href={post.seo?.canonical || '#'} aria-label="LinkedIn" className="text-muted-foreground hover:text-blue-600 transition-colors">
+                                    <Linkedin className="h-5 w-5" />
+                                </a>
+                                <a href={post.authorName ? `https://github.com/${encodeURIComponent(post.authorName.replace(/\s+/g,'').toLowerCase())}` : '#'} aria-label="GitHub" className="text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors">
+                                    <Github className="h-5 w-5" />
+                                </a>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Link href="/profile" className="text-sm text-primary hover:underline font-medium">
+                                    View full profile →
+                                </Link>
+                                <button className="text-sm bg-primary text-primary-foreground px-4 py-1 rounded-full hover:bg-primary/90 transition-colors">
+                                    + Follow
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <Separator className="my-12" />
 

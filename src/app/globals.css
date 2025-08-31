@@ -131,10 +131,15 @@ html {
   pointer-events: none;
 }
 
-/* Reduce giant spacing under header */
+/* Main content spacing (route-specific) */
 main#main-content {
-  padding-top: 64px; /* fixed instead of clamp */
+  padding-top: 0; /* default: no extra gap */
   padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+/* Add padding only on blog/article pages */
+main#main-content.blog,
+main#main-content.article {
+  padding-top: 64px; /* match header height */
 }
 
 /* Remove unnecessary max-width from profile/hero sections */

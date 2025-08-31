@@ -27,11 +27,11 @@ export async function GET(req: Request) {
   } else if (type === 'top-posts') {
     api = `/api/analytics/top-posts?period=${encodeURIComponent(period)}`
   } else if (type === 'devices') {
-    api = `/api/analytics/devices?period=${encodeURIComponent(period)}`
+  api = `/api/analytics/summary?period=${encodeURIComponent(period)}`
   } else if (type === 'countries') {
-    api = `/api/analytics/countries?period=${encodeURIComponent(period)}`
+  api = `/api/analytics/summary?period=${encodeURIComponent(period)}`
   } else if (type === 'referers') {
-    api = `/api/analytics/referers?period=${encodeURIComponent(period)}`
+  api = `/api/analytics/summary?period=${encodeURIComponent(period)}`
   } else {
     return new Response('unknown type', { status: 400 })
   }
@@ -46,11 +46,11 @@ export async function GET(req: Request) {
   } else if (type === 'top-posts') {
     csv = toCSV(data || [], ['id','slug','title','views'])
   } else if (type === 'devices') {
-    csv = toCSV(data || [], ['device_type','count'])
+    csv = toCSV((data?.devices || []), ['device_type','count'])
   } else if (type === 'countries') {
-    csv = toCSV(data || [], ['country_code','count'])
+    csv = toCSV((data?.countries || []), ['country_code','count'])
   } else if (type === 'referers') {
-    csv = toCSV(data || [], ['source','count','category'])
+    csv = toCSV((data?.referers || []), ['source','count','category'])
   }
   return new Response(csv, { status: 200, headers: { 'Content-Type': 'text/csv', 'Content-Disposition': `attachment; filename="${type}-${period}.csv"` } })
 }

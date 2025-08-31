@@ -17,17 +17,19 @@ type Props = {
 export default function AnalyticsCharts({ period, postIds, chartType, granularity, autoRefresh, queryKeyBase }: Props) {
   const refreshMs = autoRefresh ? 60000 : undefined
   const postId = postIds.length === 1 ? String(postIds[0]) : undefined
-  const viewsKey = useMemo(() => ['analytics','views',...queryKeyBase], [queryKeyBase])
-  const { data: viewsData } = useQuery({
-    queryKey: viewsKey,
+  const summaryKey = useMemo(() => ['analytics','summary', period], [period])
+  const { data: summary } = useQuery({
+    queryKey: summaryKey,
     queryFn: async () => {
-      const u = new URL('/api/analytics/views', window.location.origin)
+      const u = new URL('/api/analytics/summary', window.location.origin)
       u.searchParams.set('period', period)
-      if (postId) u.searchParams.set('postId', postId)
       const res = await fetch(u)
+      if (!res.ok) throw new Error('Failed to load summary')
       return res.json()
     },
     refetchInterval: refreshMs,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const topKey = useMemo(() => ['analytics','top',period], [period])
@@ -42,17 +44,7 @@ export default function AnalyticsCharts({ period, postIds, chartType, granularit
     refetchInterval: refreshMs,
   })
 
-  const devicesKey = useMemo(() => ['analytics','devices',period], [period])
-  const { data: devices } = useQuery({
-    queryKey: devicesKey,
-    queryFn: async () => {
-      const u = new URL('/api/analytics/devices', window.location.origin)
-      u.searchParams.set('period', period)
-      const res = await fetch(u)
-      return res.json()
-    },
-    refetchInterval: refreshMs,
-  })
+  // Devices can be read from summary when needed elsewhere
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -61,14 +53,14 @@ export default function AnalyticsCharts({ period, postIds, chartType, granularit
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             {chartType === 'line' ? (
-              <LineChart data={viewsData?.series || []}>
+              <LineChart data={summary?.trends?.series || []}>
                 <XAxis dataKey="date" hide={false} />
                 <YAxis />
                 <Tooltip />
                 <Line type="monotone" dataKey="views" stroke="#2563eb" strokeWidth={2} dot={false} />
               </LineChart>
             ) : (
-              <BarChart data={viewsData?.series || []}>
+              <BarChart data={summary?.trends?.series || []}>
                 <XAxis dataKey="date" hide={false} />
                 <YAxis />
                 <Tooltip />

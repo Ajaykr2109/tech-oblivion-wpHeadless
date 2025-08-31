@@ -78,6 +78,7 @@ export const apiMap = {
     countries: `${WP_BASE}/wp-json/fe-analytics/v1/countries`,
     referers: `${WP_BASE}/wp-json/fe-analytics/v1/referers`,
     topPosts: `${WP_BASE}/wp-json/fe-analytics/v1/top-posts`,
+  summary: `${WP_BASE}/wp-json/fe-analytics/v1/summary`,
   sessions: `${WP_BASE}/wp-json/fe-analytics/v1/sessions`,
   },
 };

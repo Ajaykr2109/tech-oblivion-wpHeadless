@@ -177,3 +177,10 @@ To get started, take a look at src/app/page.tsx.
 - The browser never talks to WordPress directly for data or auth; all requests go through Next.js server routes under `/api/wp/*` and `/api/auth/*`.
 - We store the upstream WordPress JWT token inside the server-signed session to perform privileged actions; it is never exposed to the browser.
 - See `docs/button_api_map.md` for the current mapping of UI actions to internal APIs and required roles.
+
+## Unified Admin + Analytics
+
+- Unified Admin Dashboard at `/admin` combines Analytics, Moderation, and Settings in a tabbed UI (Tailwind + Radix Tabs).
+- Single normalized analytics endpoint: `GET /api/analytics/summary` → `GET {WP}/wp-json/fe-analytics/v1/summary`.
+- WordPress caches with transients; frontend caches with React Query (staleTime 60s, gcTime 5m).
+- Role-aware: access limited to `administrator` for now, enforced both server-side (WP REST permission) and client-side (React role guard).

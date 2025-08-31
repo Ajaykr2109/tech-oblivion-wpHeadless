@@ -16,19 +16,21 @@ try {
 const geoUrl = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
 export default function AnalyticsWorldMap({ period }: { period: Period }) {
-  const { data, isLoading } = useQuery<{ data: CountryBreakdown[] }>({
-    queryKey: ['analytics', 'countries', period, 'map'],
+  const { data, isLoading } = useQuery<{ countries?: CountryBreakdown[] }>({
+    queryKey: ['analytics', 'summary', period, 'map'],
     queryFn: async () => {
-      const u = new URL('/api/analytics/countries', window.location.origin)
+      const u = new URL('/api/analytics/summary', window.location.origin)
       u.searchParams.set('period', period)
       const r = await fetch(u)
-      if (!r.ok) throw new Error('Failed to load countries')
+      if (!r.ok) throw new Error('Failed to load summary')
       return r.json()
     },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
 
   const { countsByNumeric, max } = useMemo(() => {
-    const list = data?.data || []
+  const list = data?.countries || []
     const map: Record<string, number> = {}
     let max = 0
     for (const c of list) {

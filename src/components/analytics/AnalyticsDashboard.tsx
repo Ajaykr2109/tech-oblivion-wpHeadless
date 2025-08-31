@@ -21,6 +21,20 @@ export default function AnalyticsDashboard() {
 
   const queryKeyBase = useMemo(() => [period, postIds.join(','), granularity], [period, postIds, granularity])
 
+  // Prefetch unified summary for sidebar and possibly charts
+  useQuery({
+    queryKey: ['analytics','summary',period],
+    queryFn: async () => {
+      const u = new URL('/api/analytics/summary', window.location.origin)
+      u.searchParams.set('period', period)
+      const r = await fetch(u)
+      if (!r.ok) throw new Error('Failed to load summary')
+      return r.json()
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div className="lg:col-span-9 space-y-4">
@@ -77,36 +91,26 @@ export default function AnalyticsDashboard() {
 
 function DevicesMain({ period }: { period: Period }) {
   const { data } = useQuery({
-    queryKey: ['analytics','devices',period,'main'],
+    queryKey: ['analytics','summary',period,'devices'],
     queryFn: async () => {
-      const u = new URL('/api/analytics/devices', window.location.origin)
+      const u = new URL('/api/analytics/summary', window.location.origin)
       u.searchParams.set('period', period)
       const r = await fetch(u)
+      if (!r.ok) throw new Error('Failed to load summary')
       return r.json()
-    }
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   })
   return (
     <Card className="p-4">
       <div className="font-medium mb-2">Devices breakdown</div>
-      <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>
+      <pre className="text-xs overflow-auto">{JSON.stringify(data?.devices || [], null, 2)}</pre>
     </Card>
   )
 }
 
 function CountriesMain({ period }: { period: Period }) {
-  const { data } = useQuery({
-    queryKey: ['analytics','countries',period,'main'],
-    queryFn: async () => {
-      const u = new URL('/api/analytics/countries', window.location.origin)
-      u.searchParams.set('period', period)
-      const r = await fetch(u)
-      return r.json()
-    }
-  })
-  return (
-    <Card className="p-4">
-      <div className="font-medium mb-2">World map heatmap (TODO)</div>
-      <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>
-    </Card>
-  )
+  // Deprecated: countries now rendered via AnalyticsWorldMap which consumes summary.countries
+  return null
 }
