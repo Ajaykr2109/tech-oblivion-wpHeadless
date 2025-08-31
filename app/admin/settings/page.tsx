@@ -2,14 +2,17 @@
 import { revalidateTag } from 'next/cache'
 import { invalidateTags } from '@/lib/serverCache'
 import { getSettings, updateSettings } from '@/lib/settings'
+import { requireAccess } from '@/lib/requireAccess'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import PageHeader from '@/components/admin/PageHeader'
 
 export default async function AdminSettingsPage() {
+  await requireAccess({ path: '/api/wp/settings', method: 'GET', action: 'read' })
   const ttl = Number(process.env.WP_CACHE_TTL || 300)
   const settings = await getSettings()
 
@@ -62,7 +65,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Site Settings</h1>
+      <PageHeader title="settings" subtitle="Site settings" />
 
       <div className="grid gap-8">
         <Card>

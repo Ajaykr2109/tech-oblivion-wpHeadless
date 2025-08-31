@@ -1,13 +1,14 @@
 
 import { Suspense } from 'react'
 import UnifiedAdmin from '@/components/admin/UnifiedAdmin'
+import PageHeader from '@/components/admin/PageHeader'
 
 export const runtime = 'nodejs'
 
 export default function AdminHomePage() {
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+      <PageHeader title="admin dashboard" />
       <Suspense fallback={<div>Loading…</div>}>
         <UnifiedAdmin />
       </Suspense>

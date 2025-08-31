@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { MoreHorizontal, PlusCircle, Search } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import PageHeader from '@/components/admin/PageHeader'
+import { requireAccess } from '@/lib/requireAccess'
 
 const dummyAdminPosts = [
   { id: 1, title: "The Future of AI in Web Development", status: "Published", author: "Jane Doe", date: "2024-07-28" },
@@ -18,10 +20,11 @@ const dummyAdminPosts = [
 ];
 
 export default async function AdminPostsPage() {
+  await requireAccess({ path: '/api/wp/posts', method: 'POST', action: 'write' })
   return (
     <div className="p-8">
+      <PageHeader title="posts" subtitle="Manage / Revisions" />
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manage Posts</h1>
         <Button asChild>
           <Link href="/editor/new"><PlusCircle className="mr-2 h-4 w-4" /> New Post</Link>
         </Button>
@@ -93,6 +96,7 @@ export default async function AdminPostsPage() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild><Link href={`/editor/${post.id}`}>Edit</Link></DropdownMenuItem>
                         <DropdownMenuItem>View</DropdownMenuItem>
+                        <DropdownMenuItem>View Revisions</DropdownMenuItem>
                         <DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

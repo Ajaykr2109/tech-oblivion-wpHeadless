@@ -18,6 +18,8 @@ export const apiMap = {
     create: `${WP_BASE}/wp-json/wp/v2/users`,
     update: (id: number) => `${WP_BASE}/wp-json/wp/v2/users/${id}`,
     delete: (id: number) => `${WP_BASE}/wp-json/wp/v2/users/${id}`,
+  // Custom MU endpoint for bulk deletion (see docs/mu-plugins-backup/mu-fe-auth-users-bulk-delete.php)
+  bulkDelete: `${WP_BASE}/wp-json/fe-auth/v1/users/bulk-delete`,
   },
   posts: {
     list: `${WP_BASE}/wp-json/wp/v2/posts`,

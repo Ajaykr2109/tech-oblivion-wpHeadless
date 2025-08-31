@@ -1,51 +1,34 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+import { fetchWithAuth, MissingWpTokenError } from '@/lib/fetchWithAuth'
+
 function getWpBase() {
   const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
   if (!WP) throw new Error('WP_URL env required')
   return WP.replace(/\/$/, '')
 }
 
-async function forward(req: Request, path: string, init?: RequestInit) {
-  const base = getWpBase()
-  const url = new URL(`/wp-json/fe-auth/v1${path}`, base)
-  const incomingCookies = req.headers.get('cookie') || ''
-  const ua = req.headers.get('user-agent') || 'techoblivion-next-proxy'
-  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0]?.trim()
-  const r = await fetch(url.toString(), {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...(incomingCookies ? { cookie: incomingCookies } : {}),
-      'User-Agent': ua,
-      ...(ip ? { 'X-Forwarded-For': ip } : {}),
-      ...(init?.headers || {}),
-    },
-    cache: 'no-store',
-  })
-  const text = await r.text()
-  return new Response(text || '{}', {
-    status: r.status,
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const postId = searchParams.get('postId') || searchParams.get('post_id')
-  const expand = searchParams.get('expand')
+    const expand = searchParams.get('expand')
+    const base = getWpBase()
     if (postId) {
-      // Check bookmark state and count for a post
-      return await forward(req, `/bookmarks/check?post_id=${encodeURIComponent(postId)}`)
+      const url = new URL('/wp-json/fe-auth/v1/bookmarks/check', base)
+      url.searchParams.set('post_id', String(postId))
+      return await fetchWithAuth(req, url.toString())
     }
-    // List bookmarks for current user
-  const q = expand ? `?expand=${encodeURIComponent(expand)}` : ''
-  return await forward(req, `/bookmarks${q}`)
+    const url = new URL('/wp-json/fe-auth/v1/bookmarks', base)
+    if (expand) url.searchParams.set('expand', expand)
+    return await fetchWithAuth(req, url.toString())
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: 'server error', detail: String(e?.message || e) }), { status: 500 })
+    if (e instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Login required to use bookmarks' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('bookmarks.GET unexpected error:', e)
+    return new Response(JSON.stringify({ error: 'server_error', detail: String(e?.message || e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }
 
@@ -55,13 +38,20 @@ export async function POST(req: Request) {
     try { body = await req.json() } catch { body = null }
     const postId = Number(body?.postId ?? body?.post_id ?? 0)
     if (!postId || !Number.isFinite(postId)) {
-      return new Response(JSON.stringify({ error: 'postId required' }), { status: 400 })
+      return new Response(JSON.stringify({ error: 'postId required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
-    return await forward(req, '/bookmarks/toggle', {
+    const base = getWpBase()
+    const url = new URL('/wp-json/fe-auth/v1/bookmarks/toggle', base)
+    return await fetchWithAuth(req, url.toString(), {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ post_id: postId }),
     })
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: 'server error', detail: String(e?.message || e) }), { status: 500 })
+    if (e instanceof MissingWpTokenError) {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Login required to save bookmarks' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+    }
+    console.error('bookmarks.POST unexpected error:', e)
+    return new Response(JSON.stringify({ error: 'server_error', detail: String(e?.message || e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }
