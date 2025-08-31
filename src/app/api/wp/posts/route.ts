@@ -43,7 +43,18 @@ export async function GET(req: NextRequest) {
   const out = id ? new URL(`/wp-json/wp/v2/posts/${id}`, WP) : new URL('/wp-json/wp/v2/posts', WP)
   if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
   // Forward Authorization header if present
-  const authHeader = req.headers.get('authorization')
+  let authHeader = req.headers.get('authorization') || undefined
+  // If fetching a single post without Authorization, attempt to use session wpToken (to allow drafts access)
+  if (id && !authHeader) {
+    try {
+      const cookieStore = await cookies()
+      const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+      if (sessionCookie?.value) {
+        const claims: any = await verifySession(sessionCookie.value)
+        if (claims?.wpToken) authHeader = `Bearer ${claims.wpToken}`
+      }
+    } catch {}
+  }
   const res = await fetch(out, { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
   if (!res.ok) {
     if (res.status === 404 || res.status === 400) {

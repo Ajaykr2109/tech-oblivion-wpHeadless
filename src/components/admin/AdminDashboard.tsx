@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import GridLayout from 'react-grid-layout'
 import dynamic from 'next/dynamic'
 import Tile from './tiles/Tile'
+const PostEditorTile = dynamic(() => import('./tiles/PostEditorTile'), { ssr: false })
 import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
@@ -137,9 +138,13 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
           <div key={id} data-grid={layout.find(l => l.i === id)}>
             <Tile>
               <div className="text-sm font-semibold mb-1">{id}</div>
-              {/* TODO: render real tile content by id */}
-              <div className="text-xs text-muted-foreground">Content for {id}</div>
-              {id === 'crewMan' ? <CrewMan /> : null}
+              {id === 'postEditor' ? (
+                <PostEditorTile />
+              ) : id === 'crewMan' ? (
+                <CrewMan />
+              ) : (
+                <div className="text-xs text-muted-foreground">Content for {id}</div>
+              )}
             </Tile>
           </div>
         ))}
