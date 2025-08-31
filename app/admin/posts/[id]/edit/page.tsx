@@ -1,7 +1,5 @@
 import { notFound } from 'next/navigation'
 import PostEditorPageClient from '@/components/admin/PostEditorPageClient'
-import { cookies } from 'next/headers'
-import { verifySession } from '@/lib/jwt'
 
 export const runtime = 'nodejs'
 
@@ -15,18 +13,11 @@ async function fetchPost(id: string) {
 export default async function EditPostPage({ params }: { params: { id: string } }) {
   const { id } = params
   if (!id) notFound()
-  // Role gate: only users with editing perms
-  const cookieStore = await cookies()
-  const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
-  if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 }) as any
-  try {
-    const claims: any = await verifySession(sessionCookie.value)
-    const roles: string[] = (claims?.roles as any) || []
-    const canEdit = roles.some(r => ['author','editor','administrator'].includes(r))
-    if (!canEdit) return new Response('Forbidden', { status: 403 }) as any
-  } catch {
-    return new Response('Unauthorized', { status: 401 }) as any
-  }
+  // Role gate via Roles Matrix API (single source of truth)
+  const rmRes = await fetch('/api/roles/matrix', { cache: 'no-store' })
+  if (!rmRes.ok) notFound()
+  const matrix = await rmRes.json()
+  if (!matrix?.can?.posts?.edit) notFound()
   const post = await fetchPost(id)
   if (!post) notFound()
   const title = typeof post?.title === 'string' ? post.title : post?.title?.rendered || ''

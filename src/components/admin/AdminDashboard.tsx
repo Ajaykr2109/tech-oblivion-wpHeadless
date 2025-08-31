@@ -1,12 +1,16 @@
 'use client'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import GridLayout from 'react-grid-layout'
 import dynamic from 'next/dynamic'
 import Tile from './tiles/Tile'
 const PostEditorTile = dynamic(() => import('./tiles/PostEditorTile'), { ssr: false })
 import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
+
+// Load react-grid-layout only on the client and normalize default/named export interop
+const GridLayout = dynamic(() => import('react-grid-layout').then((m: any) => m.default ?? m), {
+  ssr: false,
+}) as any
 
 // Lazy heavy tiles example (actual tiles can be split per section later)
 const CrewMan = dynamic(() => import('../dashboard/CrewMan'), { ssr: false })
