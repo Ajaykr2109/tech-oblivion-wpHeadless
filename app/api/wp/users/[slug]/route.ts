@@ -77,9 +77,18 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
 
   const base = WP.replace(/\/$/, '')
   const url = new URL(`/wp-json/fe-auth/v1/public-user/${encodeURIComponent(slug)}`, base)
+  // forward optional compact flag
+  const inUrl = new URL(request.url)
+  const compact = inUrl.searchParams.get('compact')
+  if (compact != null) url.searchParams.set('compact', compact)
+
+  const revalidate = Number(process.env.PROFILE_CACHE_SECONDS || '0')
+  const fetchOpts: RequestInit = revalidate > 0
+    ? ({ next: { revalidate } } as any)
+    : { cache: 'no-store' }
 
   try {
-    const res = await fetch(url.toString(), { cache: 'no-store' })
+    const res = await fetch(url.toString(), fetchOpts)
     if (res.status === 404) {
       return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
     }

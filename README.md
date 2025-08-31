@@ -28,6 +28,20 @@ For advanced in-process caching of custom loaders, use `src/lib/serverCache.ts`.
 
 This project implements a Next.js App Router frontend that proxies WordPress auth via API routes.
 
+## Authors API (minimal, fast)
+
+- Route: `GET /api/wp/users?include=1,2,3`
+- Backed by `wp-json/wp/v2/users` with `include[]` batching and `_fields=id,slug,name,description,avatar_urls,social` to reduce payload.
+- Output: ordered array of users with a consistent `social` object `{ twitter|null, linkedin|null, github|null }`. URLs are normalized to `https://` if missing scheme.
+- Intended for authors lists and bylines; use the profile route below for full details.
+
+## Profile API caching
+
+- Route: `GET /api/wp/users/[slug]`
+- Upstream: single call to `fe-auth/v1/public-user/{slug}`.
+- Optional Next.js cache: set `PROFILE_CACHE_SECONDS` (number of seconds) to enable ISR-style caching for this API route. When not set or `0`, it uses `no-store`.
+- The upstream plugin may also emit HTTP cache headers and support `?compact=1` to trim payload — see WordPress plugin notes below.
+
 ## Api Routes
 
 * `/wp-json/wp/v2/posts` → All published posts (title, content, excerpt, etc.).
@@ -35,6 +49,7 @@ This project implements a Next.js App Router frontend that proxies WordPress aut
 * `/wp-json/wp/v2/media` → Media library info (URLs, captions).
 * `/wp-json/wp/v2/categories`, `/tags` → Taxonomies.
 * `/wp-json/wp/v2/users`
+  - Prefer `GET /api/wp/users?include=...` from the frontend for minimal, ordered authors data.
 
 ## Key features:
 
@@ -77,6 +92,7 @@ When you deploy to production, do NOT keep production secrets in `.env.local` in
 - `NEXT_REVALIDATE_SECRET` (secret for the revalidate webhook)
 - `NEXT_PUBLIC_SITE_URL` (your public frontend URL)
 - `SESSION_COOKIE_NAME` (optional, cookie name; keep consistent)
+- `PROFILE_CACHE_SECONDS` (optional, seconds to cache `/api/wp/users/[slug]` responses on the Next.js side)
 
 Quick secret generation examples (PowerShell):
 
@@ -123,6 +139,24 @@ Use the MU plugin at `wp-content/mu-plugins/next-revalidate.php`.
 - On publish/update of `post` or `page`, it POSTs `{ slug, secret }`.
 - Next.js calls `revalidateTag('wp:post:{slug}')` and optionally `revalidateTag('wp:posts')`.
 - Only affected pages are purged. SEO wins, users get fresh content.
+
+### WordPress public-user endpoint (performance)
+
+Update your `fe-auth` public-user callback to:
+
+- Accept `?compact=1` to omit heavy rendered content in recent posts/comments.
+- Add HTTP caching headers and ETag. Example:
+
+```
+$resp->header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+$resp->header('ETag', '"' . md5(wp_json_encode([$user->ID, $recent_posts, $recent_comments])) . '"');
+```
+
+Verification:
+
+- `/api/wp/users?include=1,2` returns ordered minimal authors with `social`.
+- `/api/wp/users/ajay` returns full profile; set `PROFILE_CACHE_SECONDS` to cache briefly.
+- `/wp-json/fe-auth/v1/public-user/ajay?compact=1` returns lightweight profile with cache headers (200/304 as appropriate).
 
 ### Manual test
 
