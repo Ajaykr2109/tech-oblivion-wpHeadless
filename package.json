@@ -13,7 +13,9 @@
   "test": "vitest",
   "check-env": "node ./scripts/validateEnv.js",
   "build:docs": "tsx ./scripts/generateRoleMatrix.ts",
-  "audit:rbac": "tsx ./scripts/auditRoles.ts"
+  "audit:rbac": "tsx ./scripts/auditRoles.ts",
+  "build:api-map": "tsx ./scripts/generateApiMap.ts",
+  "build:api-map:roles": "tsx ./scripts/generateApiProxyRoles.ts"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
