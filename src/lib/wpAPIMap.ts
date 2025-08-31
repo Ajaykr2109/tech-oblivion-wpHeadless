@@ -82,5 +82,8 @@ export const apiMap = {
     topPosts: `${WP_BASE}/wp-json/fe-analytics/v1/top-posts`,
   summary: `${WP_BASE}/wp-json/fe-analytics/v1/summary`,
   sessions: `${WP_BASE}/wp-json/fe-analytics/v1/sessions`,
+  sessionSummary: `${WP_BASE}/wp-json/fe-analytics/v1/sessions/summary`,
+  sessionTimeseries: `${WP_BASE}/wp-json/fe-analytics/v1/sessions/timeseries`,
+  stream: `${WP_BASE}/wp-json/fe-analytics/v1/stream`,
   },
 };

@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import DashboardClientShell from '@/components/dashboard/DashboardClientShell'
 
 export default async function DashboardPage() {
   // Dummy user data for design purposes, replacing the authentication check.
@@ -61,6 +62,11 @@ export default async function DashboardPage() {
             Logout
             </Button>
         </form>
+      </div>
+
+      <div className="mt-12 space-y-4">
+        <h2 className="text-xl font-semibold">Unified Dashboard</h2>
+  <DashboardClientShell />
       </div>
     </div>
   )

@@ -16,22 +16,30 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "incremental": true,
+  "incremental": false,
     "plugins": [
       {
         "name": "next"
       }
     ],
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ],
   "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "react-grid-layout": [
+        "./types/react-grid-layout.d.ts"
       ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+  "**/*.d.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts"
   ],
