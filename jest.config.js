@@ -18,7 +18,7 @@ const customJestConfig = {
   '^server-only$': '<rootDir>/src/__tests__/serverOnlyMock.js',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(lucide-react|jose|unified|remark|rehype|github-slugger)/)',
+    '/node_modules/(?!lucide-react|d3-scale|jose|react-markdown|unified|remark-parse|github-slugger|react-dnd|dnd-core|@react-dnd|unist-util-visit|is-plain-obj|@radix-ui)/',
   ],
 }
 

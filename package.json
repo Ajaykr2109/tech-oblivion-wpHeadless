@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests --runInBand",
     "test:watch": "jest --watch",
+    "wp-api": "node ./scripts/test-apis.js",
     "check-env": "node ./scripts/validateEnv.js",
     "build:docs": "tsx ./scripts/generateRoleMatrix.ts",
     "audit:rbac": "tsx ./scripts/auditRoles.ts",

@@ -45,7 +45,8 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-  "**/*.d.ts",
+    "**/*.d.ts",
+    "**/*.js",
     "next-env.d.ts",
     ".next/types/**/*.ts"
   ],

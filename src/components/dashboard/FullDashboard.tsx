@@ -53,6 +53,7 @@ function MetricsWidget() {
 
 function SessionsWidget() {
   const { sessionSummary, sessionTS } = useMetrics()
+  const safeSessionTS = sessionTS || []
   return (
     <div className="h-full flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-3">
@@ -60,8 +61,8 @@ function SessionsWidget() {
         <Card className="p-3"><div className="text-xs text-muted-foreground">Avg Duration</div><div className="text-xl font-semibold">{sessionSummary ? Math.round(sessionSummary.avg_duration) + 's' : '—'}</div></Card>
         <Card className="p-3"><div className="text-xs text-muted-foreground">Devices</div><div className="text-xl font-semibold">{sessionSummary?.by_device?.length ?? 0}</div></Card>
       </div>
-      <div className="text-xs text-muted-foreground">Timeseries points: {sessionTS.length}</div>
-      <div className="flex-1 rounded-md border border-border/50 p-2 text-xs overflow-auto">{sessionTS.slice(-20).map(p => (
+      <div className="text-xs text-muted-foreground">Timeseries points: {safeSessionTS.length}</div>
+      <div className="flex-1 rounded-md border border-border/50 p-2 text-xs overflow-auto">{safeSessionTS.slice(-20).map(p => (
         <div key={p.date} className="grid grid-cols-3 gap-2"><span>{p.date}</span><span>{p.sessions}</span><span>{Math.round(p.avg_duration)}s</span></div>
       ))}</div>
     </div>
@@ -70,10 +71,11 @@ function SessionsWidget() {
 
 function PresenceWidget() {
   const { presences } = useMetrics()
-  if (!presences.length) return <div className="text-xs text-muted-foreground">No active users.</div>
+  const safePresences = presences || []
+  if (!safePresences.length) return <div className="text-xs text-muted-foreground">No active users.</div>
   return (
     <div className="space-y-2 text-sm">
-      {presences.map(p => (
+      {safePresences.map(p => (
         <div key={String(p.id)} className="flex items-center justify-between"><span>{p.name || 'User ' + p.id}</span><span className="text-muted-foreground text-xs">{p.device || 'unknown'}</span></div>
       ))}
     </div>

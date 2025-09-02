@@ -8,17 +8,24 @@ import { Card } from '@/components/ui/card'
 import type { Period } from '../../../types/analytics'
 
 type Props = {
-  period: Period
-  postIds: number[]
-  chartType: 'line'|'bar'
-  granularity: 'daily'|'weekly'
-  autoRefresh: boolean
-  queryKeyBase: (string | number)[]
+  period?: Period
+  postIds?: number[]
+  chartType?: 'line'|'bar'
+  granularity?: 'daily'|'weekly'
+  autoRefresh?: boolean
+  queryKeyBase?: (string | number)[]
 }
 
-export default function AnalyticsCharts({ period, postIds, chartType, granularity: _granularity, autoRefresh, queryKeyBase: _queryKeyBase }: Props) {
+export default function AnalyticsCharts({ 
+  period = 'day', 
+  postIds = [], 
+  chartType = 'line', 
+  granularity: _granularity = 'daily', 
+  autoRefresh = false, 
+  queryKeyBase: _queryKeyBase = [] 
+}: Props) {
   const refreshMs = autoRefresh ? 60000 : undefined
-  const _postId = postIds.length === 1 ? String(postIds[0]) : undefined
+  const _postId = (postIds || []).length === 1 ? String(postIds[0]) : undefined
   const summaryKey = useMemo(() => ['analytics','summary', period], [period])
   const { data: summary } = useQuery({
     queryKey: summaryKey,

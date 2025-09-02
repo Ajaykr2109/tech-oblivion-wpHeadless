@@ -126,20 +126,21 @@ const DEFAULTS: Record<SectionKey, LayoutItem[]> = {
 const breakpoints = { lg: 1200, md: 996, sm: 768 }
 const cols = { lg: 12, md: 8, sm: 4 }
 
-export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey }) {
+export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey }) {
   const { loadLayout, saveLayout } = useLayoutPersistence()
-  const [layout, setLayout] = useState<LayoutItem[]>(DEFAULTS[sectionKey])
+  const validSectionKey = sectionKey || 'dashboard' // Default to 'dashboard' if undefined
+  const [layout, setLayout] = useState<LayoutItem[]>(DEFAULTS[validSectionKey] || [])
 
   // Load saved per-user layout
   useEffect(() => {
     let alive = true
     ;(async () => {
-    const saved = await loadLayout(sectionKey)
+    const saved = await loadLayout(validSectionKey)
     if (alive && Array.isArray(saved) && saved.length) setLayout(saved as LayoutItem[])
-      if (!saved?.length) setLayout(DEFAULTS[sectionKey])
+      if (!saved?.length) setLayout(DEFAULTS[validSectionKey] || [])
     })()
     return () => { alive = false }
-  }, [loadLayout, sectionKey])
+  }, [loadLayout, validSectionKey])
 
   const onLayoutChange = useCallback((current: RGLLayout[]) => {
     // Only track lg layout for now; ResponsiveGridLayout supplies per-breakpoint
@@ -148,11 +149,11 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
   }, [])
 
   const onLayoutSave = useCallback(async () => {
-    await saveLayout(sectionKey, layout)
-  }, [layout, saveLayout, sectionKey])
+    await saveLayout(validSectionKey, layout)
+  }, [layout, saveLayout, validSectionKey])
 
   // Simple placeholder tiles by id for now
-  const tileIds = useMemo(() => DEFAULTS[sectionKey].map(d => d.i), [sectionKey])
+  const tileIds = useMemo(() => (DEFAULTS[validSectionKey] || []).map((d: LayoutItem) => d.i), [validSectionKey])
 
   const layouts = useMemo(() => ({
     lg: layout.map((it) => ({ ...it } as RGLLayout)),
@@ -177,7 +178,7 @@ export default function AdminDashboard({ sectionKey }: { sectionKey: SectionKey 
         isDraggable
         isResizable
       >
-        {tileIds.map((id) => (
+        {tileIds.map((id: string) => (
           <div key={id}>
             <Tile>
               <div className="text-sm font-semibold mb-1">{id}</div>

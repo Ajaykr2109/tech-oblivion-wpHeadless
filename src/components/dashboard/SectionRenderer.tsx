@@ -12,9 +12,9 @@ import TileRenderer from './TileRenderer'
 
 type SavedLayout = { i: string; x: number; y: number; w: number; h: number }
 
-export default function SectionRenderer({ section }: { section: Widget['section'] }) {
+export default function SectionRenderer({ section }: { section?: Widget['section'] }) {
   const widgets = useMemo(() => widgetRegistry.filter(w => w.section === section), [section])
-  const defaultLayout: SavedLayout[] = useMemo(() => widgets.map(w => w.defaultLayout), [widgets])
+  const defaultLayout: SavedLayout[] = useMemo(() => (widgets || []).map(w => w.defaultLayout), [widgets])
   const [layout, setLayout] = useState<SavedLayout[]>(defaultLayout)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLayoutChange = (l: SavedLayout[]) => setLayout(l as any)
@@ -45,7 +45,7 @@ export default function SectionRenderer({ section }: { section: Widget['section'
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onLayoutChange={handleLayoutChange}
       >
-        {widgets.map(w => (
+        {(widgets || []).map(w => (
           <div key={w.id}>
             <Card className="h-full w-full p-3 overflow-auto">
               <div className="text-sm font-medium mb-2">{w.title}</div>
