@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,8 +42,8 @@ export default function AccountAvatarPage() {
       const r2 = await fetch('/api/auth/me', { cache: 'no-store' })
       const d2 = await r2.json().catch(() => ({}))
       if (d2?.user) setMe(d2.user)
-    } catch (e: any) {
-      toast({ title: 'Upload failed', description: e?.message || String(e), variant: 'destructive' })
+    } catch (e: unknown) {
+      toast({ title: 'Upload failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' })
     } finally {
       setUploading(false)
     }
@@ -59,7 +60,7 @@ export default function AccountAvatarPage() {
       <Card>
         <CardContent className="p-6 grid gap-4 max-w-xl">
           {preview && (
-            <img src={preview} alt="Current avatar" className="h-24 w-24 rounded-full object-cover" />
+            <Image src={preview} alt="Current avatar" width={96} height={96} className="h-24 w-24 rounded-full object-cover" unoptimized />
           )}
           <input
             type="file"

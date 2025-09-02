@@ -15,9 +15,10 @@ export async function GET(_req: NextRequest, { params }: { params: { slug?: stri
       const full = decodeURIComponent(encoded)
       const u = new URL(full)
       if (u.protocol === 'http:' || u.protocol === 'https:') origin = full
-    } catch {}
+    } catch {
+      // Ignore URL parsing errors
+    }
   }
-
   const headers: Record<string, string> = {
     Accept: 'image/*,*/*;q=0.8',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -26,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug?: stri
   let upstream: Response
   try {
     upstream = await fetch(origin, { cache: 'no-store', headers })
-  } catch (err: any) {
+  } catch {
     return placeholder('upstream-fetch-error')
   }
   if (!upstream.ok) {

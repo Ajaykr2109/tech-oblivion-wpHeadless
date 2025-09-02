@@ -70,7 +70,9 @@ export function useScrollSpy(
           const url = new URL(window.location.href)
           url.hash = `#${current}`
           history.replaceState({}, '', url)
-        } catch {}
+        } catch {
+          // Silently handle URL manipulation errors
+        }
       } else {
         // Still update nearby/adjacent to keep badges consistent
         setState((s) => ({ activeId: s.activeId, nearbyIds: nearby, adjacentIds: adjacent }))

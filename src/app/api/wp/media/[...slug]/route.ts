@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, {
       if (u.protocol === 'http:' || u.protocol === 'https:') {
         origin = full;
       }
-    } catch (e) {
+    } catch {
       // fallthrough; will attempt default WP-based origin which may 404
     }
   }
@@ -37,8 +37,8 @@ export async function GET(_req: NextRequest, {
   let upstream: Response;
   try {
     upstream = await fetch(origin, { cache: 'no-store', headers });
-  } catch (err: any) {
-    console.error('[media-proxy] fetch error', { origin, err: String(err) });
+  } catch (err: unknown) {
+    console.error('[media-proxy] fetch error', { origin, err: err instanceof Error ? err.message : String(err) });
     return placeholderResponse('upstream-fetch-error');
   }
 

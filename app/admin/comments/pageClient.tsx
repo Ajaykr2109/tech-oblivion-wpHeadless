@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { Reply, Trash2 } from 'lucide-react'
 
 import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
-import { TableCell } from '@/components/ui/table'
 import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'

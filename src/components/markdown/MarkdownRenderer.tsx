@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
@@ -19,15 +20,21 @@ export default function MarkdownRenderer({ markdown, className }: Props) {
       <ReactMarkdown
         // Allow HTML embedded in markdown safely handled by rehype-raw + downstream sanitizers/styles
         rehypePlugins={[
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rehypeRaw as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rehypeSlug as any,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           [rehypeAutolinkHeadings as any, { behavior: 'wrap' }],
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rehypeHighlight as any,
         ]}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         remarkPlugins={[remarkGfm as any]}
         // Limit image width and add lazy loading via components mapping
         components={{
-          img: (props) => <img loading="lazy" {...props} />,
+          img: (props) => props.src ? <Image src={props.src} alt={props.alt || ''} width={800} height={600} unoptimized /> : null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           code: (codeProps: any) => {
             const { inline, className, children, ...props } = codeProps || {}
             const child = String(children || '')

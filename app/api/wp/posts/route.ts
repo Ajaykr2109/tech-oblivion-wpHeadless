@@ -26,8 +26,8 @@ export async function DELETE(req: NextRequest) {
 		})
 		const text = await res.text()
 		return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
-	} catch (e: any) {
-		const msg = e?.name === 'AbortError' ? 'Upstream timeout' : (e?.message || 'Upstream error')
+	} catch (e: unknown) {
+		const msg = (e instanceof Error && e.name === 'AbortError') ? 'Upstream timeout' : ((e instanceof Error) ? e.message : 'Upstream error')
 		return new Response(JSON.stringify({ error: msg }), { status: 504 })
 	} finally {
 		clearTimeout(to)

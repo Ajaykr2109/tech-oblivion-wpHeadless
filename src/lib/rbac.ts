@@ -4,7 +4,6 @@ import type { Role } from '@/config/apiRolesMatrix'
 export function mapToApiRole(userRoles?: string[] | null): Role {
   if (!userRoles || userRoles.length === 0) return 'public'
   const norm = userRoles.map((r) => r.toLowerCase())
-  const has = (s: string) => norm.includes(s)
   const priority: Role[] = [
     'administrator',
     'seo_manager',

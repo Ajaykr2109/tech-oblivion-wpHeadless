@@ -1,5 +1,6 @@
 // src/lib/wpProxy.ts
-export async function signProxy(method: string, path: string, body: unknown) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function signProxy(method: string, path: string, body: any) {
   const ts = Math.floor(Date.now() / 1000).toString();
   const raw = body != null ? JSON.stringify(body) : '';
   const msg = `${method.toUpperCase()}\n${path}\n${ts}\n${raw}`;

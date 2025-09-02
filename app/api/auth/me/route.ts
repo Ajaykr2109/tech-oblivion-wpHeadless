@@ -9,8 +9,23 @@ export async function GET(req: Request) {
   const token = match?.[1]
   if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
   try {
-    const claims = await verifySession(token) as any
-  const user: any = {
+    const claims = await verifySession(token) as {
+      sub: string;
+      username: string;
+      email: string;
+      roles: string[];
+      wpUserId?: number;
+      displayName: string;
+      wpToken: string;
+    }
+  const user: {
+      id: string | number;
+      username: string;
+      email: string;
+      displayName: string;
+      roles: string[];
+      [key: string]: unknown;
+    } = {
       id: claims.wpUserId ?? claims.sub,
       username: claims.username,
       email: claims.email,

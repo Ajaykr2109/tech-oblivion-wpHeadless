@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { dehydrate, HydrationBoundary, QueryClient, useQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { cookies } from 'next/headers'
-import { notFound } from 'next/navigation'
 
 type SearchItem = {
   id: number

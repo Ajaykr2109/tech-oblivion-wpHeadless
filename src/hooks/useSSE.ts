@@ -17,15 +17,17 @@ export function useAnalyticsSSE() {
         try {
           const j = JSON.parse(e.data)
           if (!cancelled) setData(j)
-        } catch {}
+        } catch {
+          // Silently handle malformed SSE messages
+        }
       }
       es.onerror = () => {
         setError('sse_error')
         es.close()
         ref.current = null
       }
-    } catch (e: any) {
-      setError(e?.message || 'sse_init_failed')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'sse_init_failed')
     }
     return () => { cancelled = true; ref.current?.close(); ref.current = null }
   }, [])
@@ -33,7 +35,7 @@ export function useAnalyticsSSE() {
   // Fallback polling every 15s
   useEffect(() => {
     if (!error) return
-    let timer: any = null
+    let timer: NodeJS.Timeout | null = null
     const tick = async () => {
       try {
         const r = await fetch('/api/metrics', { cache: 'no-store' })
@@ -41,7 +43,9 @@ export function useAnalyticsSSE() {
         if (r.ok) {
           // leave as-is; caller can combine
         }
-      } catch {}
+      } catch {
+        // Silently handle polling errors
+      }
     }
     timer = setInterval(tick, 15000)
     return () => { if (timer) clearInterval(timer) }

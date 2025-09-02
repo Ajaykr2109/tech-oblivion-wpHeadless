@@ -53,7 +53,7 @@ export default function AccountCenter() {
       onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         const fd = new FormData(e.currentTarget)
-        const payload: any = {
+        const payload = {
           name: String(fd.get('name') || ''),
           nickname: String(fd.get('nickname') || ''),
           email: String(fd.get('email') || ''),
@@ -61,7 +61,7 @@ export default function AccountCenter() {
           description: String(fd.get('description') || ''),
         }
         // prune empty strings so WP doesn't clear unintentionally
-        Object.keys(payload).forEach((k) => { if (payload[k] === '') delete payload[k] })
+        Object.keys(payload).forEach((k) => { if ((payload as Record<string, string>)[k] === '') delete (payload as Record<string, string>)[k] })
         setSaving(true)
         try {
           const r = await fetch('/api/wp/users/me', {
@@ -78,12 +78,14 @@ export default function AccountCenter() {
           try {
             const r2 = await fetch('/api/auth/me', { cache: 'no-store' })
             if (r2.ok) {
-              const d2 = await r2.json().catch(() => ({} as any))
+              const d2 = await r2.json().catch(() => ({} as { user?: unknown }))
               if (d2?.user) setMe(d2.user)
             }
-          } catch {}
-        } catch (err: any) {
-          toast({ title: 'Update failed', description: err?.message || String(err), variant: 'destructive' })
+          } catch {
+            // ignore refresh error
+          }
+        } catch (err: unknown) {
+          toast({ title: 'Update failed', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
         } finally {
           setSaving(false)
         }

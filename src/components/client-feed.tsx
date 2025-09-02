@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 import { cn } from '@/lib/utils'
 import { htmlToText } from '@/lib/text'
@@ -18,6 +18,7 @@ type Post = {
   imageHint: string
   excerpt: string
   slug: string
+  date: string
 }
 
 export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' | 'grid', perPage?: number }) {
@@ -25,9 +26,7 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => { loadPage(1) }, [])
-
-  async function loadPage(p: number) {
+  const loadPage = useCallback(async (p: number) => {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(p), per_page: String(perPage), _embed: '1' })
@@ -41,8 +40,9 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
         avatar: '/favicon.ico',
         imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
         imageHint: post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered,
-  excerpt: htmlToText(post.excerpt.rendered).slice(0,240),
+        excerpt: htmlToText(post.excerpt.rendered).slice(0,240),
         slug: post.slug,
+        date: post.date,
       }))
       if (p === 1) setPosts(mapped)
       else setPosts(prev => [...prev, ...mapped])
@@ -50,7 +50,9 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
     } catch (e) {
       console.error('Error loading posts:', e)
     } finally { setLoading(false) }
-  }
+  }, [perPage])
+
+  useEffect(() => { loadPage(1) }, [loadPage])
 
   const wrapperClass = cn(
     'grid gap-6',
@@ -60,7 +62,7 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
   return (
     <>
       <div className={wrapperClass}>
-        {posts.map(p => <PostCard key={p.id} post={p as any} layout={layout as any} />)}
+        {posts.map(p => <PostCard key={p.id} post={p} layout={layout} />)}
       </div>
       <div className="flex justify-center mt-6">
         <button className="btn" onClick={() => loadPage(page + 1)} disabled={loading}>{loading ? 'Loading...' : 'Load more'}</button>

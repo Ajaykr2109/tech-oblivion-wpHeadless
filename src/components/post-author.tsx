@@ -15,10 +15,9 @@ type PostAuthorProps = {
   githubUrl?: string | null
 }
 
-export default function PostAuthor({ authorName, authorAvatar, canonicalUrl, bio, profileSlug, twitterUrl, linkedinUrl, githubUrl }: PostAuthorProps) {
+export default function PostAuthor({ authorName, authorAvatar, canonicalUrl: _canonicalUrl, bio, profileSlug, twitterUrl, linkedinUrl, githubUrl }: PostAuthorProps) {
   const name = authorName || 'Unknown'
   const avatar = authorAvatar || ''
-  const canonical = canonicalUrl || '#'
 
   // Basic heuristic for GitHub profile based on author name, same as inline behavior
   const ghUser = name.replace(/\s+/g, '').toLowerCase()

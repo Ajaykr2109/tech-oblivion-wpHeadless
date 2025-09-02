@@ -51,21 +51,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json()
         const u = data?.user || null
         // Normalize profile_fields (preferred) or meta (fallback) to Record<string,string>
-        const normalize = (obj: any) => {
+        const normalize = (obj: unknown) => {
           const out: Record<string, string> = {}
           try {
-            Object.entries(obj || {}).forEach(([k, v]) => {
-              if (v == null) return
-              if (Array.isArray(v)) {
-                const val = v.find((x) => typeof x === 'string' && x.trim()) as string | undefined
-                if (val) out[k] = val
-              } else if (typeof v === 'string') {
-                out[k] = v
-              } else if (typeof v === 'number' || typeof v === 'boolean') {
-                out[k] = String(v)
-              }
-            })
-          } catch {}
+            if (obj && typeof obj === 'object') {
+              Object.entries(obj).forEach(([k, v]) => {
+                if (v == null) return
+                if (Array.isArray(v)) {
+                  const val = v.find((x) => typeof x === 'string' && x.trim()) as string | undefined
+                  if (val) out[k] = val
+                } else if (typeof v === 'string') {
+                  out[k] = v
+                } else if (typeof v === 'number' || typeof v === 'boolean') {
+                  out[k] = String(v)
+                }
+              })
+            }
+          } catch {
+            // Ignore normalization errors - return empty object
+          }
           return out
         }
         if (u) {

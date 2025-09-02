@@ -13,7 +13,9 @@ export default function ViewsCounter({ postId }: { postId: number }) {
           const v = (j && (j.views_total ?? j.count))
           if (typeof v === 'number') setViews(v)
         }
-      } catch {}
+      } catch {
+        // Ignore view tracking errors
+      }
     }
     run()
     return () => { cancelled = true }

@@ -62,17 +62,20 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const wpToken = (claims as any).wpToken
+  let claims: { wpToken?: string }
+  try { claims = await verifySession(sessionCookie.value) as { wpToken?: string } } catch { return new Response('Unauthorized', { status: 401 }) }
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
   // Parse and validate body
-  let body: any = {}
-  try { body = await req.json() } catch { body = {} }
-  const content = (body?.content ?? '').toString().trim()
-  const postId = Number(body?.postId)
-  const parent = body?.parent ? Number(body.parent) : undefined
+  let body: unknown = {}
+  try { body = await req.json() } catch { 
+    // ignore parse error
+    body = {} 
+  }
+  const content = ((body as Record<string, unknown>)?.content ?? '').toString().trim()
+  const postId = Number((body as Record<string, unknown>)?.postId)
+  const parent = (body as Record<string, unknown>)?.parent ? Number((body as Record<string, unknown>).parent) : undefined
   if (!content || !postId) return new Response('content and postId are required', { status: 400 })
 
   // Forward to WP REST API

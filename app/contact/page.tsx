@@ -14,8 +14,11 @@ export default function ContactPage() {
       await navigator.clipboard.writeText(email)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch {}
+    } catch {
+      // Ignore clipboard errors - fallback to manual copy
+    }
   }
+  
   return (
     <div className="container mx-auto px-4 py-12 max-w-2xl">
       <div className="text-center mb-12">

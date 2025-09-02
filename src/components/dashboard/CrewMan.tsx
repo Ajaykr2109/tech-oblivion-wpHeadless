@@ -4,10 +4,10 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
 import { RoleGate } from '@/hooks/useRoleGate'
 
 type Endpoint = { method: string; route: string }
+type Favorite = { method: string; route: string; headers: string; body: string; at: number }
 
 export default function CrewMan() {
   const [endpoints, setEndpoints] = useState<Endpoint[]>([])
@@ -17,7 +17,7 @@ export default function CrewMan() {
   const [body, setBody] = useState('{}')
   const [result, setResult] = useState<string>('')
   const [saving, setSaving] = useState(false)
-  const [favorites, setFavorites] = useState<any[]>([])
+  const [favorites, setFavorites] = useState<Favorite[]>([])
 
   useEffect(() => {
     const run = async () => {
@@ -27,13 +27,20 @@ export default function CrewMan() {
           const list = await r.json()
           setEndpoints(list)
         }
-      } catch {}
+      } catch {
+        // Ignore endpoint fetch errors - non-critical for testing
+      }
     }
     run()
   }, [])
 
   useEffect(() => {
-    try { const fav = JSON.parse(localStorage.getItem('crewman:favorites') || '[]'); setFavorites(Array.isArray(fav) ? fav : []) } catch {}
+    try { 
+      const fav = JSON.parse(localStorage.getItem('crewman:favorites') || '[]')
+      setFavorites(Array.isArray(fav) ? fav : []) 
+    } catch {
+      // Ignore localStorage parsing errors - use empty favorites
+    }
   }, [])
 
   const methods = useMemo(() => ['GET','POST','PUT','PATCH','DELETE'], [])
@@ -42,17 +49,23 @@ export default function CrewMan() {
     setSaving(true)
     try {
       const init: RequestInit = { method }
-      try { init.headers = JSON.parse(headers || '{}') } catch {}
-      if (method !== 'GET' && method !== 'HEAD' && body && body.trim() && init.headers && (init.headers as any)['Content-Type']?.includes('application/json')) {
+      try { 
+        init.headers = JSON.parse(headers || '{}') 
+      } catch {
+        // Ignore header parsing errors - use no headers
+      }
+      if (method !== 'GET' && method !== 'HEAD' && body && body.trim() && init.headers && (init.headers as Record<string, string>)['Content-Type']?.includes('application/json')) {
         init.body = body
       }
       const r = await fetch(route, init)
       const ct = r.headers.get('content-type') || ''
       const text = ct.includes('application/json') ? JSON.stringify(await r.json(), null, 2) : await r.text()
       setResult(text)
-    } catch (e: any) {
-      setResult(`Error: ${e?.message || 'Request failed'}`)
-    } finally { setSaving(false) }
+    } catch (e: unknown) {
+      setResult(`Error: ${(e as Error)?.message || 'Request failed'}`)
+    } finally { 
+      setSaving(false) 
+    }
   }
 
   const saveFav = () => {

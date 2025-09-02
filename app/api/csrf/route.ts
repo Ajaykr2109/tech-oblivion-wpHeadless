@@ -5,7 +5,7 @@ import { CSRF_COOKIE, generateCsrfToken } from '../../../src/lib/csrf'
 
 export async function GET() {
   const store = await cookies()
-  const existing = (store as any).get?.(CSRF_COOKIE)
+  const existing = store.get?.(CSRF_COOKIE) as { value: string } | undefined
   if (existing?.value) {
     return NextResponse.json({ token: existing.value }, { status: 200 })
   }

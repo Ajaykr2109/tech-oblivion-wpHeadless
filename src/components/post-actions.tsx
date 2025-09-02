@@ -22,12 +22,16 @@ export default function PostActions({ postId, slug, title }: Props) {
         await navigator.share({ title, url })
         return
       }
-    } catch {}
+    } catch {
+      // Ignore share API errors; fallback to clipboard
+    }
     try {
       await navigator.clipboard.writeText(url)
       toast({ title: 'Link copied', description: 'Post URL copied to clipboard.' })
       // Fallback: no-op
-    } catch {}
+    } catch {
+      // Ignore clipboard errors - user can manually copy
+    }
   }
 
   return (
@@ -53,7 +57,9 @@ export default function PostActions({ postId, slug, title }: Props) {
         <DropdownMenuItem
           onClick={async () => {
             const url = typeof window !== 'undefined' ? window.location.href : `${slug}`
-            try { await navigator.clipboard.writeText(url); toast({ title: 'Link copied' }) } catch {}
+            try { await navigator.clipboard.writeText(url); toast({ title: 'Link copied' }) } catch {
+              // Ignore clipboard errors - user can manually copy
+            }
           }}
           className="cursor-pointer"
         >

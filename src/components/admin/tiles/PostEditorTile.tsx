@@ -23,7 +23,7 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
   const [content, setContent] = useState(initial?.content || '')
   const [excerpt, setExcerpt] = useState(initial?.excerpt || '')
   const [status, setStatus] = useState<'draft'|'pending'|'publish'|'auto-draft'|'future'|'private'|'trash'|'unknown'>(
-    (initial?.status as any) || 'draft'
+    (initial?.status as 'draft'|'pending'|'publish'|'auto-draft'|'future'|'private'|'trash'|'unknown') || 'draft'
   )
   const [isSaving, setIsSaving] = useState(false)
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
@@ -52,8 +52,8 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
       setStatus('draft')
   setLastSavedAt(Date.now())
   setLastSyncHash(currentHash)
-    } catch (e: any) {
-      setError(`Failed to create draft: ${e?.message || e}`)
+    } catch (e: unknown) {
+      setError(`Failed to create draft: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setIsSaving(false)
     }
@@ -62,15 +62,6 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
   useEffect(() => {
     if (!postId && isDirty && !postIdProp) createDraftDebounced()
   }, [postId, isDirty, createDraftDebounced, title, content, excerpt, postIdProp])
-
-  // Autosave every 10s when there are changes and we have a postId
-  useEffect(() => {
-    if (!postId) return
-    const iv = setInterval(() => {
-      void autosave()
-    }, 10_000)
-    return () => clearInterval(iv)
-  }, [postId, title, content, excerpt])
 
   const autosave = useCallback(async () => {
     if (!postId) return
@@ -87,12 +78,21 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
       if (!res.ok) throw new Error(`${res.status}`)
       setLastSavedAt(Date.now())
       setLastSyncHash(currentHash)
-    } catch (e: any) {
-      setError(`Autosave failed: ${e?.message || e}`)
+    } catch (e: unknown) {
+      setError(`Autosave failed: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setIsSaving(false)
     }
   }, [postId, title, content, excerpt, isDirty, currentHash, lastSyncHash])
+
+  // Autosave every 10s when there are changes and we have a postId
+  useEffect(() => {
+    if (!postId) return
+    const iv = setInterval(() => {
+      void autosave()
+    }, 10_000)
+    return () => clearInterval(iv)
+  }, [postId, title, content, excerpt, autosave])
 
   const saveNow = useCallback(async () => {
     await autosave()
@@ -110,8 +110,8 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
       })
       if (!res.ok) throw new Error(`${res.status}`)
       setStatus('pending')
-    } catch (e: any) {
-      setError(`Publish request failed: ${e?.message || e}`)
+    } catch (e: unknown) {
+      setError(`Publish request failed: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setIsSaving(false)
     }
@@ -131,8 +131,8 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
       setExcerpt('')
       setStatus('draft')
       setLastSavedAt(null)
-    } catch (e: any) {
-      setError(`Delete failed: ${e?.message || e}`)
+    } catch (e: unknown) {
+      setError(`Delete failed: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setIsSaving(false)
     }

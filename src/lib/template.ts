@@ -1,6 +1,6 @@
 export function renderTemplate(template: string, data: Record<string, unknown>): string {
   if (!template) return ''
-  return template.replace(/\{([a-zA-Z0-9_.$-]+)\}/g, (_, key) => {
+  return template.replace(/\{([a-zA-Z0-9._$-]+)\}/g, (_, key) => {
     const value = getByPath(data, key)
     return value == null ? '' : String(value)
   })

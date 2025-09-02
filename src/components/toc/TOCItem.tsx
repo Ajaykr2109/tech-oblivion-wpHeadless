@@ -4,11 +4,10 @@ import Link from 'next/link'
 
 import { decodeEntities } from '@/lib/entities'
 
-export default function TOCItem({ id, value, depth, state, onClick, focused, minutes }: {
+export default function TOCItem({ id, value, depth, state, onClick, minutes }: {
   id: string
   value: string
   depth: number
-  focused?: boolean
   state: 'active'|'nearby'|'adjacent'|'idle'
   onClick?: () => void
   minutes?: number

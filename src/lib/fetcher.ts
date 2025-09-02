@@ -33,6 +33,7 @@ export async function apiFetch<T = unknown>(path: string, opts?: { method?: stri
   else payload = await res.text()
 
   if (!res.ok) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const msg = (payload && typeof payload === 'object' && 'message' in (payload as any)) ? (payload as any).message : res.statusText
     const err: APIError = { status: res.status, message: msg, details: payload }
     throw err
@@ -54,6 +55,7 @@ export const wpFetch = async <T = unknown>(wpPath: string, opts?: { method?: str
   const ct = res.headers.get('content-type') ?? ''
   const data = ct.includes('application/json') ? await res.json() : await res.text()
   if (!res.ok) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     throw { status: res.status, message: (data && (data as any).message) ? (data as any).message : res.statusText, details: data } as APIError
   }
   return data as T

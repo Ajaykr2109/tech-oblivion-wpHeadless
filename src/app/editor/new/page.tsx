@@ -16,6 +16,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { RoleGate } from "@/hooks/useRoleGate";
 import { fetchAllCategories, buildCategoryTree, type WpCategory, fetchAllTags, createCategory } from '@/lib/taxonomy-client'
+type CategoryNode = {
+  id: number
+  name: string
+  children?: CategoryNode[]
+}
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 
 const EditorToolbar = () => (
@@ -167,8 +172,8 @@ export default function EditorNewPage() {
   const [readingTime, setReadingTime] = useState(0);
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [categories, setCategories] = useState<WpCategory[]>([])
-  const [categoryTree, setCategoryTree] = useState<any[]>([])
+  const [_categories, setCategories] = useState<WpCategory[]>([])
+  const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([])
   const [tagsList, setTagsList] = useState<string[]>([])
   const [catDialogOpen, setCatDialogOpen] = useState(false)
   const [newCat, setNewCat] = useState<{ name: string; slug: string; parent: string }>({ name: '', slug: '', parent: '' })
@@ -222,7 +227,7 @@ export default function EditorNewPage() {
     setCreatingCat(true); setCatError(null)
     try {
       if (!newCat.name.trim()) throw new Error('Name is required')
-      const payload: any = { name: newCat.name.trim() }
+      const payload: { name: string; slug?: string; parent?: number } = { name: newCat.name.trim() }
       if (newCat.slug.trim()) payload.slug = newCat.slug.trim()
       if (newCat.parent) payload.parent = Number(newCat.parent)
       const res = await createCategory(payload)
@@ -230,8 +235,8 @@ export default function EditorNewPage() {
       await refreshCategories(id)
       setCatDialogOpen(false)
       setNewCat({ name: '', slug: '', parent: '' })
-    } catch (e: any) {
-      setCatError(e.message || 'Failed to create category')
+    } catch (e: unknown) {
+      setCatError(e instanceof Error ? e.message : 'Failed to create category')
     } finally { setCreatingCat(false) }
   }
 
@@ -246,7 +251,7 @@ export default function EditorNewPage() {
   async function createPost(statusOverride?: 'draft'|'publish'|'pending') {
     setSaving(true); setError(null)
     try {
-  const body: any = {
+  const body: Record<string, unknown> = {
         title: post.title?.trim() || 'Untitled',
         content: post.content || '',
         status: toWpStatus(post.status, statusOverride),
@@ -271,8 +276,8 @@ export default function EditorNewPage() {
         // Fallback to success toast
         alert('Post saved successfully')
       }
-    } catch (e: any) {
-      setError(e.message || 'Failed to save')
+    } catch (e: unknown) {
+      setError((e as Error).message || 'Failed to save')
     } finally { setSaving(false) }
   }
   
@@ -352,7 +357,7 @@ export default function EditorNewPage() {
                     </div>
               <div className="sticky bottom-0 bg-card/80 backdrop-blur py-2">
                 <RoleGate action="publishOwn" as="span">
-                  <Button className="w-full" disabled={saving} onClick={() => createPost(toWpStatus(post.status) as any)}>{saving ? 'Saving…' : 'Publish'}</Button>
+                  <Button className="w-full" disabled={saving} onClick={() => createPost(toWpStatus(post.status))}>{saving ? 'Saving…' : 'Publish'}</Button>
                 </RoleGate>
               </div>
                   </div>
@@ -507,12 +512,12 @@ export default function EditorNewPage() {
   )
 }
 
-function CategoryOptions({ node, level }: { node: any; level: number }) {
+function CategoryOptions({ node, level }: { node: CategoryNode; level: number }) {
   const pad = '—'.repeat(level)
   return (
     <>
       <SelectItem value={String(node.id)}>{pad ? `${pad} ` : ''}{node.name}</SelectItem>
-      {node.children?.map((child: any) => (
+      {node.children?.map((child) => (
         <CategoryOptions key={child.id} node={child} level={level + 1} />
       ))}
     </>

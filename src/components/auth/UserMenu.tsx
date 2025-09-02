@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function UserMenu({ user }: { user: any }) {
+export default function UserMenu({ user }: { user: Record<string, unknown> }) {
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST', headers: { 'x-csrf-token': getCsrfCookie() } })
     // reload client
@@ -14,8 +14,8 @@ export default function UserMenu({ user }: { user: any }) {
 
   return (
     <div>
-      <div>{user.display_name || user.username}</div>
-      <div>Roles: {(user.roles || []).join(', ')}</div>
+      <div>{(user.display_name as string) || (user.username as string)}</div>
+      <div>Roles: {Array.isArray(user.roles) ? user.roles.join(', ') : ''}</div>
       <button onClick={logout}>Logout</button>
     </div>
   )

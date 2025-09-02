@@ -12,8 +12,9 @@ export default async function PostPage({ params }: Props) {
   try {
     post = await getPostBySlug(params.slug)
   } catch (err: unknown) {
-    const msg = err && typeof err === 'object' && 'message' in err ? (err as any).message : String(err)
-    logWPError('post-page-getPost', { status: (err as any)?.status, statusText: msg, body: typeof err === 'string' ? err : JSON.stringify(err) })
+    const msg = err instanceof Error ? err.message : String(err)
+    const status = err && typeof err === 'object' && 'status' in err ? (err as { status?: number }).status : undefined
+    logWPError('post-page-getPost', { status, statusText: msg, body: typeof err === 'string' ? err : JSON.stringify(err) })
     // If upstream is down, treat as not found to avoid build failure
     return notFound()
   }

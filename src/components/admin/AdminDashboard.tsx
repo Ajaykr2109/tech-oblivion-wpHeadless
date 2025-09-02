@@ -7,14 +7,35 @@ import type { Layout as RGLLayout } from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
+interface ResponsiveGridLayoutProps {
+  className?: string;
+  breakpoints: { lg: number; md: number; sm: number; };
+  cols: { lg: number; md: number; sm: number; };
+  rowHeight: number;
+  margin: number[];
+  containerPadding: number[];
+  onLayoutChange: (current: RGLLayout[]) => void;
+  layouts: Record<string, RGLLayout[]>;
+  isDraggable?: boolean;
+  isResizable?: boolean;
+  children?: React.ReactNode;
+}
+
 // Proper ResponsiveGridLayout wrapper for client-only usage
-const ResponsiveGridLayout = dynamic(async () => {
-  const mod = await import('react-grid-layout')
-  const Responsive = (mod as any).Responsive || (mod as any).default?.Responsive
-  const WidthProvider = (mod as any).WidthProvider || (mod as any).default?.WidthProvider
-  const Component = WidthProvider ? WidthProvider(Responsive) : Responsive
-  return Component as React.ComponentType<any>
-}, { ssr: false })
+const ResponsiveGridLayout = dynamic(() =>
+  import('react-grid-layout').then((mod: unknown) => {
+    // Try both CJS and ESM default/named exports
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Responsive = (mod as any).default?.Responsive || (mod as any).Responsive;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const WidthProvider = (mod as any).default?.WidthProvider || (mod as any).WidthProvider;
+    if (!Responsive || !WidthProvider) {
+      throw new Error('Could not load Responsive or WidthProvider from react-grid-layout');
+    }
+    return WidthProvider(Responsive);
+  }),
+  { ssr: false }
+) as React.ComponentType<ResponsiveGridLayoutProps>;
 
 import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
 

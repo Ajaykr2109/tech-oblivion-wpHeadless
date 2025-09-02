@@ -71,7 +71,7 @@ export function sanitizeWP(html: string) {
             return `url(/api/wp/media${u.pathname}${u.search})`
           }
           return `url(${raw})`
-        } catch (e) {
+        } catch {
           return `url(${raw})`
         }
       })

@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
 
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) }
+  let claims: { wpToken?: string }
+  try { claims = await verifySession(sessionCookie.value) as { wpToken?: string } } catch { return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }) }
   const wpToken = claims?.wpToken
   if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (!file) return new Response(JSON.stringify({ error: 'Missing file' }), { status: 400 })
 
   const arrayBuf = await file.arrayBuffer()
-  const filename = (file as any).name || 'avatar.jpg'
+  const filename = file.name || 'avatar.jpg'
   const contentType = file.type || 'application/octet-stream'
 
   // Upload to WP Media Library

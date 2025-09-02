@@ -1,14 +1,12 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 
-// @ts-ignore - module types provided via local shim
 import GridLayout from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { MetricsProvider, useMetrics } from '@/contexts/metrics-context'
-import { RoleGate } from '@/hooks/useRoleGate'
 
 import MetricsDashboardControls from './MetricsDashboardControls'
 
@@ -34,7 +32,7 @@ function MetricsWidget() {
     metrics.filter(m => m.pinned).forEach(m => {
       if (!evals[m.id]) evalMetric(m.id)
     })
-  }, [metrics])
+  }, [metrics, evals, evalMetric])
   const visible = metrics.filter(m => m.pinned)
   if (visible.length === 0) return <div className="text-xs text-muted-foreground">No pinned metrics.</div>
   return (
@@ -83,13 +81,16 @@ function PresenceWidget() {
 }
 
 function MediaWidget() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [items, setItems] = useState<any[]>([])
   useEffect(() => {
     const load = async () => {
       try {
         const r = await fetch('/api/wp/media?per_page=6')
         if (r.ok) setItems(await r.json())
-      } catch {}
+      } catch {
+        // Silently handle media loading errors
+      }
     }
     load()
   }, [])
@@ -97,7 +98,7 @@ function MediaWidget() {
   return (
     <div className="grid grid-cols-3 gap-2">
       {items.map((m) => (
-        <img key={m.id} src={m.media_details?.sizes?.thumbnail?.source_url || m.source_url} className="w-full aspect-square object-cover rounded" alt={m.title?.rendered || ''} />
+        <Image key={m.id} src={m.media_details?.sizes?.thumbnail?.source_url || m.source_url} width={100} height={100} className="w-full aspect-square object-cover rounded" alt={m.title?.rendered || ''} unoptimized />
       ))}
     </div>
   )
@@ -128,26 +129,35 @@ function InnerDashboard() {
     run()
   }, [defaultLayout])
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onLayoutChange = (l: any[]) => setLayout(l as SavedLayout[])
   // Bind layout actions on window only on client
   useEffect(() => {
     if (typeof window === 'undefined') return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(window as any).__saveDashboard = async () => {
       await fetch('/api/metrics/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(layout) })
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(window as any).__resetDashboard = async () => {
       await fetch('/api/metrics/layout', { method: 'DELETE' })
       setLayout(defaultLayout)
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(window as any).__setDefaultDashboard = async () => {
       await fetch('/api/metrics/layout/default', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(layout) })
     }
     return () => {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (window as any).__saveDashboard
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (window as any).__resetDashboard
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (window as any).__setDefaultDashboard
-      } catch {}
+      } catch {
+        // Silently handle cleanup errors
+      }
     }
   }, [layout, defaultLayout])
 

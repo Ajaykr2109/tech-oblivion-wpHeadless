@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -31,7 +31,7 @@ export default function AnalyticsHeader(props: Props) {
   return (
     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
       <div className="flex items-center gap-2">
-        <Select value={period} onValueChange={(v: any) => onPeriodChange(v)}>
+        <Select value={period} onValueChange={(v: Period) => onPeriodChange(v)}>
           <SelectTrigger className="w-40"><SelectValue placeholder="Period" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="day">Day</SelectItem>
@@ -41,14 +41,14 @@ export default function AnalyticsHeader(props: Props) {
             <SelectItem value="year">Year</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={chartType} onValueChange={(v: any) => onChartTypeChange(v)}>
+        <Select value={chartType} onValueChange={(v: 'line' | 'bar') => onChartTypeChange(v)}>
           <SelectTrigger className="w-32"><SelectValue placeholder="Chart" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="line">Line</SelectItem>
             <SelectItem value="bar">Bar</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={granularity} onValueChange={(v: any) => onGranularityChange(v)}>
+        <Select value={granularity} onValueChange={(v: 'daily' | 'weekly') => onGranularityChange(v)}>
           <SelectTrigger className="w-36"><SelectValue placeholder="Granularity" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="daily">Daily</SelectItem>
@@ -99,7 +99,11 @@ function PostMultiSelect({ selected, onChange }: { selected: number[]; onChange:
         const res = await fetch(url.toString())
         if (res.ok) {
           const arr = await res.json()
-          const mapped = Array.isArray(arr) ? arr.map((p: any) => ({ id: p.id, slug: p.slug, title: p.title?.rendered || p.title || p.slug })) : []
+          const mapped = Array.isArray(arr) ? arr.map((p: { id: number; slug: string; title?: { rendered?: string } | string }) => ({ 
+            id: p.id, 
+            slug: p.slug, 
+            title: typeof p.title === 'object' && p.title?.rendered ? p.title.rendered : (typeof p.title === 'string' ? p.title : p.slug) 
+          })) : []
           setOptions(mapped)
         }
       } finally {

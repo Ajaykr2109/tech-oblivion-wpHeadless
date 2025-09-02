@@ -54,7 +54,7 @@ export default function AnalyticsDashboard() {
           autoRefresh={autoRefresh}
           onAutoRefreshChange={setAutoRefresh}
         />
-        <Tabs value={tab} onValueChange={(v: any) => setTab(v)}>
+        <Tabs value={tab} onValueChange={(v: string) => setTab(v as 'views' | 'devices' | 'countries' | 'referers')}>
           <TabsList>
             <TabsTrigger value="views">Views</TabsTrigger>
             <TabsTrigger value="devices">Devices</TabsTrigger>
@@ -114,7 +114,7 @@ function DevicesMain({ period }: { period: Period }) {
   )
 }
 
-function CountriesMain({ period }: { period: Period }) {
+function _CountriesMain({ period: _period }: { period: Period }) {
   // Deprecated: countries now rendered via AnalyticsWorldMap which consumes summary.countries
   return null
 }

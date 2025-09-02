@@ -8,8 +8,23 @@ type PublicUser = {
   description?: string
   avatar_urls?: Record<string, string>
   profile_fields?: Record<string, unknown> | null
-  recent_posts?: any[]
-  recent_comments?: any[]
+  recent_posts?: Array<{
+    id: number;
+    title: string;
+    slug: string;
+    date: string;
+    link: string;
+    content_raw: string;
+    content_rendered: string;
+  }>
+  recent_comments?: Array<{
+    id: number;
+    post: number;
+    date: string;
+    link: string;
+    content_raw: string;
+    content_rendered: string;
+  }>
   social?: { twitter: string | null; linkedin: string | null; github: string | null }
 }
 
@@ -21,13 +36,14 @@ function normalizeUrl(u?: string | null): string | null {
   return `https://${s}`
 }
 
-function deriveSocial(u: any): { twitter: string | null; linkedin: string | null; github: string | null } {
+function deriveSocial(u: Record<string, unknown>): { twitter: string | null; linkedin: string | null; github: string | null } {
   // Prefer explicit social object if backend/plugin supplies it
   if (u && typeof u.social === 'object' && u.social) {
+    const social = u.social as Record<string, unknown>
     return {
-      twitter: normalizeUrl((u.social as any).twitter ?? null),
-      linkedin: normalizeUrl((u.social as any).linkedin ?? null),
-      github: normalizeUrl((u.social as any).github ?? null),
+      twitter: normalizeUrl(typeof social.twitter === 'string' ? social.twitter : null),
+      linkedin: normalizeUrl(typeof social.linkedin === 'string' ? social.linkedin : null),
+      github: normalizeUrl(typeof social.github === 'string' ? social.github : null),
     }
   }
   const pf = (u && typeof u.profile_fields === 'object') ? (u.profile_fields as Record<string, unknown>) : null
@@ -39,34 +55,34 @@ function deriveSocial(u: any): { twitter: string | null; linkedin: string | null
   return { twitter: normalizeUrl(tw || null), linkedin: normalizeUrl(ln || null), github: normalizeUrl(gh || null) }
 }
 
-function sanitize(u: any): PublicUser {
-  const mapPost = (p: any) => ({
+function sanitize(u: Record<string, unknown>): PublicUser {
+  const mapPost = (p: Record<string, unknown>) => ({
     id: Number(p?.id ?? 0),
-    title: String(p?.title ?? p?.title?.rendered ?? ''),
+    title: String(p?.title ?? (p?.title as Record<string, unknown>)?.rendered ?? ''),
     slug: String(p?.slug ?? ''),
     date: String(p?.date ?? p?.date_gmt ?? ''),
     link: String(p?.link ?? ''),
-    content_raw: String(p?.content_raw ?? p?.content?.raw ?? ''),
-    content_rendered: String(p?.content_rendered ?? p?.content?.rendered ?? ''),
+    content_raw: String(p?.content_raw ?? (p?.content as Record<string, unknown>)?.raw ?? ''),
+    content_rendered: String(p?.content_rendered ?? (p?.content as Record<string, unknown>)?.rendered ?? ''),
   })
-  const mapComment = (c: any) => ({
+  const mapComment = (c: Record<string, unknown>) => ({
     id: Number(c?.id ?? 0),
     post: Number(c?.post ?? c?.post_id ?? 0),
     date: String(c?.date ?? c?.date_gmt ?? ''),
     link: String(c?.link ?? c?.permalink ?? ''),
-    content_raw: String(c?.content_raw ?? c?.content?.raw ?? ''),
-    content_rendered: String(c?.content_rendered ?? c?.content?.rendered ?? ''),
+    content_raw: String(c?.content_raw ?? (c?.content as Record<string, unknown>)?.raw ?? ''),
+    content_rendered: String(c?.content_rendered ?? (c?.content as Record<string, unknown>)?.rendered ?? ''),
   })
   return {
     id: Number(u?.id ?? 0),
-    name: u?.name ?? u?.display_name,
+    name: typeof u?.name === 'string' ? u.name : typeof u?.display_name === 'string' ? u.display_name : undefined,
     slug: String(u?.slug ?? ''),
-    description: u?.description ?? '',
-    avatar_urls: u?.avatar_urls ?? {},
-    profile_fields: u?.profile_fields ?? null,
+    description: typeof u?.description === 'string' ? u.description : '',
+    avatar_urls: (u?.avatar_urls && typeof u.avatar_urls === 'object') ? u.avatar_urls as Record<string, string> : {},
+    profile_fields: (u?.profile_fields && typeof u.profile_fields === 'object') ? u.profile_fields as Record<string, unknown> : null,
     recent_posts: Array.isArray(u?.recent_posts) ? u.recent_posts.map(mapPost) : [],
     recent_comments: Array.isArray(u?.recent_comments) ? u.recent_comments.map(mapComment) : [],
-  social: deriveSocial(u),
+    social: deriveSocial(u),
   }
 }
 
@@ -84,7 +100,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
 
   const revalidate = Number(process.env.PROFILE_CACHE_SECONDS || '0')
   const fetchOpts: RequestInit = revalidate > 0
-    ? ({ next: { revalidate } } as any)
+    ? { next: { revalidate } }
     : { cache: 'no-store' }
 
   try {
@@ -96,7 +112,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
       // Mask upstream errors
       return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
-    const data = await res.json().catch(() => null)
+    const data = await res.json().catch(() => null) as Record<string, unknown> | null
     if (!data || typeof data !== 'object') {
       return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
@@ -105,7 +121,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
       return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
     return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
-  } catch (e) {
+  } catch {
     return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
   }
 }

@@ -3,9 +3,9 @@ import { revalidateTag } from 'next/cache'
 
 export async function POST(req: Request) {
   let body: unknown = {}
-  try { body = await req.json() } catch (_e: unknown) { /* ignore */ }
+  try { body = await req.json() } catch { /* ignore */ }
   const url = new URL(req.url)
-  const b = body as Record<string, any>
+  const b = body as Record<string, unknown>
   const secret = url.searchParams.get('secret') || b?.secret
   if (secret !== process.env.NEXT_REVALIDATE_SECRET) return new Response('Forbidden', { status: 403 })
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     if (slug) revalidated.push(`/blogs/${slug}`)
   return new Response(JSON.stringify({ revalidated, now: Date.now() }), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch (e: unknown) {
-    const msg = (e && typeof e === 'object' && 'message' in e) ? (e as any).message : String(e)
+    const msg = (e && typeof e === 'object' && 'message' in e) ? (e as { message: string }).message : String(e)
   return new Response(JSON.stringify({ message: msg || 'fail', error: String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } })
   }
 }

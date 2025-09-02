@@ -1,7 +1,7 @@
 "use client"
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 
 import { Card } from '@/components/ui/card'
 
@@ -13,12 +13,12 @@ type Props = {
   chartType: 'line'|'bar'
   granularity: 'daily'|'weekly'
   autoRefresh: boolean
-  queryKeyBase: any[]
+  queryKeyBase: (string | number)[]
 }
 
-export default function AnalyticsCharts({ period, postIds, chartType, granularity, autoRefresh, queryKeyBase }: Props) {
+export default function AnalyticsCharts({ period, postIds, chartType, granularity: _granularity, autoRefresh, queryKeyBase: _queryKeyBase }: Props) {
   const refreshMs = autoRefresh ? 60000 : undefined
-  const postId = postIds.length === 1 ? String(postIds[0]) : undefined
+  const _postId = postIds.length === 1 ? String(postIds[0]) : undefined
   const summaryKey = useMemo(() => ['analytics','summary', period], [period])
   const { data: summary } = useQuery({
     queryKey: summaryKey,

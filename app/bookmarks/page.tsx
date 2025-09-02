@@ -1,8 +1,16 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+
+type Bookmark = {
+  id: number;
+  link: string;
+  title?: string;
+  date: string;
+  slug: string;
+  count?: number;
+}
 
 async function getBookmarks(cookiesHeader?: string) {
   try {
@@ -23,7 +31,7 @@ export default async function BookmarksPage() {
   const c = jar.get(sessionName)?.value
   const header = c ? `${sessionName}=${c}` : undefined
   const data = await getBookmarks(header)
-  const items = Array.isArray(data?.items) ? data.items as Array<any> : []
+  const items = Array.isArray(data?.items) ? data.items as Bookmark[] : []
   return (
     <div className="container mx-auto px-4 py-10 max-w-4xl">
       <h1 className="text-2xl font-semibold mb-6">Bookmarks</h1>

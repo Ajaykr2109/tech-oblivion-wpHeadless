@@ -67,7 +67,7 @@ function main() {
   }
 
   const selected: FileInfo[] = []
-  for (const [apiPath, infos] of byPath) {
+  for (const [_apiPath, infos] of byPath) {
     if (infos.length === 1) {
       selected.push(infos[0])
     } else {
@@ -87,7 +87,7 @@ function main() {
     if (info.methods.length === 0) continue
     for (const method of info.methods) {
       const matched = apiRolesMatrix.some((e) => {
-        if (e.method !== (method as any)) return false
+        if (e.method !== method) return false
         const pattern = e.path
           .replace(/\//g, '\\/')
           .replace(/\[.+?\]/g, '[^/]+')

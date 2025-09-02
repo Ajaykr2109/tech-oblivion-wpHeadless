@@ -8,7 +8,10 @@ export default function MetricsDashboardControls() {
   const [saving, setSaving] = useState(false)
   const run = async (fn: string) => {
     setSaving(true)
-    try { await (window as any)[fn]?.() } finally { setSaving(false) }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (window as any)[fn]?.()
+    } finally { setSaving(false) }
   }
   return (
     <div className="flex gap-2">

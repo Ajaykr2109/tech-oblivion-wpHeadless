@@ -13,8 +13,8 @@ export async function GET(req: Request) {
   const token = match?.[1]
   if (!token) return new Response(JSON.stringify({ error: 'unauthorized', message: 'Missing session cookie' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
 
-  let claims: any
-  try { claims = await verifySession(token) } catch {
+  let claims: { wpToken?: string }
+  try { claims = await verifySession(token) as { wpToken?: string } } catch {
     return new Response(JSON.stringify({ error: 'unauthorized', message: 'Invalid session token' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
   }
   const wpToken = claims?.wpToken
@@ -55,18 +55,18 @@ export async function POST(req: Request) {
   const token = match?.[1]
   if (!token) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing session cookie' }), { status: 401 })
 
-  let claims: any
+  let claims: { wpToken?: string }
   try { claims = await verifySession(token) } catch { return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Invalid session token' }), { status: 401 }) }
   const wpToken = claims?.wpToken
   if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing wpToken in session' }), { status: 401 })
 
-  let body: any = {}
+  let body: Record<string, unknown> = {}
   try { body = await req.json() } catch { body = {} }
 
   // Only allow a safe subset to pass through
   // Allow profile_fields to pass through to WP (plugin will handle persistence). Keep meta for backward compat.
   const allowed = ['name','nickname','email','url','description','locale','profile_fields','meta']
-  const patch: Record<string, any> = {}
+  const patch: Record<string, unknown> = {}
   for (const k of allowed) if (k in body) patch[k] = body[k]
 
   // Try MU plugin proxy first
@@ -107,15 +107,15 @@ export async function PUT(req: Request) {
   const token = match?.[1]
   if (!token) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing session cookie' }), { status: 401 })
 
-  let claims: any
+  let claims: { wpToken?: string }
   try { claims = await verifySession(token) } catch { return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Invalid session token' }), { status: 401 }) }
   const wpToken = claims?.wpToken
   if (!wpToken) return new Response(JSON.stringify({ error: 'Unauthorized', message: 'Missing wpToken in session' }), { status: 401 })
 
-  let body: any = {}
+  let body: Record<string, unknown> = {}
   try { body = await req.json() } catch { body = {} }
   const allowed = ['name','nickname','email','url','description','locale','profile_fields','meta']
-  const patch: Record<string, any> = {}
+  const patch: Record<string, unknown> = {}
   for (const k of allowed) if (k in body) patch[k] = body[k]
 
   // Try MU plugin proxy first

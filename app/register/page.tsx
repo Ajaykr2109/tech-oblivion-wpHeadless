@@ -18,17 +18,17 @@ export default function RegisterPage() {
     setStatus('pending')
     setError('')
     const form = e.target as HTMLFormElement
-    const data = Object.fromEntries(new FormData(form) as any)
+    const data = Object.fromEntries(new FormData(form)) as Record<string, string>
     try {
       const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': getCsrfCookie() }, body: JSON.stringify({ email: data.email, password: data.password, username: data.username }) })
-      const json = await res.json()
+      const json = await res.json() as { message?: string; status?: string }
       if (res.status === 201 && json.status === 'pending_verification') {
         setStatus('success')
         return
       }
       setError(json.message || 'An unknown error occurred.');
       setStatus('error')
-    } catch (err: any) {
+    } catch {
       setError('Failed to connect to the server.');
       setStatus('error')
     }

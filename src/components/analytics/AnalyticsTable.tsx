@@ -7,7 +7,7 @@ import type { Period } from '../../../types/analytics'
 
 type SummaryResp = { referers?: { source: string; count: number }[] }
 
-export default function AnalyticsTable({ period, postIds }: { period: Period, postIds: number[] }) {
+export default function AnalyticsTable({ postIds: _postIds, period }: { postIds?: number[]; period: Period }) {
   const { data } = useQuery<SummaryResp>({
     queryKey: ['analytics','summary',period],
     queryFn: async () => {
@@ -27,7 +27,7 @@ export default function AnalyticsTable({ period, postIds }: { period: Period, po
       <table className="min-w-full text-sm">
         <thead><tr><th className="text-left">Source</th><th className="text-left">Count</th></tr></thead>
         <tbody>
-          {rows.map((row: any, i: number) => (
+          {rows.map((row, i) => (
             <tr key={i} className="border-t"><td>{row.source}</td><td>{row.count}</td></tr>
           ))}
         </tbody>

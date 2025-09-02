@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const local = await cacheImage(url)
     return Response.json({ url: local })
-  } catch (e: any) {
-    return Response.json({ error: String(e?.message || e) }, { status: 502 })
+  } catch (e: unknown) {
+    return Response.json({ error: String(e instanceof Error ? e.message : e) }, { status: 502 })
   }
 }

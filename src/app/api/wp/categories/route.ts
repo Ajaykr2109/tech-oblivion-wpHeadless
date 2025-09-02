@@ -16,7 +16,7 @@ async function fetchAllCategories(WP: string, qs: URLSearchParams) {
   if (!firstUrl.searchParams.has('order')) firstUrl.searchParams.set('order', 'asc')
   firstUrl.searchParams.set('page', '1')
 
-  const out: any[] = []
+  const out: unknown[] = []
   let page = 1
   let totalPages = 1
   do {
@@ -38,9 +38,14 @@ export async function GET(req: NextRequest) {
   try {
     const data = await fetchAllCategories(WP, url.searchParams)
     return Response.json(data, { headers: { 'Cache-Control': 'public, max-age=300' } })
-  } catch (e: any) {
-    return new Response(e.message || 'Upstream error', { status: 502 })
+  } catch (e: unknown) {
+    return new Response(e instanceof Error ? e.message : 'Upstream error', { status: 502 })
   }
+}
+
+type Claims = {
+  roles?: string[]
+  wpToken?: string
 }
 
 export async function POST(req: NextRequest) {
@@ -49,13 +54,13 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
   const token = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')?.value
   if (!token) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(token) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const roles: string[] = (claims.roles as any) || []
+  let claims: Claims
+  try { claims = await verifySession(token) as Claims } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = claims.roles || []
   if (!roles.some(r => ['contributor','author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
   }
-  const wpToken = (claims as any).wpToken
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
   const bodyText = await req.text()

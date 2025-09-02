@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     u.searchParams.set('period', period)
     if (postId) u.searchParams.set('post_id', postId)
     return await fetchWithAuth(req, u.toString())
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof MissingWpTokenError) {
       return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
     }

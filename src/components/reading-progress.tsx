@@ -9,7 +9,6 @@ export default function ReadingProgress({ targetSelector = '.wp-content' }: { ta
     function update() {
       const el = document.querySelector<HTMLElement>(targetSelector)
       if (!el) { setProgress(0); return }
-      const rect = el.getBoundingClientRect()
       const total = el.scrollHeight - window.innerHeight
       const scrolled = window.scrollY - (el.offsetTop || 0)
       const value = total > 0 ? Math.min(100, Math.max(0, (scrolled / total) * 100)) : 0

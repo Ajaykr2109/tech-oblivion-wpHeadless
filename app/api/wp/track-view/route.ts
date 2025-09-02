@@ -4,8 +4,8 @@ export const runtime = 'nodejs'
 export async function POST(req: Request) {
   const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
   if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
-  let body: any
-  try { body = await req.json() } catch { body = null }
+  let body: { postId?: unknown; post_id?: unknown } | null
+  try { body = await req.json() as { postId?: unknown; post_id?: unknown } } catch { body = null }
   const postId = Number(body?.postId ?? body?.post_id ?? 0)
   if (!postId || !Number.isFinite(postId)) {
     return new Response(JSON.stringify({ error: 'postId required' }), { status: 400 })
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       return new Response(text || JSON.stringify({ error: 'wp error' }), { status: r.status })
     }
     return new Response(text || '{}', { status: 200, headers: { 'Content-Type': 'application/json' } })
-  } catch (e: any) {
+  } catch (e: unknown) {
     return new Response(JSON.stringify({ error: 'upstream error', detail: String(e) }), { status: 502 })
   }
 }

@@ -1,11 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import * as log from '../log'
-
 const HTML_503 = `<!DOCTYPE html><html><head><title>Maintenance</title></head><body><p>Site under maintenance</p></body></html>`
 
 describe('wp helpers - resilience', () => {
-  let originalFetch: any
+  let originalFetch: typeof globalThis.fetch
   beforeEach(() => {
     originalFetch = globalThis.fetch
   process.env.WP_URL = 'https://techoblivion.test'

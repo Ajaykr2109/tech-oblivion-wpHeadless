@@ -13,8 +13,8 @@ export async function GET() {
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
 
-  let claims: any
-  try { claims = await verifySession(sessionCookie.value) } catch { return new Response('Unauthorized', { status: 401 }) }
+  let claims: { wpToken?: string }
+  try { claims = await verifySession(sessionCookie.value) as { wpToken?: string } } catch { return new Response('Unauthorized', { status: 401 }) }
   const wpToken = claims?.wpToken
   if (!wpToken) return new Response('Unauthorized', { status: 401 })
 

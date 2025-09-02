@@ -23,13 +23,25 @@ export async function GET(req: NextRequest) {
   try {
     const wppRes = await fetch(wppUrl.toString(), { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
     if (wppRes.ok) {
-      const items = (await wppRes.json()) as PopularItem[]
-      ids = (items || []).map((i: any) => Number(i.id ?? i.post_id)).filter((n) => Number.isFinite(n))
+      const data: unknown = await wppRes.json()
+      const items = Array.isArray(data) ? data as PopularItem[] : []
+      ids = items.map((i: PopularItem) => Number('id' in i ? i.id : i.post_id)).filter((n) => Number.isFinite(n))
     }
-  } catch {}
+  } catch {
+    // Ignore popular posts fetch errors
+  }
 
   // Fallback: empty or failed -> use latest posts as a reasonable default
-  let posts: any[] = []
+  let posts: Array<{
+    id: number;
+    slug?: string;
+    title?: { rendered?: string } | string;
+    excerpt?: { rendered?: string };
+    date?: string;
+    _embedded?: { 'wp:featuredmedia'?: Array<{ source_url?: string }>; author?: Array<{ name?: string }> };
+    featured_media_url?: string;
+    jetpack_featured_media_url?: string;
+  }> = []
   try {
     if (ids.length) {
       const detailsUrl = new URL('/wp-json/wp/v2/posts', WP)
@@ -54,10 +66,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Upstream error', detail: String(e) }, { status: 502 })
   }
 
-  const simplified = (posts as any[]).map((p) => ({
+  const simplified = posts.map((p) => ({
     id: p.id,
     slug: p.slug,
-    title: p.title?.rendered || p.title || '',
+    title: typeof p.title === 'string' ? p.title : p.title?.rendered || '',
     excerpt: (p.excerpt?.rendered || '').replace(/<[^>]+>/g, ''),
     featuredImage: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || p.featured_media_url || p.jetpack_featured_media_url || '',
     authorName: p._embedded?.author?.[0]?.name || '',

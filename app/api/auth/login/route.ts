@@ -19,9 +19,15 @@ export async function POST(req: Request) {
     })
     return new Response(JSON.stringify({ error: 'Invalid CSRF' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
   }
-  const body = await req.json()
+  const body: unknown = await req.json()
   const { identifier, password } = schema.parse(body)
-  let data: any
+  let data: {
+    token: string;
+    user_email: string;
+    user_nicename: string;
+    user_display_name: string;
+    user_id?: number;
+  }
   
   try {
     // Direct fetch to WordPress JWT endpoint
@@ -40,7 +46,7 @@ export async function POST(req: Request) {
     }).finally(() => clearTimeout(timeout))
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      const errorData: unknown = await response.json().catch(() => ({}))
       logWPError('jwt-auth-failed', { 
         status: response.status, 
         statusText: response.statusText,
@@ -66,18 +72,19 @@ export async function POST(req: Request) {
       })
     }
 
-    data = await response.json()
+    data = await response.json() as typeof data
     
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('WordPress connection error:', err)
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     logWPError('wordpress-connection-error', { 
-      statusText: err.message,
-      body: err.stack || ''
+      statusText: errorMessage,
+      body: err instanceof Error ? err.stack || '' : ''
     })
     
     return new Response(JSON.stringify({ 
       error: 'Unable to reach WordPress backend', 
-      details: err.message 
+      details: errorMessage 
     }), { 
       status: 502, 
       headers: { 'Content-Type': 'application/json' } 
@@ -105,13 +112,13 @@ export async function POST(req: Request) {
       cache: 'no-store',
     })
     if (meResp.ok) {
-      const meJson: any = await meResp.json()
+      const meJson: { roles?: string[] } = await meResp.json()
       if (meJson && Array.isArray(meJson.roles)) {
         wpRoles = meJson.roles
       }
     }
-  } catch (e) {
-    // ignore; fallback to default below
+  } catch {
+    // Ignore role fetching errors; fallback to default subscriber role
   }
 
   // Create session with the user data from JWT response

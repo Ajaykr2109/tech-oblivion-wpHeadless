@@ -1,48 +1,30 @@
 // Utility functions to generate JSON-LD schemas for SEO
 // Accepts a post-like object; we normalize safely inside
-import type { PostDetail } from './wp'
-
-interface PostData {
-  slug?: string
-  title?: { rendered?: string } | string
-  excerpt?: { rendered?: string } | string
-  featuredImage?: { node?: { sourceUrl?: string } } | string | null
-  author?: { node?: { name?: string } }
-  authorName?: string | null
-  date?: string
-  publishedAt?: string
-  modified?: string
-  updatedAt?: string
-  seo?: { slug?: string } | Record<string, unknown>
-  uri?: string
-}
-
-type SchemaPost = unknown
 
 function isObj(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null
 }
 
-function getSlug(post: SchemaPost): string {
-  if (isObj(post) && 'slug' in post && typeof (post as any).slug === 'string') return (post as any).slug
-  const seo = (post as any).seo
-  if (seo && typeof seo.slug === 'string') return seo.slug
-  const uri = (post as any).uri
+function getSlug(post: unknown): string {
+  if (isObj(post) && 'slug' in post && typeof (post as Record<string, unknown>).slug === 'string') return (post as Record<string, unknown>).slug as string
+  const seo = (post as Record<string, unknown>).seo
+  if (seo && typeof (seo as Record<string, unknown>).slug === 'string') return (seo as Record<string, unknown>).slug as string
+  const uri = (post as Record<string, unknown>).uri
   if (typeof uri === 'string') return uri.replace(/^\/\?blog\//, '')
   return ''
 }
 
-function getTitle(post: SchemaPost): string {
-  const t: any = (post as any).title
+function getTitle(post: unknown): string {
+  const t = (post as Record<string, unknown>).title
   if (typeof t === 'string') return t
-  if (t && typeof t.rendered === 'string') return t.rendered
+  if (t && typeof (t as Record<string, unknown>).rendered === 'string') return (t as Record<string, unknown>).rendered as string
   return ''
 }
 
-function getExcerpt(post: SchemaPost): string {
-  const e: any = (post as any).excerpt
+function getExcerpt(post: unknown): string {
+  const e = (post as Record<string, unknown>).excerpt
   if (typeof e === 'string') return e
-  if (e && typeof e.rendered === 'string') return e.rendered
+  if (e && typeof (e as Record<string, unknown>).rendered === 'string') return (e as Record<string, unknown>).rendered as string
   return ''
 }
 
@@ -50,34 +32,38 @@ function stripHtml(input: string): string {
   return input.replace(/<[^>]+>/g, '')
 }
 
-function getImage(post: SchemaPost): string {
-  const fi: any = (post as any).featuredImage
+function getImage(post: unknown): string {
+  const fi = (post as Record<string, unknown>).featuredImage
   if (typeof fi === 'string') return fi
-  const nested = fi?.node?.sourceUrl
-  if (typeof nested === 'string') return nested
+  if (isObj(fi) && 'node' in fi && isObj(fi.node) && 'sourceUrl' in fi.node) {
+    const nested = fi.node.sourceUrl
+    if (typeof nested === 'string') return nested
+  }
   return 'https://techoblivion.in/default-cover.jpg'
 }
 
-function getAuthorName(post: SchemaPost): string {
-  const authorName = (post as any).authorName
+function getAuthorName(post: unknown): string {
+  const authorName = (post as Record<string, unknown>).authorName
   if (typeof authorName === 'string' && authorName) return authorName
-  const author = (post as any).author
-  const name = author?.node?.name
-  if (typeof name === 'string' && name) return name
+  const author = (post as Record<string, unknown>).author
+  if (isObj(author) && 'node' in author && isObj(author.node) && 'name' in author.node) {
+    const name = author.node.name
+    if (typeof name === 'string' && name) return name
+  }
   return 'tech.oblivion'
 }
 
-function getDatePublished(post: SchemaPost): string | undefined {
-  if (isObj(post) && 'date' in post && typeof (post as any).date === 'string') return (post as any).date
-  const publishedAt = (post as any).publishedAt
+function getDatePublished(post: unknown): string | undefined {
+  if (isObj(post) && 'date' in post && typeof (post as Record<string, unknown>).date === 'string') return (post as Record<string, unknown>).date as string
+  const publishedAt = (post as Record<string, unknown>).publishedAt
   if (typeof publishedAt === 'string') return publishedAt
   return undefined
 }
 
-function getDateModified(post: SchemaPost): string | undefined {
-  const modified = (post as any).modified
+function getDateModified(post: unknown): string | undefined {
+  const modified = (post as Record<string, unknown>).modified
   if (typeof modified === 'string') return modified
-  const updatedAt = (post as any).updatedAt
+  const updatedAt = (post as Record<string, unknown>).updatedAt
   if (typeof updatedAt === 'string') return updatedAt
   return getDatePublished(post)
 }

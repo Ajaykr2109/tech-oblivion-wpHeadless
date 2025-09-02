@@ -71,8 +71,12 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
           // Fallback: fetch recent posts in chronological order
           const recentResp = await fetch(`/api/wp/posts?per_page=5&_embed=1`, { headers: { Accept: 'application/json' } })
           if (recentResp.ok) {
-            const recent = (await recentResp.json()) as any[]
-            const simplified = recent.map(p => ({ id: p.id, slug: p.slug, title: { rendered: p.title?.rendered || '' } }))
+            const recent = (await recentResp.json()) as Array<Record<string, unknown>>
+            const simplified = recent.map((p: Record<string, unknown>) => ({ 
+              id: Number(p.id), 
+              slug: String(p.slug), 
+              title: { rendered: String((p.title as Record<string, unknown>)?.rendered || '') } 
+            }))
             setRelatedPosts(simplified)
             setHeading('Recent Posts')
           } else {
@@ -82,7 +86,7 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
           setRelatedPosts(filteredData);
           setHeading('Related Posts')
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching related posts:', err);
         setError('Failed to load related posts.');
       } finally {

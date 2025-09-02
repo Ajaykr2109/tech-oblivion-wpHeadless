@@ -3,7 +3,6 @@
 
 import { Upload, X, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,8 +203,8 @@ export default function EditorEditPage({ params }: { params: { id: string } }) {
         throw new Error(`Failed to update (${res.status}): ${t.slice(0,200)}`)
       }
       alert('Post updated')
-    } catch (e: any) {
-      setError(e.message || 'Failed to update')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to update')
     } finally { setSaving(false) }
   }
 

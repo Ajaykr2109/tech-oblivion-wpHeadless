@@ -9,12 +9,12 @@ export async function GET(req: Request) {
   // Generic discovery: list all WP REST routes; restrict to fe-* namespaces
   const res = await fetchWithAuth(req, `${WP}/wp-json`)
   try {
-    const j = await res.json() as any
+    const j: unknown = await res.json()
+    const data = j as { routes?: Record<string, { methods?: string[] }> }
     const out: { method: string; route: string }[] = []
-    if (j && j.routes) {
-      for (const [route, meta] of Object.entries(j.routes as any)) {
-        const item = meta as any
-        const methods: string[] = item?.methods || []
+    if (data && typeof data === 'object' && data.routes && typeof data.routes === 'object') {
+      for (const [route, meta] of Object.entries(data.routes)) {
+        const methods: string[] = (meta && typeof meta === 'object' && 'methods' in meta && Array.isArray(meta.methods)) ? meta.methods : []
         methods.forEach(m => out.push({ method: m, route: `/api${route}`.replace(/^\/+/, '/') }))
       }
     }

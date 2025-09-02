@@ -8,6 +8,8 @@ export type WordPressUser = {
   url?: string
 }
 
+import { logWPError } from './log'
+
 function getSiteOrigin() {
   if (typeof window !== 'undefined' && window.location) {
     return window.location.origin
@@ -32,7 +34,6 @@ export async function getUserBySlug(slug: string): Promise<WordPressUser | null>
   const list = await getUsers({ slug })
   return list[0] || null
 }
-import { logWPError } from './log'
 
 // Centralized caching knobs
 const DEFAULT_TTL = Number(process.env.WP_CACHE_TTL || 300) // seconds
@@ -51,7 +52,7 @@ export type WPPost = {
   slug: string
   title: { rendered: string }
   excerpt: { rendered: string }
-  content: { rendered: string }
+  content: { rendered: string; raw?: string }
   categories?: number[]
   tags?: number[]
   author?: number
@@ -87,6 +88,7 @@ export type PostDetail = {
   slug: string
   title: string
   contentHtml: string
+  content_raw?: string
   featuredImage?: string | null
   date: string
   authorId?: number | null
@@ -235,6 +237,7 @@ export async function getPostBySlug(slug: string) {
     slug: p.slug,
     title: p.title.rendered,
     contentHtml: p.content.rendered,
+    content_raw: p.content.raw,
     featuredImage,
     date: p.date,
     authorId: p.author ?? null,

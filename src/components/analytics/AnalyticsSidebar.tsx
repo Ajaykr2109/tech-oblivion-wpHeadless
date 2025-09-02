@@ -30,7 +30,7 @@ export default function AnalyticsSidebar({ period, postIds: _postIds }: { period
 
   const devices = data?.devices || []
   const countries = data?.countries || []
-  const total = devices.reduce((a: number, b: any) => a + (b.count || 0), 0)
+  const total = devices.reduce((a: number, b: { count?: number }) => a + (b.count || 0), 0)
 
   return (
     <div className="space-y-4">
@@ -47,7 +47,7 @@ export default function AnalyticsSidebar({ period, postIds: _postIds }: { period
                 outerRadius={70} 
                 label
               >
-                {devices.map((_: any, i: number) => (
+                {devices.map((_: { name?: string; count?: number }, i: number) => (
                   <Cell key={`c-${i}`} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
@@ -59,7 +59,7 @@ export default function AnalyticsSidebar({ period, postIds: _postIds }: { period
       <Card className="p-4">
         <div className="text-sm font-medium mb-2">Top countries</div>
         <ul className="space-y-1 text-sm">
-          {countries.slice(0, 10).map((c: any, i: number) => (
+          {countries.slice(0, 10).map((c: { name?: string; count?: number; country_code?: string }, i: number) => (
             <li key={i} className="flex justify-between">
               <span>{c.country_code}</span>
               <span>{c.count}</span>

@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   if (!WP) return Response.json({ error: 'WP_URL env required' }, { status: 500 })
   // Pass through multipart form-data
-  const body = await req.arrayBuffer()
-  const headers: HeadersInit = { 'Content-Type': req.headers.get('content-type') || 'application/octet-stream' }
-  return fetchWithAuth(req, `${WP}/wp-json/fe-media/v1/media`, { method: 'POST', body: body as any, headers })
+  const body = await req.arrayBuffer() as ArrayBuffer
+  const headers: Record<string, string> = { 'Content-Type': req.headers.get('content-type') || 'application/octet-stream' }
+  return fetchWithAuth(req, `${WP}/wp-json/fe-media/v1/media`, { method: 'POST', body: body, headers })
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 import type { WordPressPost } from '@/lib/wordpress-client'
 
@@ -67,10 +68,13 @@ export default function TestPage() {
             </div>
             {post._embedded?.['wp:featuredmedia']?.[0] && (
               <div className="mt-2">
-                <img 
+                <Image 
                   src={post._embedded['wp:featuredmedia'][0].source_url}
                   alt={post._embedded['wp:featuredmedia'][0].alt_text || post.title.rendered}
+                  width={128}
+                  height={128}
                   className="w-32 h-32 object-cover rounded"
+                  unoptimized
                 />
               </div>
             )}

@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       const cookieStore = await cookies()
       const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
       if (sessionCookie?.value) {
-        const claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims
+        const claims = (await verifySession(sessionCookie.value)) as SessionClaims
         if (claims?.wpToken) authHeader = `Bearer ${claims.wpToken}`
       }
     } catch {
@@ -83,7 +83,10 @@ export async function POST(req: NextRequest) {
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
   let claims: SessionClaims
-  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  try { claims = (await verifySession(sessionCookie.value)) as SessionClaims } catch { 
+    // ignore session parse error
+    return new Response('Unauthorized', { status: 401 }) 
+  }
   const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
@@ -94,7 +97,10 @@ export async function POST(req: NextRequest) {
   // Parse body; if tags are names, resolve to IDs
   const raw = await req.text()
   let bodyJson: unknown
-  try { bodyJson = raw ? JSON.parse(raw) : {} } catch { bodyJson = {} }
+  try { bodyJson = raw ? JSON.parse(raw) : {} } catch { 
+    // ignore parse error
+    bodyJson = {} 
+  }
   if (
     bodyJson &&
     typeof bodyJson === 'object' &&
@@ -137,7 +143,10 @@ export async function PATCH(req: NextRequest) {
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
   let claims: SessionClaims
-  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  try { claims = (await verifySession(sessionCookie.value)) as SessionClaims } catch { 
+    // ignore session parse error
+    return new Response('Unauthorized', { status: 401 }) 
+  }
   const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
@@ -201,7 +210,10 @@ export async function DELETE(req: NextRequest) {
   const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
   if (!sessionCookie?.value) return new Response('Unauthorized', { status: 401 })
   let claims: SessionClaims
-  try { claims = (await verifySession(sessionCookie.value)) as unknown as SessionClaims } catch { return new Response('Unauthorized', { status: 401 }) }
+  try { claims = (await verifySession(sessionCookie.value)) as SessionClaims } catch { 
+    // ignore session parse error
+    return new Response('Unauthorized', { status: 401 }) 
+  }
   const roles: string[] = Array.isArray(claims.roles) ? claims.roles : []
   if (!roles.some(r => ['editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })

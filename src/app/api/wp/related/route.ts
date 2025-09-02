@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
   const res = await fetch(out.toString(), { cache: 'no-store' })
   if (!res.ok) return new Response('Upstream error', { status: res.status })
   const arr = await res.json()
-  const simplified = Array.isArray(arr) ? arr.map((p: any) => ({
-    id: p.id,
-    slug: p.slug,
-    title: p.title?.rendered,
-    date: p.date,
-    featuredImage: p._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null,
+  const simplified = Array.isArray(arr) ? arr.map((p: Record<string, unknown>) => ({
+    id: (p as { id: unknown }).id,
+    slug: (p as { slug: unknown }).slug,
+    title: (p as { title?: { rendered?: string } }).title?.rendered,
+    date: (p as { date: unknown }).date,
+    featuredImage: (p as { _embedded?: { 'wp:featuredmedia'?: Array<{ source_url?: string }> } })._embedded?.['wp:featuredmedia']?.[0]?.source_url ?? null,
   })) : []
   return Response.json(simplified, { headers: { 'Cache-Control': 'public, max-age=60' } })
 }

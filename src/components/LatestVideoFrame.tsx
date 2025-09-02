@@ -15,6 +15,7 @@ export default function LatestVideoFrame() {
         const data = await res.json();
         if (!cancelled) setVideoId(data.videoId || null);
       } catch {
+        // Ignore fetch errors; videoId will remain null
         if (!cancelled) setVideoId(null);
       } finally {
         if (!cancelled) setLoading(false);

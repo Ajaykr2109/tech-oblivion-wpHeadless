@@ -34,7 +34,7 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
         items.map((p) => (
           <PostCard
             key={p.id}
-            layout={layout as any}
+            layout={layout}
             post={{
               id: String(p.id),
               title: p.title,

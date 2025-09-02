@@ -9,7 +9,7 @@ export async function GET(req: Request) {
     const url = apiMap.analytics.check
     if (!url) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
     return await fetchWithAuth(req, url)
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof MissingWpTokenError) {
       return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
     }

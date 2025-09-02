@@ -5,14 +5,17 @@ import type { AccessLevel } from '@/config/apiRolesMatrix'
 
 export async function requireAccess(opts: { path: string; method: string; action: AccessLevel }) {
   const claims = await getServerSessionClaims()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let roles: string[] | null = (claims as any)?.roles || null
   // Enrich roles from WordPress if we have a WP token
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((claims as any)?.wpToken) {
     const wp = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
     if (wp) {
       try {
         const url = new URL('/wp-json/wp/v2/users/me', wp)
         url.searchParams.set('context', 'edit')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const res = await fetch(url, { headers: { Authorization: `Bearer ${(claims as any).wpToken}` }, cache: 'no-store' })
         if (res.ok) {
           const j: { roles?: string[] } = await res.json()

@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 
-import { can as canAction, messageFor, Action } from '@/lib/roles'
+import { can as canAction, messageFor, normalizeRole, type Action } from '@/lib/roles'
 
 type Me = { roles?: string[] } | null
 
@@ -51,6 +51,32 @@ export function useRoleGate(action: Action) {
   const allowed = canAction(roles, action)
   const reason = allowed ? '' : messageFor(roles, action)
   return { allowed, reason, loading, me }
+}
+
+export function useSimpleAccess(role: 'admin' | 'editor' | 'viewer' | 'guest', action: string) {
+  const { me, loading } = useMe()
+  const roles = me?.roles || null
+  const currentRole = normalizeRole(roles)
+  const roleMapping: Record<string, 'admin' | 'editor' | 'viewer' | 'guest'> = {
+    admin: 'admin',
+    publisher: 'editor',
+    editor: 'editor',
+    author: 'editor',
+    writer: 'viewer',
+    reader: 'viewer',
+    seo_lead: 'editor',
+    seo_specialist: 'viewer',
+    guest: 'guest',
+  }
+  const mappedRole = roleMapping[currentRole] || 'guest'
+  const permissions: Record<string, string[]> = {
+    admin: ['view', 'edit', 'delete', 'publish', 'draft', 'settings', 'moderate', 'admin'],
+    editor: ['view', 'edit', 'publish', 'draft', 'moderate'],
+    viewer: ['view', 'draft'],
+    guest: ['view'],
+  }
+  const allowed = permissions[mappedRole]?.includes(action) ?? false
+  return { allowed, loading, me, currentRole: mappedRole }
 }
 
 type GateProps = React.PropsWithChildren<{

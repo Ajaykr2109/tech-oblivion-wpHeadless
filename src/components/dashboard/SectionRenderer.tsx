@@ -1,10 +1,11 @@
 "use client"
+
 import React, { useEffect, useMemo, useState } from 'react'
 
 import GridLayout from 'react-grid-layout'
-
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
+
 import { Card } from '@/components/ui/card'
 
 import { widgetRegistry, type Widget } from './WidgetRegistry'
@@ -16,6 +17,7 @@ export default function SectionRenderer({ section }: { section: Widget['section'
   const widgets = useMemo(() => widgetRegistry.filter(w => w.section === section), [section])
   const defaultLayout: SavedLayout[] = useMemo(() => widgets.map(w => w.defaultLayout), [widgets])
   const [layout, setLayout] = useState<SavedLayout[]>(defaultLayout)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLayoutChange = (l: SavedLayout[]) => setLayout(l as any)
 
   useEffect(() => {
@@ -41,7 +43,8 @@ export default function SectionRenderer({ section }: { section: Widget['section'
         rowHeight={48}
         width={1200}
         layout={layout}
-        onLayoutChange={handleLayoutChange as any}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onLayoutChange={handleLayoutChange}
       >
         {widgets.map(w => (
           <div key={w.id}>

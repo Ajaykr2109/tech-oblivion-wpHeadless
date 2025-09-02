@@ -22,7 +22,7 @@ export type PublicUserProfile = {
   description?: string
   avatar_urls?: Record<string, string>
   roles?: string[]
-  profile_fields?: Record<string, any>
+  profile_fields?: Record<string, unknown>
   recent_posts: Array<{
     id: number
     title: string
@@ -54,7 +54,7 @@ export default function ProfilePage({ user }: { user: PublicUserProfile }) {
   const wpBase = (process.env.NEXT_PUBLIC_WP_URL || '').replace(/\/$/, '')
   const authorArchive = hasPosts ? `${wpBase}/author/${encodeURIComponent(user.slug)}/` : null
 
-  const joined = typeof (user as any)?.profile_fields?.registered === 'string' ? (user as any).profile_fields.registered : null
+  const joined = typeof user.profile_fields?.registered === 'string' ? user.profile_fields.registered : null
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-10">
@@ -179,7 +179,9 @@ function RolesBadges({ user }: { user: PublicUserProfile }) {
     try {
       const cached = localStorage.getItem(`roles:${user.id}`)
       if (cached) return JSON.parse(cached)
-    } catch {}
+    } catch {
+      // Ignore localStorage parse errors
+    }
     return null
   })
 
@@ -196,14 +198,18 @@ function RolesBadges({ user }: { user: PublicUserProfile }) {
           cache: 'force-cache',
         })
         if (!res.ok) return
-        const arr = (await res.json()) as any[]
+        const arr = (await res.json()) as Array<{ id: number; roles?: string[] }>
         const hit = Array.isArray(arr) ? arr.find((u) => u?.id === user.id) : null
         const foundRoles = hit?.roles
         if (Array.isArray(foundRoles) && foundRoles.length) {
           setRoles(foundRoles)
-          try { localStorage.setItem(`roles:${user.id}`, JSON.stringify(foundRoles)) } catch {}
+          try { localStorage.setItem(`roles:${user.id}`, JSON.stringify(foundRoles)) } catch {
+            // Ignore localStorage errors
+          }
         }
-      } catch {}
+      } catch {
+        // Ignore fetch errors
+      }
     }
     run()
     return () => controller.abort()
@@ -235,7 +241,7 @@ function FieldsSkeleton() {
   )
 }
 
-function ListSkeleton() {
+function _ListSkeleton() {
   return (
     <div className="space-y-6">
       {Array.from({ length: 3 }).map((_, i) => (

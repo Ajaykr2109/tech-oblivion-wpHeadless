@@ -1,6 +1,5 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import { apiMap as loadedApiMap, WP_BASE } from '../src/lib/wpAPIMap'
 
@@ -49,13 +48,16 @@ function toApiPath(absFile: string): string {
   return '/' + rel.replace(/\/route\.ts$/, '')
 }
 
-type ApiMap = any
+type ApiMap = Record<string, unknown>
 
 function getValueFromApiMap(obj: ApiMap, chain: string[]): unknown {
-  let cur: any = obj
+  let cur: unknown = obj
   for (const key of chain) {
-    if (cur && typeof cur === 'object' && key in cur) cur = cur[key]
-    else return undefined
+    if (cur && typeof cur === 'object' && cur !== null && key in cur) {
+      cur = (cur as Record<string, unknown>)[key]
+    } else {
+      return undefined
+    }
   }
   return cur
 }

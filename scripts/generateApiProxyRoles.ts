@@ -48,13 +48,16 @@ function toApiPath(absFile: string): string {
   return '/' + rel.replace(/\/route\.ts$/, '')
 }
 
-type ApiMap = any
+type ApiMap = Record<string, unknown>
 
 function getValueFromApiMap(obj: ApiMap, chain: string[]): unknown {
-  let cur: any = obj
+  let cur: unknown = obj
   for (const key of chain) {
-    if (cur && typeof cur === 'object' && key in cur) cur = cur[key]
-    else return undefined
+    if (cur && typeof cur === 'object' && cur !== null && key in cur) {
+      cur = (cur as Record<string, unknown>)[key]
+    } else {
+      return undefined
+    }
   }
   return cur
 }
@@ -122,7 +125,7 @@ function markAccess(endpointPath: string, method: string): Record<Role, boolean>
   // Try exact and then pattern match like in audit script
   const methodUpper = method.toUpperCase()
   const match = apiRolesMatrix.find((e) => {
-    if (e.method !== (methodUpper as any)) return false
+    if (e.method !== methodUpper) return false
     if (e.path === endpointPath) return true
     const pattern = e.path
       .replace(/\//g, '\\/')

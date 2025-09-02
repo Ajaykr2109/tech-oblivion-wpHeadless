@@ -20,9 +20,11 @@ export default function FloatingActions({ title, postId }: { title: string; post
         await navigator.clipboard.writeText(url)
         toast({ title: 'Link copied', description: 'Post URL copied to clipboard.' })
       }
-    } catch {}
+    } catch {
+      // Ignore share/clipboard errors - fallback to manual copy
+    }
   }
-  function printPage() { try { window.print() } catch {} }
+  function printPage() { try { window.print() } catch { /* Ignore print errors */ } }
 
   useEffect(() => {
     let cancelled = false
@@ -33,7 +35,9 @@ export default function FloatingActions({ title, postId }: { title: string; post
         if (!r.ok) return
         const j = await r.json().catch(() => null)
         if (!cancelled && j && typeof j === 'object') setBookmarkState({ bookmarked: !!j.bookmarked, count: Number(j.count || 0) })
-      } catch {}
+      } catch {
+        // Ignore bookmark fetch errors - keep default state
+      }
     })()
     return () => { cancelled = true }
   }, [postId])
@@ -57,8 +61,8 @@ export default function FloatingActions({ title, postId }: { title: string; post
         setBookmarkState({ bookmarked: !!j.bookmarked, count: Number(j.count || 0) })
         toast({ title: j.bookmarked ? 'Saved' : 'Removed', description: j.bookmarked ? 'Added to your bookmarks.' : 'Removed from your bookmarks.' })
       }
-    } catch (e: any) {
-      toast({ title: 'Error', description: e?.message || 'Could not update bookmark', variant: 'destructive' })
+    } catch (e: unknown) {
+      toast({ title: 'Error', description: e instanceof Error ? e.message : 'Could not update bookmark', variant: 'destructive' })
     } finally { setBusy(false) }
   }
 

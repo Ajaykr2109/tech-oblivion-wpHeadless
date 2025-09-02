@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const raw = await import('fs/promises').then(m => m.readFile(metricsFile, 'utf-8')).catch(() => null)
     if (raw) return NextResponse.json(JSON.parse(raw))
-  } catch (_e) {
+  } catch {
     // ignore
   }
   return NextResponse.json({ ok: true, message: 'metrics not persisted; check logs or use headers' })

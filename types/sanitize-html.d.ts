@@ -1,7 +1,7 @@
 declare module 'sanitize-html' {
   export interface SanitizeOptions {
     allowedTags?: string[]
-    allowedAttributes?: Record<string, string[] | true> | false
+    allowedAttributes?: Record<string, string[] | boolean> | false
     allowedSchemesAppliedToAttributes?: string[]
     allowProtocolRelative?: boolean
     allowedSchemesByTag?: Record<string, string[]>

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,7 @@ export default function AccountProfilePage() {
   const [me, setMe] = useState<Me | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
-  const allowedKeys = ["insta", "fb", "youtube", "github", "linked"] as const
+  const allowedKeys = useMemo(() => ["insta", "fb", "youtube", "github", "linked"] as const, [])
   const [fields, setFields] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function AccountProfilePage() {
             setMe(data.user)
             const profile =
               data.user.profile_fields && typeof data.user.profile_fields === "object"
-                ? (data.user.profile_fields as Record<string, any>)
+                ? (data.user.profile_fields as Record<string, unknown>)
                 : {}
             const init: Record<string, string> = {}
             allowedKeys.forEach((k) => {
@@ -53,13 +53,13 @@ export default function AccountProfilePage() {
         setLoading(false)
       }
     })()
-  }, [])
+  }, [allowedKeys])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!me) return
     const fd = new FormData(e.currentTarget)
-    const payload: any = {
+    const payload = {
       name: String(fd.get("name") || ""),
       nickname: String(fd.get("nickname") || ""),
       email: String(fd.get("email") || ""),
@@ -71,10 +71,10 @@ export default function AccountProfilePage() {
           .filter(([k]) => (allowedKeys as readonly string[]).includes(k))
           .map(([k, v]) => [k, String(v ?? "").trim()])
           .filter(([, v]) => v.length > 0)
-      ),
+      ) as Record<string, string>,
     }
     Object.keys(payload).forEach((k) => {
-      if (payload[k] === "") delete payload[k]
+      if ((payload as Record<string, unknown>)[k] === "") delete (payload as Record<string, unknown>)[k]
     })
 
     setSaving(true)
@@ -89,10 +89,10 @@ export default function AccountProfilePage() {
         throw new Error(t || "Update failed")
       }
       toast({ title: "Profile updated" })
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Update failed",
-        description: err?.message || String(err),
+        description: err instanceof Error ? err.message : String(err),
         variant: "destructive",
       })
     } finally {
@@ -119,7 +119,7 @@ export default function AccountProfilePage() {
               <Input
                 id="name"
                 name="name"
-                defaultValue={me.name || me.nickname || (me as any).displayName}
+                defaultValue={me.name || me.nickname || (me as Me & { displayName?: string }).displayName}
                 placeholder="e.g. John Doe"
               />
             </div>

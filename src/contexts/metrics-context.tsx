@@ -66,8 +66,8 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
       if (!r.ok) throw new Error('Failed to load metrics')
       const list: Metric[] = await r.json()
       setMetrics(list)
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load metrics')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to load metrics')
     }
   }, [])
 
@@ -77,8 +77,8 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
       if (!r.ok) throw new Error('Eval failed')
       const data: MetricEval = await r.json()
       setEvals((prev) => ({ ...prev, [id]: data }))
-    } catch (e: any) {
-      setEvals((prev) => ({ ...prev, [id]: { status: 'error', message: e?.message || 'Eval failed' } }))
+    } catch (e: unknown) {
+      setEvals((prev) => ({ ...prev, [id]: { status: 'error', message: e instanceof Error ? e.message : 'Eval failed' } }))
     }
   }, [])
 
@@ -90,8 +90,8 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
       ])
       if (sumR.ok) setSessionSummary(await sumR.json())
       if (tsR.ok) setSessionTS(await tsR.json())
-    } catch (e) {
-      // ignore
+    } catch {
+      // Silently handle session loading errors
     }
   }, [])
 
@@ -125,14 +125,18 @@ export function MetricsProvider({ children }: { children: React.ReactNode }) {
             // light refresh on events
             loadSessions()
           }
-        } catch {}
+        } catch {
+          // Silently handle event processing errors
+        }
       }
       es.onerror = () => {
         // Autoreconnect handled by EventSource when reloaded; onerror we can close and retry later
         es.close()
         sseRef.current = null
       }
-    } catch {}
+    } catch {
+      // Silently handle SSE initialization errors
+    }
     return () => {
       sseRef.current?.close()
       sseRef.current = null

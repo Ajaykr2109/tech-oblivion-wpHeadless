@@ -6,7 +6,8 @@ export async function GET() {
   try {
     await requireRole('administrator')
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
-    return NextResponse.json({ message: err.message || 'Forbidden' }, { status: err.status ?? 403 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Forbidden'
+    return NextResponse.json({ message }, { status: 403 })
   }
 }

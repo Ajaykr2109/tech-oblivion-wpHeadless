@@ -5,8 +5,9 @@ declare module 'react-simple-maps' {
   export type GeographyType = {
     id?: string | number
     rsmKey: string
-    // allow extra fields without unsafe any
-    [key: string]: unknown
+    // allow extra fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any
   }
 
   export interface ComposableMapProps {

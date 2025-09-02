@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/button'
 
 export default function SettingsPanel() {
   const [enableReferers, setEnableReferers] = useState(true)
-  const [threshold, setThreshold] = useState(10)
+  const [_threshold, _setThreshold] = useState(10)
 
   const refreshCache = async () => {
     try {
       const u = new URL('/api/analytics/summary', window.location.origin)
       u.searchParams.set('refresh', 'true')
       await fetch(u)
-    } catch {}
+    } catch {
+      // Ignore cache refresh errors - these are non-critical
+    }
   }
 
   return (

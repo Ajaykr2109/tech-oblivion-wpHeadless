@@ -24,6 +24,6 @@ export async function POST(req: Request) {
     await fs.rm(CACHE_DIR, { recursive: true, force: true }).catch(() => null)
     return NextResponse.json({ ok: true, cleared: true })
   } catch (e: unknown) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 })
+    return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }

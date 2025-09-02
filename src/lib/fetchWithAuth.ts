@@ -15,7 +15,7 @@ export async function getWpTokenFromRequest(req: Request): Promise<string | null
   if (!token) return null
   try {
     const claims = await verifySession(token)
-    return (claims as any)?.wpToken || null
+    return (claims as { wpToken?: string })?.wpToken || null
   } catch {
     return null
   }
@@ -25,16 +25,19 @@ export async function fetchWithAuth(reqOrToken: Request | string | null | undefi
   let wpToken: string | null = null
   if (typeof reqOrToken === 'string') {
     wpToken = reqOrToken
-  } else if (reqOrToken && typeof (reqOrToken as any).headers === 'object') {
+  } else if (reqOrToken && typeof (reqOrToken as { headers?: unknown }).headers === 'object') {
     wpToken = await getWpTokenFromRequest(reqOrToken as Request)
   }
   if (!wpToken) throw new MissingWpTokenError()
   const headers: HeadersInit = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(init.headers as any),
     Authorization: `Bearer ${wpToken}`,
   }
   // Some proxies may read cookie Authorization
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!(headers as any).Cookie) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (headers as any).Cookie = `Authorization=Bearer ${wpToken}`
   }
   // Honor caller-provided caching options. Default to no-store only if not provided.

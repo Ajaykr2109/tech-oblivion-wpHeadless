@@ -15,7 +15,7 @@ declare module 'react-grid-layout' {
     onLayoutChange?: (layout: Layout[]) => void
     children?: React.ReactNode
   }
-  export interface WidthProviderProps extends ReactGridLayoutProps {
+  export type WidthProviderProps = ReactGridLayoutProps & {
     measureBeforeMount?: boolean
   }
   export function WidthProvider<T extends React.ComponentType<ReactGridLayoutProps>>(component: T): React.ComponentType<WidthProviderProps>

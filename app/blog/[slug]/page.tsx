@@ -1,41 +1,38 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import Head from 'next/head'
 import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import hljs from 'highlight.js'
 import { Twitter, Linkedin, Github, Clock, Eye } from 'lucide-react'
-import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
-
-import { getArticleSchema, getBreadcrumbSchema } from '@/lib/generateSchema'
 import 'highlight.js/styles/github-dark.css'
 
+import { getArticleSchema, getBreadcrumbSchema } from '@/lib/generateSchema'
+import { getPostBySlug, type PostDetail } from '@/lib/wp'
+import { getOrBuildToc } from '@/lib/toc'
+import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
+import { sanitizeWP } from '@/lib/sanitize'
+import { getLatestByAuthor } from '@/lib/wp-author'
+import { extractTocFromMarkdown } from '@/lib/toc-md'
+import { decodeEntities } from '@/lib/entities'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { getPostBySlug, type PostDetail } from '@/lib/wp'
-import { getOrBuildToc } from '@/lib/toc'
 import TableOfContents from '@/components/toc/TableOfContents'
-import type { TocItem as HtmlTocItem } from '@/lib/toc'
-import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
-import { sanitizeWP } from '@/lib/sanitize'
 import PostActions from '@/components/post-actions'
 import CommentsSection from '@/components/comments-section'
 import ReadingProgress from '@/components/reading-progress'
 import FloatingActions from '@/components/floating-actions'
 import ContentDecorators from '@/components/content-decorators'
-import ReaderToolbar from '@/components/reader-toolbar'
 import ReaderToolbarPortal from '@/components/reader-toolbar-portal'
 import BackToTopCenter from '@/components/back-to-top-center'
-import { getLatestByAuthor } from '@/lib/wp-author'
 import ViewsCounter from '@/components/views-counter'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
-import { extractTocFromMarkdown } from '@/lib/toc-md'
-import { decodeEntities } from '@/lib/entities'
+import type { TocItem as HtmlTocItem } from '@/lib/toc'
+import type { TocItem as MdTocItem } from '@/lib/toc-md'
 
 // ToolbarPortal moved to component file
 
@@ -102,8 +99,8 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
         // Generate TOC (legacy for anchors), and markdown items for new TOC component
         let tableOfContents: HtmlTocItem[] = []
-        const mdItems = (post as any).content_raw ? extractTocFromMarkdown((post as any).content_raw as string, { minDepth: 1, maxDepth: 6 }) : []
-        if ((post as any).content_raw) {
+        const mdItems = post.content_raw ? extractTocFromMarkdown(post.content_raw, { minDepth: 1, maxDepth: 6 }) : []
+        if (post.content_raw) {
             const mdToc = mdItems
             tableOfContents = mdToc
                 .filter(i => i.depth === 2 || i.depth === 3)
@@ -119,7 +116,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     // 🚀 ENHANCED: Better recommendations with more metadata
     let recommended: EnhancedRecommendation[] = []
     // Try to infer author id from categories/tags data model; fallback 0 (no fetch)
-    const authorId = (post as any).author ?? 0
+    const authorId = post.authorId ?? 0
     const latestByAuthor = authorId ? await getLatestByAuthor(Number(authorId), Number(post.id), 3) : []
     try {
         const cats = (post.categories || []).map(c => c.id).join(',')
@@ -137,8 +134,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             next: { revalidate: 300 } // Cache for 5 minutes
         })
         if (r.ok) {
-            const data = (await r.json()) as any[]
-            recommended = (data || []).slice(0, 3).map(d => {
+            const data = (await r.json()) as unknown[]
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            recommended = (data || []).slice(0, 3).map((d: any) => {
                 // Calculate reading time for each recommendation
                 const content = d.content?.rendered || d.excerpt?.rendered || ''
                 const words = content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
@@ -168,8 +166,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         const url = `${origin || ''}/api/wp/popular?limit=6`
         const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
         if (r.ok) {
-            const data = (await r.json()) as any[]
-            popular = (data || []).map(d => ({
+            const data = (await r.json()) as unknown[]
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            popular = (data || []).map((d: any) => ({
                 id: d.id,
                 slug: d.slug,
                 title: d.title?.rendered || d.title || '',
@@ -190,8 +189,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         const url = `${origin || ''}/api/wp/posts?per_page=6&_embed=1`
         const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
         if (r.ok) {
-            const data = (await r.json()) as any[]
-            recent = (data || []).map((p) => ({
+            const data = (await r.json()) as unknown[]
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            recent = (data || []).map((p: any) => ({
                 id: p.id,
                 slug: p.slug,
                 title: p.title?.rendered || '',
@@ -319,12 +319,12 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
                                 {/* Mobile/Tablet TOC (use markdown items or HTML fallback) */}
                                 {(() => {
-                                        const itemsForTOC = (mdItems && mdItems.length > 0)
+                                        const itemsForTOC: MdTocItem[] = (mdItems && mdItems.length > 0)
                                                 ? mdItems
                                                 : (tableOfContents || []).map(i => ({ id: i.slug, value: i.text, depth: i.level }))
                                         return itemsForTOC.length > 0 ? (
                                                                     <div className="lg:hidden mb-6">
-                                                                        <TableOfContents items={itemsForTOC as unknown as any[]} />
+                                                                        <TableOfContents items={itemsForTOC} />
                                                                     </div>
                                         ) : null
                                 })()}
@@ -333,7 +333,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     {/* 🔧 FIX: Sticky TOC with better positioning */}
                                                             <aside className="self-start hidden lg:block print:hidden" style={{ position: 'sticky', top: 'calc(var(--header-height) + 16px)' }}>
                         {(() => {
-                            const itemsForTOC = (mdItems && mdItems.length > 0)
+                            const itemsForTOC: MdTocItem[] = (mdItems && mdItems.length > 0)
                                 ? mdItems
                                 : (tableOfContents || []).map(i => ({ id: i.slug, value: i.text, depth: i.level }))
                             return itemsForTOC.length > 0 ? (
@@ -341,7 +341,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                 <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                                     On this page
                                 </h2>
-                                <TableOfContents items={itemsForTOC as unknown as any[]} />
+                                <TableOfContents items={itemsForTOC} />
                             </div>
                             ) : null
                         })()}
@@ -359,9 +359,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                                                                                     </figure>
                                                                                                 ) : null}
 
-                        { (post as any).content_raw ? (
+                        { post.content_raw ? (
                                                     <MarkdownRenderer
-                            markdown={decodeEntities((post as any).content_raw as string)}
+                            markdown={decodeEntities(post.content_raw)}
                                                                                                                 className="wp-content prose prose-lg dark:prose-invert max-w-[70ch] w-full min-w-0 mx-auto leading-7 [&>h1]:text-3xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-2xl [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:scroll-mt-24 [&>h3]:text-xl [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:scroll-mt-24 [&>p]:mb-3 [&>figure]:my-5 [&>figure>img]:rounded-lg [&>figure>img]:shadow-md [&>figure>figcaption]:mt-2 [&>figure>figcaption]:text-center [&>img]:rounded-lg [&>img]:shadow-md [&>img]:my-3 [&>img]:mx-auto [&>img]:max-w-full [&>ul]:mb-3 [&>ol]:mb-3 [&>li]:mb-1 [&>blockquote]:border-l-4 [&>blockquote]:border-primary [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:my-4 [&>blockquote]:bg-secondary/30 [&>blockquote]:rounded-r-lg [&>pre]:relative [&>pre]:group"
                                                     />
                                                 ) : (
@@ -465,6 +465,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                                         <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
                                                                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">More from the author</h3>
                                                                 <ul className="space-y-3">
+                                                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                                         {latestByAuthor.map((p: any) => (
                                                                                 <li key={p.id}>
                                                                                         <Link href={`/blog/${p.slug}`} className="text-sm hover:underline line-clamp-2">{p.title?.rendered || p.title}</Link>

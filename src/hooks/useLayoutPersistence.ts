@@ -2,8 +2,6 @@
 
 export type RGLItem = { i: string; x: number; y: number; w: number; h: number; static?: boolean; minW?: number; minH?: number }
 
-const fetcher = (url: string) => fetch(url, { cache: 'no-store' }).then(r => r.json())
-
 export function useLayoutPersistence() {
   // last section helper
   const setLastSection = (s: string) => { 

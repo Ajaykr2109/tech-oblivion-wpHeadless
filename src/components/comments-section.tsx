@@ -22,7 +22,6 @@ type Comment = {
 export default function CommentsSection({ postId }: { postId: number }) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const { allowed } = useRoleGate('comment')
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -50,7 +49,6 @@ export default function CommentsSection({ postId }: { postId: number }) {
     let cancelled = false
     async function load() {
       setLoading(true)
-      setError(null)
       try {
         // Placeholder: try API if exists; otherwise empty list
         const r = await fetch(`/api/wp/comments?post=${postId}`, { cache: 'no-store' })
@@ -77,8 +75,9 @@ export default function CommentsSection({ postId }: { postId: number }) {
                 setComments(mapped)
               }
       } catch {
-              setComments(mapped)
-            }
+        // Ignore user enrichment errors
+        setComments(mapped)
+      }
           } else {
             setComments(mapped)
           }
@@ -86,8 +85,9 @@ export default function CommentsSection({ postId }: { postId: number }) {
           setComments([])
         }
     } catch {
-        if (!cancelled) setComments([])
-      } finally {
+      // Ignore comment loading errors
+      if (!cancelled) setComments([])
+    } finally {
         if (!cancelled) setLoading(false)
       }
     }

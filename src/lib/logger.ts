@@ -9,8 +9,8 @@ const ERROR_FILE = path.join(LOG_DIR, 'error.log')
 function ensureDir() {
   try {
     if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
-  } catch (e) {
-    // ignore
+  } catch {
+    // ignore directory creation errors
   }
 }
 
@@ -18,9 +18,9 @@ function write(file: string, entry: unknown) {
   try {
     ensureDir()
     fs.appendFileSync(file, JSON.stringify(entry) + '\n')
-  } catch (e) {
+  } catch {
     // swallow logging errors - console.warn could be added for debugging
-    console.warn('Failed to write log:', e)
+    console.warn('Failed to write log')
   }
 }
 

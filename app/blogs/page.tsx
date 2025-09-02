@@ -11,8 +11,8 @@ export default async function BlogsPage() {
     items = res.items
   } catch (err: unknown) {
     // Log upstream WP error and continue with empty list so build/prerender succeeds
-    const status = (err && typeof err === 'object' && 'status' in err) ? (err as any).status : undefined
-    const statusText = (err && typeof err === 'object' && 'message' in err) ? (err as any).message : String(err)
+    const status = (err && typeof err === 'object' && 'status' in err) ? (err as { status?: number }).status : undefined
+    const statusText = (err && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err)
     logWPError('blogs-page-getPosts', { status, statusText, body: typeof err === 'string' ? err : JSON.stringify(err) })
     items = []
   }

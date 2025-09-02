@@ -25,7 +25,7 @@ export default function LoginPage() {
           window.location.href = '/'
           return
         }
-      } catch (error) {
+      } catch {
         // Not logged in, continue to show login form
       } finally {
         setCheckingAuth(false)
@@ -45,7 +45,9 @@ export default function LoginPage() {
           const j = await res.json()
           setCsrf(j.token)
         }
-      } catch {}
+      } catch {
+        // Ignore CSRF fetch errors - will retry on form submission
+      }
     }
 
     ensureCsrf()
@@ -58,7 +60,7 @@ export default function LoginPage() {
     setError('')
     
     const form = e.target as HTMLFormElement
-    const data = Object.fromEntries(new FormData(form) as any)
+    const data = Object.fromEntries(new FormData(form)) as Record<string, string>
     
     try {
       const res = await fetch('/api/auth/login', { 
@@ -89,8 +91,8 @@ export default function LoginPage() {
       const next = params.get('next') || '/'
       window.location.href = next
       
-    } catch (err: any) {
-      setError(err.message || 'Login error occurred')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setIsLoading(false)
     }

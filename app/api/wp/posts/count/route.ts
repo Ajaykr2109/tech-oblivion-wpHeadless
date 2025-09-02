@@ -14,16 +14,16 @@ export async function GET(req: Request) {
 
   // Include auth when available; required for non-public statuses like draft/pending
   const token = await getWpTokenFromRequest(req)
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'User-Agent': 'techoblivion-fe/1.0',
     'Accept': 'application/json',
   }
-  if (token) (headers as any).Authorization = `Bearer ${token}`
+  if (token) headers.Authorization = `Bearer ${token}`
   if (!token && status && status !== 'publish') {
     return Response.json({ error: 'unauthorized', message: 'Login required for non-public post statuses' }, { status: 401 })
   }
 
   const res = await fetch(u.toString(), { cache: 'no-store', headers })
-  const total = res.headers.get('x-wp-total')
+  const total = res.headers.get('x-wp-total') as string | null
   return Response.json({ count: total ? Number(total) : (res.ok ? 0 : null) }, { status: res.ok ? 200 : res.status })
 }

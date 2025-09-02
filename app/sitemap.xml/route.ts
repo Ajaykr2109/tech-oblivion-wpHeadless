@@ -4,7 +4,7 @@ import { getSettings } from '@/lib/settings'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const WP = process.env.WP_URL ?? 'http://example.com'
   const settings = await getSettings()
   const SITE = settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || 'http://example.com'

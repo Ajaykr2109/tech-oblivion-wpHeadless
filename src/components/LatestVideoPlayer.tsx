@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import Image from "next/image";
 
 export default function LatestVideoPlayer() {
   const [video, setVideo] = useState<{ id: string; title: string; thumbnail: string } | null>(null);
@@ -55,10 +55,12 @@ export default function LatestVideoPlayer() {
             onClick={() => setPlaying(true)}
             aria-label="Play video"
           >
-            <img
+            <Image
               src={video.thumbnail}
               alt={video.title}
-              className="w-full h-full object-cover absolute inset-0 z-0"
+              fill
+              className="object-cover z-0"
+              unoptimized
             />
             <svg className="z-10" width="64" height="64" viewBox="0 0 64 64" fill="none">
               <circle cx="32" cy="32" r="32" fill="rgba(0,0,0,0.6)" />

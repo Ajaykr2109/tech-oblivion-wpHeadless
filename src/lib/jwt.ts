@@ -16,6 +16,7 @@ export type SessionClaims = {
 }
 
 export async function signSession(claims: SessionClaims, maxAgeSec = 60 * 60 * 24 * 7) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return await new SignJWT(claims as any)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()

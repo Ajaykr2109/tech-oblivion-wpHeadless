@@ -27,7 +27,12 @@ export async function GET(req: NextRequest) {
     const body = await res.text()
     return NextResponse.json({ error: 'Upstream error', status: res.status, message: body }, { status: 502 })
   }
-  const data = await res.json()
-  const simplified = (data as any[]).map(p => ({ id: p.id, slug: p.slug, title: { rendered: p.title?.rendered || '' } }))
+  const data: unknown = await res.json()
+  const posts = Array.isArray(data) ? data as Array<{
+    id: number;
+    slug: string;
+    title?: { rendered?: string };
+  }> : []
+  const simplified = posts.map(p => ({ id: p.id, slug: p.slug, title: { rendered: p.title?.rendered || '' } }))
   return NextResponse.json(simplified, { status: 200 })
 }

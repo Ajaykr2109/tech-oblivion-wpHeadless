@@ -1,16 +1,15 @@
 import Head from "next/head"
 import Link from "next/link"
-import { PlayCircle, Send, BookOpen, Rss, Edit } from "lucide-react"
+import { Send, BookOpen, Rss, Edit } from "lucide-react"
 
 import Feed from "@/components/feed"
-import { getWebSiteSchema, getVideoSchema, getFAQSchema } from "@/lib/generateSchema"
+import { getWebSiteSchema, getFAQSchema } from "@/lib/generateSchema"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import HomeLatestVideoSection from "@/components/HomeLatestVideoSection"
-import { Marquee } from "@/components/marquee"
 
 export default function Home() {
-  const summary = 'Latest updates from our blog.'
+  const _summary = 'Latest updates from our blog.'
   // Example FAQ data; replace with real data if available
   const faqs = [
     { question: "What is Tech.Oblivion?", answer: "A modern tech blog and community for web, AI, and engineering." },

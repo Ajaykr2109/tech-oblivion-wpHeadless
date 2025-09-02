@@ -14,7 +14,9 @@ export default function LoginPage() {
       const u = new URL(window.location.href)
       const n = u.searchParams.get('next')
       if (n) setNextUrl(n)
-    } catch {}
+    } catch {
+      // Ignore invalid URL parsing - use default nextUrl
+    }
     // If already logged in, bounce early
     ;(async () => {
       try {
@@ -25,9 +27,11 @@ export default function LoginPage() {
             window.location.href = nextUrl || '/account'
           }
         }
-      } catch {}
+      } catch {
+        // Ignore auth check errors - allow login attempt
+      }
     })()
-  }, [])
+  }, [nextUrl])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,8 +48,8 @@ export default function LoginPage() {
         throw new Error(j?.message || 'Login failed')
       }
   window.location.href = nextUrl || '/account'
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Login failed')
     } finally { setLoading(false) }
   }
 

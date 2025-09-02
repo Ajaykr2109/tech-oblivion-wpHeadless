@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
+import Image from "next/image";
 
 import { getSessionUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ export default async function UserProfilePage({ params }: { params: { slug: stri
 
   const res = await fetch(`${origin}/api/wp/users/${encodeURIComponent(params.slug)}`, {
     cache: "no-store",
-  headers: Object.assign({ Accept: 'application/json' } as HeadersInit, cookie ? { cookie } : {}),
+    headers: { Accept: 'application/json', ...(cookie ? { cookie } : {}) },
   });
   if (!res.ok) return notFound();
   const user = await res.json();
@@ -28,11 +29,13 @@ export default async function UserProfilePage({ params }: { params: { slug: stri
     <div className="max-w-2xl mx-auto p-6">
       <div className="flex items-center gap-4">
         {user.avatar_urls?.["96"] && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={user.avatar_urls["96"]}
             alt={user.name}
+            width={80}
+            height={80}
             className="w-20 h-20 rounded-full"
+            unoptimized
           />
         )}
         <div className="flex-1">

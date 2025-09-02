@@ -15,7 +15,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const viewingUser = await getSessionUser().catch(() => null)
   const user = await getUserBySlug(username)
   if (!user) notFound()
-  const isSelf = !!(viewingUser && String((viewingUser as any).wpUserId ?? (viewingUser as any).id) === String(user.id))
+  const isSelf = !!(viewingUser && String((viewingUser as { wpUserId?: unknown; id?: unknown }).wpUserId ?? (viewingUser as { wpUserId?: unknown; id?: unknown }).id) === String(user.id))
 
   // Map WP user fields to UI
   const nameRaw = user.name || username
@@ -52,6 +52,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const rolesList = getPFArray('roles') || getPFArray('role') || getPFArray('roles_display')
 
   // Determine if we should show authored posts. Hide for plain subscribers/readers
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userHasRecentPosts = Array.isArray((user as any)?.recent_posts) && (user as any).recent_posts.length > 0
   const showPostsTab = userHasRecentPosts
   const defaultTab = showPostsTab ? 'posts' : 'comments'
@@ -199,7 +200,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
                   if (v === null || v === undefined) return false
                   if (typeof v === 'string') return v.trim().length > 0
                   if (Array.isArray(v)) return v.length > 0
-                  if (typeof v === 'object') return Object.keys(v as any).length > 0
+                  if (typeof v === 'object') return Object.keys(v as Record<string, unknown>).length > 0
                   return true
                 })
                 return (

@@ -1,17 +1,21 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function toCSV(rows: any[], headers?: string[]) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toCSV(rows: Record<string, unknown>[], headers?: string[]) {
   if (!Array.isArray(rows) || rows.length === 0) return ''
   const cols = headers || Object.keys(rows[0])
-  const esc = (v: any) => {
+  const esc = (v: unknown) => {
     if (v == null) return ''
     const s = String(v)
     if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"'
     return s
   }
   const out = [cols.join(',')]
-  for (const r of rows) out.push(cols.map(c => esc(r[c])).join(','))
+  for (const r of rows) {
+    const row = r as Record<string, unknown>
+    out.push(cols.map(c => esc(row[c])).join(','))
+  }
   return out.join('\n')
 }
 

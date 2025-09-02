@@ -169,18 +169,17 @@ export async function GET(req: Request) {
           headers: { 'Content-Type': 'application/json', 'X-Upstream-Url': upstreamTried }
         })
       }
-    } catch (_) {
+    } catch {
       // fall through
     }
   }
 
   const direct = new URL('/wp-json/wp/v2/users', base)
   for (const [k, v] of qEntries) direct.searchParams.set(k, v)
-  const headers: HeadersInit = {}
+  const headers: Record<string, string> = {}
   const basic = authHeader()
   if (basic) {
-    // HeadersInit can be a Headers, array, or record; we use a record here
-    (headers as Record<string, string>).Authorization = basic
+    headers.Authorization = basic
   }
   const dres = await fetch(direct.toString(), { headers, cache: 'no-store' })
   upstreamTried = direct.toString()

@@ -29,7 +29,7 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
         const url = new URL(window.location.href)
         url.hash = `#${el.id}`
         navigator.clipboard.writeText(url.toString())
-  if (canToast()) toast({ title: 'Link copied', description: 'Section URL copied to clipboard.' })
+        if (canToast()) toast({ title: 'Link copied', description: 'Section URL copied to clipboard.' })
       })
       const span = document.createElement('span')
       span.className = 'group'
@@ -49,7 +49,7 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
         const code = el.querySelector('code')
         const text = code?.textContent || ''
         navigator.clipboard.writeText(text)
-  if (canToast()) toast({ title: 'Code copied' })
+        if (canToast()) toast({ title: 'Code copied' })
       })
       el.style.position = 'relative'
       el.appendChild(btn)
@@ -83,7 +83,7 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
         const text = el.textContent?.trim() || ''
         const url = new URL(window.location.href)
         navigator.clipboard.writeText(`${text}\n\n${url.toString()}`)
-  if (canToast()) toast({ title: 'Quote copied', description: 'Quote + link copied to clipboard.' })
+        if (canToast()) toast({ title: 'Quote copied', description: 'Quote + link copied to clipboard.' })
       })
       wrap.appendChild(btn)
     })
@@ -127,7 +127,7 @@ export default function ContentDecorators({ selector = '.wp-content' }: { select
     })
 
     return () => { observer.disconnect() }
-  }, [selector])
+  }, [selector, toast])
 
   return null
 }

@@ -19,7 +19,7 @@ export default function BackToTopCenter({ threshold = 400 }: { threshold?: numbe
       type="button"
       aria-label="Back to top"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[68] px-3 py-1.5 rounded-full border bg-card/90 backdrop-blur shadow text-sm inline-flex items-center gap-1 hover:bg-card"
-      onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch { window.scrollTo(0,0) } }}
+      onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch { /* Fallback for older browsers */ window.scrollTo(0,0) } }}
     >
       <ArrowUp className="h-4 w-4" />
       Top

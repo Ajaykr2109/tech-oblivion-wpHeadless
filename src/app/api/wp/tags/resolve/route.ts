@@ -12,18 +12,18 @@ export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
   const token = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')?.value
   if (!token) return new Response('Unauthorized', { status: 401 })
-  let claims: any
-  try { claims = await verifySession(token) } catch { return new Response('Unauthorized', { status: 401 }) }
-  const roles: string[] = (claims.roles as any) || []
+  let claims: { roles?: string[]; wpToken?: string }
+  try { claims = await verifySession(token) as { roles?: string[]; wpToken?: string } } catch { return new Response('Unauthorized', { status: 401 }) }
+  const roles: string[] = claims.roles || []
   if (!roles.some(r => ['contributor','author','editor','administrator'].includes(r))) {
     return new Response('Forbidden', { status: 403 })
   }
-  const wpToken = (claims as any).wpToken
+  const wpToken = claims.wpToken
   if (!wpToken) return new Response('Missing upstream token', { status: 401 })
 
-  let body: any
+  let body: unknown
   try { body = await req.json() } catch { return new Response('Bad JSON', { status: 400 }) }
-  const names: string[] = Array.isArray(body?.names) ? body.names : []
+  const names: string[] = Array.isArray((body as Record<string, unknown>)?.names) ? (body as { names: string[] }).names : []
   if (!names.length) return new Response(JSON.stringify({ ids: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } })
 
   const ids: number[] = []
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
     searchUrl.searchParams.set('search', name)
     searchUrl.searchParams.set('per_page', '10')
     const searchRes = await fetch(searchUrl.toString(), { cache: 'no-store' })
-    let found: any = null
+    let found: { id?: number; name?: string } | null = null
     if (searchRes.ok) {
       const arr = await searchRes.json()
-      found = (arr || []).find((t: any) => String(t.name).toLowerCase() === name.toLowerCase())
+      found = (arr || []).find((t: { name?: string }) => String(t.name).toLowerCase() === name.toLowerCase()) as { id?: number; name?: string } | undefined || null
     }
     if (found?.id) {
       ids.push(found.id)

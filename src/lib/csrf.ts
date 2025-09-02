@@ -9,15 +9,15 @@ export function generateCsrfToken() {
 function cryptoRandom() {
   try {
     return Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2,'0')).join('')
-  } catch (e) {
-    // fallback
+  } catch {
+    // fallback for environments without crypto.getRandomValues
     return Math.random().toString(36).slice(2) + Date.now().toString(36)
   }
 }
 
-export function validateCsrf(headerToken?: string) {
-  const cookieStore = (cookies() as any)
-  const cookie = (cookieStore.get ? cookieStore.get(CSRF_COOKIE) : null)
+export async function validateCsrf(headerToken?: string) {
+  const cookieStore = await cookies()
+  const cookie = cookieStore.get ? cookieStore.get(CSRF_COOKIE) : null
   if (!cookie) return false
   if (!headerToken) return false
   return cookie.value === headerToken

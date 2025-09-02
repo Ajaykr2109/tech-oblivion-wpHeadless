@@ -8,6 +8,8 @@ import { useScrollSpy } from '@/hooks/useScrollSpy'
 import TOCItem from './TOCItem'
 import type { TocNode, SectionTimeMap } from './types'
 
+type ItemState = 'active' | 'nearby' | 'adjacent' | 'idle'
+
 function toHierarchy(items: FlatItem[]): TocNode[] {
   const root: TocNode = { id: 'root', depth: 1, value: 'root', children: [] }
   const stack: TocNode[] = [root]
@@ -28,7 +30,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   const [zoom, setZoom] = useState<number>(100)
   const [expanded, setExpanded] = useState<boolean>(items.length <= 24)
   const [focusedIndex, setFocusedIndex] = useState<number>(0)
-  const [open, setOpen] = useState<boolean>(false) // floating disabled
+  const [_open, _setOpen] = useState<boolean>(false) // floating disabled
 
   useEffect(() => {
     const fromReader = Number(localStorage.getItem('reader:scale') || '100')
@@ -54,7 +56,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   }, [])
   // Keep nearby range small so only the truly in-view section remains highlighted
   const state = useScrollSpy(ids, { rootMargin, nearbyRange: 0, adjacentRange: 1 })
-  const hierarchy = useMemo(() => toHierarchy(items), [items])
+  const _hierarchy = useMemo(() => toHierarchy(items), [items])
   // Sync a class on the active heading in the document to avoid flicker
   // Sync content heading highlight strictly to the single activeId
   useEffect(() => {
@@ -141,15 +143,13 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
               : state.nearbyIds.has(i.id) ? 'nearby'
               : state.adjacentIds.has(i.id) ? 'adjacent'
               : 'idle'
-      type ItemState = 'active' | 'nearby' | 'adjacent' | 'idle'
-      return (
+            return (
               <TOCItem
                 key={i.id}
                 id={i.id}
                 value={i.value}
                 depth={i.depth}
-        state={st as ItemState}
-                focused={idx === focusedIndex}
+                state={st as ItemState}
                 onClick={() => setFocusedIndex(idx)}
                 minutes={sectionTimes[i.id]}
               />
@@ -184,16 +184,6 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   return (
     <div className="relative">
   {/* Floating opener removed */}
-  {false && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="hidden md:flex fixed right-4 bottom-24 z-40 items-center gap-2 rounded-full border bg-card px-3 py-2 text-sm shadow-lg hover:bg-muted print:hidden"
-          aria-label="Open table of contents"
-        >
-          On this page
-        </button>
-      )}
 
       {/* Desktop sticky (only when sticky mode) */}
       <div className="hidden lg:block lg:sticky lg:top-20 print:hidden">
@@ -209,31 +199,6 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
       </div>
 
       {/* Floating side flyout for md+ when mode=floating */}
-  <AnimatePresence>
-  {false && open && (
-          <motion.aside
-            initial={{ x: 320, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 320, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-    className="fixed top-16 right-4 bottom-4 z-50 hidden md:flex w-[300px] flex-col overflow-hidden rounded-lg border bg-card shadow-2xl print:hidden cursor-default"
-            role="dialog"
-            aria-label="Table of contents"
-    drag
-    dragMomentum={false}
-    dragElastic={0.05}
-    dragConstraints={{ top: 8, left: 8, right: 8, bottom: 8 }}
-          >
-    <div className="flex items-center justify-between border-b px-3 py-2 cursor-move select-none">
-              <span className="text-sm font-semibold">On this page</span>
-              <div className="flex items-center gap-2">
-                <button className="text-xs rounded border px-2 py-0.5 hover:bg-muted" onClick={() => setOpen(false)}>Close</button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto">{content}</div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
 
       {/* Mobile bottom sheet (always available) */}
       <div className="md:hidden print:hidden">

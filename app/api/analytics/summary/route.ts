@@ -15,10 +15,10 @@ export async function GET(req: Request) {
       const store = await cookies()
       const sessionCookie = store.get(process.env.SESSION_COOKIE_NAME ?? 'session')?.value
       if (sessionCookie) {
-        const claims = await verifySession(sessionCookie)
-        wpToken = (claims as any)?.wpToken || null
+        const claims = await verifySession(sessionCookie) as { wpToken?: string }
+        wpToken = claims?.wpToken || null
       }
-    } catch (e) {
+    } catch {
       // ignore cookie/verify errors; fetchWithAuth will throw if no token
     }
     const inUrl = new URL(req.url)
@@ -71,11 +71,11 @@ export async function GET(req: Request) {
       return new Response(JSON.stringify({ error: 'unauthorized', message: 'Not authorized to view analytics' }), { status, headers: { 'Content-Type': 'application/json' } })
     }
     return new Response(JSON.stringify(body), { status: status >= 400 ? 502 : 200, headers: { 'Content-Type': 'application/json' } })
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof MissingWpTokenError) {
       return new Response(JSON.stringify({ error: 'unauthorized', message: err.message }), { status: err.status, headers: { 'Content-Type': 'application/json' } })
     }
-    const message = typeof err?.message === 'string' ? err.message : 'Failed to fetch analytics summary'
+    const message = err instanceof Error && typeof err.message === 'string' ? err.message : 'Failed to fetch analytics summary'
     console.error('analytics.summary unexpected error:', err)
     return new Response(JSON.stringify({ error: 'proxy_error', message }), { status: 502, headers: { 'Content-Type': 'application/json' } })
   }

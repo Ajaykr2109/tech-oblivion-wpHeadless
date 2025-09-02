@@ -6,6 +6,7 @@ import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
 
 import ModerationPanel from './moderation/ModerationPanel'
 import SettingsPanel from './settings/SettingsPanel'
+import LogsPanel from './LogsPanel'
 
 export default function UnifiedAdmin() {
   const { allowed, loading } = useRoleGate('admin')
@@ -18,6 +19,7 @@ export default function UnifiedAdmin() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="moderation">Moderation</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
         </TabsList>
         <TabsContent value="analytics">
           <AnalyticsDashboard />
@@ -27,6 +29,9 @@ export default function UnifiedAdmin() {
         </TabsContent>
         <TabsContent value="settings">
           <SettingsPanel />
+        </TabsContent>
+        <TabsContent value="logs">
+          <LogsPanel />
         </TabsContent>
       </Tabs>
     </Card>

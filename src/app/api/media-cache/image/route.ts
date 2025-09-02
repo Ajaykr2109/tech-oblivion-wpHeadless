@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     })
-  } catch (e: any) {
+  } catch {
+    // ignore upstream error
     return new Response('bad upstream', { status: 502 })
   }
 }

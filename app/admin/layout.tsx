@@ -12,6 +12,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { useMe } from '@/hooks/useRoleGate'
 import { mapToApiRole } from '@/lib/rbac'
 import checkAccess from '@/lib/checkAccess'
+import ErrorBoundary from '@/components/error-boundary'
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
 type Item = { href: string; label: string; icon: IconType; key: string }
@@ -48,6 +49,7 @@ const RAW_GROUPS: Group[] = [
   { href: '/admin/plugins', label: 'Plugins', icon: Plug, key: 'plugins' },
       { href: '/admin/themes', label: 'Themes', icon: Palette, key: 'themes' },
       { href: '/admin/site-health', label: 'Site Health', icon: Activity, key: 'site-health' },
+      { href: '/admin/logs', label: 'Authorization Logs', icon: FlaskConical, key: 'logs' },
   { href: '/admin/debug', label: 'Debug/Test', icon: FlaskConical, key: 'debug' },
     ],
   },
@@ -87,6 +89,9 @@ const KEY_TO_ENDPOINT: Record<string, { path: string; method: string; action: 'r
   ],
   'site-health': [
     { path: '/api/wp/site-health/background-updates', method: 'GET', action: 'read' },
+  ],
+  logs: [
+    { path: '/api/logs', method: 'GET', action: 'read' },
   ],
   debug: [
     { path: '/api/_debug', method: 'GET', action: 'read' },
@@ -167,7 +172,9 @@ export default function AdminLayout({
         </div>
       </aside>
       <main className="flex-1 overflow-auto bg-background">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
     </div>
   )

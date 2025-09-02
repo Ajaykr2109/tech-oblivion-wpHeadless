@@ -95,7 +95,9 @@ function MiniPostEditor({ endpoint }: { endpoint: string }) {
       if (!title && !content) return
       try {
         await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content, status: 'draft' }) })
-      } catch {}
+      } catch {
+        // Silently handle auto-save errors
+      }
     }, 20000)
     return () => window.clearInterval(i)
   }, [endpoint, title, content])

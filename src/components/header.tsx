@@ -27,7 +27,7 @@ interface User {
   email: string
   displayName: string
   roles?: string[]
-  profile_fields?: Record<string,string>
+  profile_fields?: Record<string, unknown>
 }
 
 export function Header() {

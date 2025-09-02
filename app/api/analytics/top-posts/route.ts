@@ -20,8 +20,8 @@ export async function GET(req: Request) {
     // Light caching to reduce WP load
     const resp = await fetchWithAuth(req, u.toString(), { next: { revalidate: 60 } })
     return resp
-  } catch (err: any) {
-    const message = typeof err?.message === 'string' ? err.message : 'Failed to fetch top posts'
+  } catch (err: unknown) {
+    const message = err instanceof Error && typeof err.message === 'string' ? err.message : 'Failed to fetch top posts'
     return new Response(JSON.stringify({ error: 'proxy_error', message }), { status: 502, headers: { 'Content-Type': 'application/json' } })
   }
 }

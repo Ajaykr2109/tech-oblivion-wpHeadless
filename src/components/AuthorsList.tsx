@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { getUsers } from "@/lib/wp";
 
@@ -39,8 +40,8 @@ export default function AuthorsList() {
           profile_fields: undefined,
         }));
         if (!cancelled) setAuthors(mapped);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load authors");
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load authors");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -90,12 +91,13 @@ export default function AuthorsList() {
         return (
           <article key={a.id} className="rounded-2xl border bg-card shadow-sm p-6 flex flex-col">
             <div className="flex items-center gap-4">
-              <img
+              <Image
                 src={avatar}
                 alt={a.name}
+                width={64}
+                height={64}
                 className="h-16 w-16 rounded-full object-cover border"
-                loading="lazy"
-                decoding="async"
+                unoptimized
               />
               <div>
                 <h3 className="text-lg font-semibold leading-tight">

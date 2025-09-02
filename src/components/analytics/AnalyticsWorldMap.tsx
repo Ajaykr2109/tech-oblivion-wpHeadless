@@ -9,7 +9,6 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps'
 import type { GeographyType } from 'react-simple-maps'
 import type { GeographiesChildrenProps } from 'react-simple-maps'
 type LocaleData = { locale: string; countries: Record<string, string> }
-
 import { Card } from '@/components/ui/card'
 
 import type { Period, CountryBreakdown } from '../../../types/analytics'

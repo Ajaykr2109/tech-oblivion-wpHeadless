@@ -8,7 +8,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!user) redirect('/login?next=/dashboard')
   const allowed = Array.isArray(user.roles) && user.roles.some(r => (
     ['subscriber','contributor','author','editor','administrator'] as const
-  ).includes(r as any))
+  ).includes(r as 'subscriber' | 'contributor' | 'author' | 'editor' | 'administrator'))
   if (!allowed) redirect('/')
   return <>{children}</>
 }

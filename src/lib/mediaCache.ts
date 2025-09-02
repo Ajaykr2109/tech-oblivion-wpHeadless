@@ -26,7 +26,9 @@ function extFromContentType(ct?: string | null, fallbackUrl?: string) {
     const u = new URL(fallbackUrl || '')
     const m = u.pathname.match(/\.([a-zA-Z0-9]+)$/)
     if (m) return m[1].toLowerCase()
-  } catch {}
+  } catch {
+    // Silently handle URL parsing errors
+  }
   return 'img'
 }
 
@@ -51,9 +53,13 @@ export async function cacheImage(url: string): Promise<string> {
         const wpHost = new URL(WP).host
         const u = new URL(url)
         if (u.host === wpHost) headers['Referer'] = WP
-      } catch {}
+      } catch {
+        // Silently handle URL parsing errors for referer
+      }
     }
-  } catch {}
+  } catch {
+    // Silently handle header setup errors
+  }
 
   const res = await fetch(url, { cache: 'no-store', headers })
   if (!res.ok) throw new Error(`Upstream ${res.status}`)
