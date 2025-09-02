@@ -6,6 +6,7 @@
   ,
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/triple-slash-reference": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "@next/next/no-img-element": "warn",
     "import/order": [

@@ -4,10 +4,10 @@ import { Edit, Trash2, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { dummyPosts } from "@/data/dummy-posts";
 
 export default function DashboardPostsPage() {
-  const userPosts = dummyPosts.slice(0, 3); // Placeholder for user-specific posts
+  // Dummy data removed; default to no posts. Hook up to real data source when ready.
+  const userPosts: { id: number; title: string; date: string; excerpt: string }[] = [];
 
   return (
     <div className="container mx-auto px-4 py-12">
