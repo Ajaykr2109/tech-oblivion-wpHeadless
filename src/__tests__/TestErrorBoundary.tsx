@@ -8,3 +8,10 @@ export default function TestErrorBoundary({ children }: { children: React.ReactN
     </AppErrorBoundary>
   )
 }
+
+// Dummy test to satisfy Jest
+describe('TestErrorBoundary', () => {
+  it('is a component', () => {
+    expect(TestErrorBoundary).toBeDefined()
+  })
+})

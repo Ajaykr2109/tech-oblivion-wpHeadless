@@ -52,14 +52,14 @@ type PageParams = { params: { slug: string } }
 type PageProps = { params: { slug: string }, searchParams?: Record<string, string | string[] | undefined> }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
-    const { slug } = params
+    const { slug } = await params
     const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post not found' }
   return { title: post.seo?.title || post.title, description: post.seo?.description }
 }
 
 export default async function PostPage({ params, searchParams }: PageProps) {
-    const { slug } = params
+    const { slug } = await params
         let post: PostDetail | null = null
         try {
             post = await getPostBySlug(slug)

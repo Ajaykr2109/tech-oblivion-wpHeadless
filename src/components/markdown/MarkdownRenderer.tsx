@@ -9,12 +9,15 @@ import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeRaw from 'rehype-raw'
 import rehypeHighlight from 'rehype-highlight'
 
+import { sanitizeWP } from '@/lib/sanitize'
+
 type Props = {
   markdown: string
   className?: string
 }
 
 export default function MarkdownRenderer({ markdown, className }: Props) {
+  const sanitizedMarkdown = sanitizeWP(markdown)
   return (
     <div className={className}>
       <ReactMarkdown
@@ -55,7 +58,7 @@ export default function MarkdownRenderer({ markdown, className }: Props) {
           }
         }}
       >
-        {markdown || ''}
+        {sanitizedMarkdown || ''}
       </ReactMarkdown>
     </div>
   )

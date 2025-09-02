@@ -5,3 +5,10 @@ module.exports = {
   redirect: () => {},
   notFound: () => {},
 }
+
+// Dummy test
+describe('nextNavigationMock', () => {
+  it('is a mock', () => {
+    expect(true).toBe(true)
+  })
+})

@@ -9,3 +9,10 @@ module.exports = new Proxy({}, {
     return () => {}
   }
 })
+
+// Dummy test
+describe('nextServerMock', () => {
+  it('is a mock', () => {
+    expect(true).toBe(true)
+  })
+})

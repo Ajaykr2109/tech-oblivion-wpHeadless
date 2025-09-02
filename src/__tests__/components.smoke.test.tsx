@@ -23,10 +23,9 @@ const files = fs.existsSync(componentsDir) ? listTsxFiles(componentsDir) : []
 describe('components smoke', () => {
   for (const file of files) {
     const rel = path.relative(process.cwd(), file).replace(/\\/g, '/')
-    test(`${rel} imports and renders (if component)`, () => {
-      // Use require to leverage Jest transformers for TS/TSX
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require(file)
+    test(`${rel} imports and renders (if component)`, async () => {
+      // Use dynamic import for ES modules
+      const mod = await import(file)
       const C = mod.default ?? mod.Component ?? mod[Object.keys(mod)[0]]
       if (typeof C === 'function') {
         // Try render with no props

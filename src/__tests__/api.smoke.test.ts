@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 
-const apiDir = path.join(process.cwd(), 'src', 'app', 'api')
+const apiDir = path.join(process.cwd(), 'app', 'api')
 
 function listRouteFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return []
@@ -20,9 +20,9 @@ const routes = listRouteFiles(apiDir)
 describe('api routes smoke', () => {
   for (const file of routes) {
     const rel = path.relative(process.cwd(), file).replace(/\\/g, '/')
-    test(`${rel} exports handlers`, () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require(file)
+    test(`${rel} exports handlers`, async () => {
+      // Use dynamic import for ES modules
+      const mod = await import(file)
       expect(mod && Object.keys(mod).length >= 1).toBeTruthy()
     })
   }

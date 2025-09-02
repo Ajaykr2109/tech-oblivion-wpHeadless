@@ -1,4 +1,4 @@
-import nextJest from 'next/jest'
+import nextJest from 'next/jest.js'
 
 const createJestConfig = nextJest({ dir: './' })
 
@@ -17,6 +17,9 @@ const customJestConfig = {
   '^next/cache$': '<rootDir>/src/__tests__/nextServerMock.js',
   '^server-only$': '<rootDir>/src/__tests__/serverOnlyMock.js',
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(lucide-react|jose|unified|remark|rehype|github-slugger)/)',
+  ],
 }
 
 export default createJestConfig(customJestConfig)

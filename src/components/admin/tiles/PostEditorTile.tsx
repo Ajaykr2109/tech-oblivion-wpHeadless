@@ -92,7 +92,7 @@ export default function PostEditorTile({ postId: postIdProp, initial }: { postId
       void autosave()
     }, 10_000)
     return () => clearInterval(iv)
-  }, [postId, title, content, excerpt, autosave])
+  }, [postId, title, content, excerpt, autosave, isDirty, currentHash, lastSyncHash])
 
   const saveNow = useCallback(async () => {
     await autosave()

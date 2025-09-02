@@ -22,9 +22,8 @@ const files = listLibFiles(libDir)
 describe('lib smoke', () => {
   for (const file of files) {
     const rel = path.relative(process.cwd(), file).replace(/\\/g, '/')
-    test(`${rel} imports`, () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require(file)
+    test(`${rel} imports`, async () => {
+      const mod = await import(file)
       expect(mod).toBeTruthy()
     })
   }

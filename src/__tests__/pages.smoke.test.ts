@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 
-const appDir = path.join(process.cwd(), 'src', 'app')
+const appDir = path.join(process.cwd(), 'app')
 
 function listPageFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) return []
@@ -20,9 +20,8 @@ const pages = listPageFiles(appDir)
 describe('pages smoke', () => {
   for (const file of pages) {
     const rel = path.relative(process.cwd(), file).replace(/\\/g, '/')
-    test(`${rel} exports a component`, () => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require(file)
+    test(`${rel} exports a component`, async () => {
+      const mod = await import(file)
       const Page = mod.default ?? mod.Page ?? mod[Object.keys(mod)[0]]
       expect(typeof Page).toBe('function')
     })
