@@ -3,6 +3,7 @@ import { Edit, Trash2, PlusCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { dummyPosts } from "@/data/dummy-posts";
 
 export default function DashboardPostsPage() {
