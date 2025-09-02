@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import GridLayout from 'react-grid-layout'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
-
 import { Card } from '@/components/ui/card'
 
 import { widgetRegistry, type Widget } from './WidgetRegistry'
