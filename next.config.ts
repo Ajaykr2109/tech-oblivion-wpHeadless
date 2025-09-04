@@ -10,6 +10,24 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Profile route consolidation - redirect duplicates to canonical /author/[slug]
+      {
+        source: '/user/:slug',
+        destination: '/author/:slug',
+        permanent: false // 308 temporary redirect
+      },
+      {
+        source: '/wp/users/:slug', 
+        destination: '/author/:slug',
+        permanent: false
+      },
+      // Blog routing consolidation
+      {
+        source: '/blogs/:path*',
+        destination: '/blog/:path*',
+        permanent: false
+      },
+      // Existing editor redirects (keep)
       { source: '/editor/new', destination: '/editor/new', permanent: false },
       { source: '/editor/:id', destination: '/editor/:id', permanent: false },
     ]
