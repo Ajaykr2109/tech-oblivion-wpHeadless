@@ -27,9 +27,7 @@ const nextConfig: NextConfig = {
         destination: '/blog/:path*',
         permanent: false
       },
-      // Existing editor redirects (keep)
-      { source: '/editor/new', destination: '/editor/new', permanent: false },
-      { source: '/editor/:id', destination: '/editor/:id', permanent: false },
+      // Remove circular editor redirects - they cause redirect loops
     ]
   },
   images: {
