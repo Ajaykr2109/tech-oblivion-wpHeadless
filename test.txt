@@ -1,0 +1,4 @@
+
+> nextn@0.1.0 test
+> jest --passWithNoTests --runInBand src/__tests__/permissions.test.ts
+

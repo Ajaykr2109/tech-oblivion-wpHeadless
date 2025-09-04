@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -17,7 +17,16 @@ type Props = {
 }
 
 export default function MarkdownRenderer({ markdown, className }: Props) {
-  const sanitizedMarkdown = sanitizeWP(markdown)
+  const [sanitizedMarkdown, setSanitizedMarkdown] = useState('')
+
+  useEffect(() => {
+    const sanitize = async () => {
+      const sanitized = await sanitizeWP(markdown)
+      setSanitizedMarkdown(sanitized)
+    }
+    sanitize()
+  }, [markdown])
+
   return (
     <div className={className}>
       <ReactMarkdown

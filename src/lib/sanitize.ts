@@ -1,35 +1,37 @@
-import sanitizeHtml, { SanitizeOptions } from 'sanitize-html'
+import type { IOptions } from 'sanitize-html'
 
 import { decodeEntities } from './text'
 
 // Include heading tags so we can build TOC and preserve document structure
-const baseAllowedTags = ['a','b','i','strong','em','p','ul','ol','li','br','blockquote','code','pre','h1','h2','h3','h4','h5','h6']
+const baseAllowedTags = ['a', 'b', 'i', 'strong', 'em', 'p', 'ul', 'ol', 'li', 'br', 'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
 // Do NOT include 'script' or 'style' in allowedTags
-export const allowedTags = baseAllowedTags.concat(['img','figure','figcaption','iframe'])
+export const allowedTags = baseAllowedTags.concat(['img', 'figure', 'figcaption', 'iframe'])
 
-export const allowedAttributes: Record<string, string[] | true> = {
-  a: ['href','name','target','rel'],
-  img: ['src','alt','title','width','height','srcset','sizes','loading','decoding'],
-  iframe: ['src','width','height','title','allow','allowfullscreen','frameborder'],
+export const allowedAttributes: Record<string, string[]> = {
+  a: ['href', 'name', 'target', 'rel'],
+  img: ['src', 'alt', 'title', 'width', 'height', 'srcset', 'sizes', 'loading', 'decoding'],
+  iframe: ['src', 'width', 'height', 'title', 'allow', 'allowfullscreen', 'frameborder'],
   // Avoid allowing arbitrary inline style by default. If needed, whitelist specific style props via
   // a custom transform later. Keeping class/id only here prevents the sanitize-html warnings.
-  '*': ['class','id'],
+  '*': ['class', 'id'],
 }
 
-export function sanitizeWP(html: string) {
+export async function sanitizeWP(html: string) {
+  const sanitizeHtml = (await import('sanitize-html')).default
+
   const WP = process.env.WP_URL ?? ''
 
   const rewriteIfWP = (src: string): string => src
 
   // Define transforms separately to avoid narrow return-type inference on inline literals
-  const transforms: NonNullable<SanitizeOptions['transformTags']> = {
+  const transforms = {
     a(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
       const out: Record<string, string> = {}
       for (const [k, v] of Object.entries(attribs)) {
         if (typeof v === 'string') out[k] = v
       }
       out.rel = 'noopener noreferrer'
-  return { tagName: 'a', attribs: out } as { tagName: string; attribs: Record<string, string> }
+      return { tagName: 'a', attribs: out } as { tagName: string; attribs: Record<string, string> }
     },
     img(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
       // Build a fresh string-only attribs object using typed entries
@@ -41,26 +43,31 @@ export function sanitizeWP(html: string) {
         // Only rewrite if src exists; never introduce undefined
         out.src = rewriteIfWP(out.src)
       }
-  return { tagName: 'img', attribs: out } as { tagName: string; attribs: Record<string, string> }
+      return { tagName: 'img', attribs: out } as { tagName: string; attribs: Record<string, string> }
     },
     iframe(tag: string, attribs: Record<string, string>): { tagName: string; attribs: Record<string, string> } {
       const out: Record<string, string> = {}
       for (const [k, v] of Object.entries(attribs)) {
         if (typeof v === 'string') out[k] = v
       }
-  return { tagName: 'iframe', attribs: out } as { tagName: string; attribs: Record<string, string> }
+      return { tagName: 'iframe', attribs: out } as { tagName: string; attribs: Record<string, string> }
     },
   }
 
-  const options: SanitizeOptions = {
+  const options: Partial<IOptions> = {
     allowedTags,
-    allowedAttributes,
+    allowedAttributes: {
+      a: ['href', 'name', 'target', 'rel'],
+      img: ['src', 'alt', 'title', 'width', 'height', 'srcset', 'sizes', 'loading', 'decoding'],
+      iframe: ['src', 'width', 'height', 'title', 'allow', 'allowfullscreen', 'frameborder'],
+      '*': ['class', 'id'],
+    },
     // Use by-tag schemes to satisfy our types shim and keep behavior explicit
-    allowedSchemesAppliedToAttributes: ['href','src'],
+    allowedSchemesAppliedToAttributes: ['href', 'src'],
     allowProtocolRelative: false,
-    allowedSchemesByTag: { iframe: ['http','https'] },
+    allowedSchemesByTag: { iframe: ['http', 'https'] },
     transformTags: transforms,
-  // Post-process style attributes embedded in CSS text (if any) to rewrite url(...) references
+    // Post-process style attributes embedded in CSS text (if any) to rewrite url(...) references
     textFilter: (text: string) => {
       if (!WP) return text
       return text.replace(/url\(([^)]+)\)/g, (m, g1) => {
@@ -80,7 +87,8 @@ export function sanitizeWP(html: string) {
   return sanitizeHtml(html, options)
 }
 
-export function renderUpdatesSummary(html: string, maxWords = 50) {
+export async function renderUpdatesSummary(html: string, maxWords = 50) {
+  const sanitizeHtml = (await import('sanitize-html')).default
   const cleaned = decodeEntities(sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }))
   // Split into sentences by full-stop and trim
   const sentences = cleaned.split('.')

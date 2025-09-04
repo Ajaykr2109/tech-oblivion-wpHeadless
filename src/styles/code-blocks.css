@@ -1,0 +1,384 @@
+/* Enhanced Code Block Styling for Accessibility and Readability */
+
+/* CSS Variables for dual-mode syntax highlighting */
+:root {
+  /* Light mode code colors */
+  --code-bg: 248 250 252;
+  --code-border: 226 232 240;
+  --code-text: 30 41 59;
+  --code-muted: 100 116 139;
+
+  /* Syntax highlighting - Light mode */
+  --code-comment: 100 116 139;
+  --code-keyword: 168 85 247;
+  --code-string: 34 197 94;
+  --code-number: 239 68 68;
+  --code-function: 245 158 11;
+  --code-operator: 59 130 246;
+  --code-variable: 236 72 153;
+  --code-type: 139 92 246;
+  --code-tag: 239 68 68;
+  --code-attribute: 34 197 94;
+}
+
+[data-theme="dark"] {
+  /* Dark mode code colors */
+  --code-bg: 15 23 42;
+  --code-border: 30 41 59;
+  --code-text: 241 245 249;
+  --code-muted: 148 163 184;
+
+  /* Syntax highlighting - Dark mode */
+  --code-comment: 148 163 184;
+  --code-keyword: 196 181 253;
+  --code-string: 74 222 128;
+  --code-number: 248 113 113;
+  --code-function: 251 191 36;
+  --code-operator: 96 165 250;
+  --code-variable: 244 114 182;
+  --code-type: 167 139 250;
+  --code-tag: 248 113 113;
+  --code-attribute: 74 222 128;
+}
+
+/* Auto-detect system theme */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --code-bg: 15 23 42;
+    --code-border: 30 41 59;
+    --code-text: 241 245 249;
+    --code-muted: 148 163 184;
+
+    --code-comment: 148 163 184;
+    --code-keyword: 196 181 253;
+    --code-string: 74 222 128;
+    --code-number: 248 113 113;
+    --code-function: 251 191 36;
+    --code-operator: 96 165 250;
+    --code-variable: 244 114 182;
+    --code-type: 167 139 250;
+    --code-tag: 248 113 113;
+    --code-attribute: 74 222 128;
+  }
+}
+
+/* Code block container */
+.code-block-container {
+  margin: 1rem 0 !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(var(--code-border)) !important;
+  background: rgb(var(--code-bg)) !important;
+}
+
+/* Filename header */
+.code-filename {
+  background: rgb(var(--code-bg) / 0.8) !important;
+  border-bottom: 1px solid rgb(var(--code-border)) !important;
+  padding: 0.5rem 1rem !important;
+  font-family: "Fira Code", "JetBrains Mono", "SF Mono", Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.75rem !important;
+  color: rgb(var(--code-muted)) !important;
+  font-weight: 500 !important;
+}
+
+.code-filename .filename {
+  color: rgb(var(--code-text)) !important;
+}
+
+/* Inline code */
+code:not(pre code) {
+  background: rgb(var(--code-bg) / 0.8) !important;
+  color: rgb(var(--code-text)) !important;
+  padding: 0.125rem 0.375rem !important;
+  border-radius: 0.25rem !important;
+  font-family: "Fira Code", "JetBrains Mono", "SF Mono", Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.875em !important;
+  font-weight: 500 !important;
+  border: 1px solid rgb(var(--code-border) / 0.6) !important;
+  /* Allow wrapping for long strings on mobile */
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+
+/* Code blocks in pre elements */
+pre {
+  background: rgb(var(--code-bg) / 0.9) !important;
+  border: 1px solid rgb(var(--code-border)) !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  overflow-x: auto !important;
+  margin: 1rem 0 !important;
+  font-family: "Fira Code", "JetBrains Mono", "SF Mono", Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  color: rgb(var(--code-text)) !important;
+  position: relative !important;
+}
+
+/* Remove border and margin when inside container */
+.code-block-container pre {
+  border: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+pre code {
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  border: none !important;
+  white-space: pre !important;
+  word-break: normal !important;
+  word-wrap: normal !important;
+  font-family: inherit !important;
+}
+
+/* Scrollbar styling for better UX */
+pre::-webkit-scrollbar {
+  height: 8px !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+pre:hover::-webkit-scrollbar,
+pre:focus-within::-webkit-scrollbar {
+  opacity: 1 !important;
+}
+
+pre::-webkit-scrollbar-track {
+  background: rgb(var(--code-bg) / 0.5) !important;
+  border-radius: 4px !important;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: rgb(var(--code-muted) / 0.4) !important;
+  border-radius: 4px !important;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--code-muted) / 0.6) !important;
+}
+
+/* Focus styles for accessibility */
+pre:focus-within {
+  outline: 2px solid rgb(var(--code-operator)) !important;
+  outline-offset: 2px !important;
+}
+
+/* Line numbers */
+pre.line-numbers {
+  counter-reset: linenumber !important;
+  padding-left: 3rem !important;
+}
+
+pre.line-numbers code {
+  position: relative !important;
+}
+
+pre.line-numbers .line::before {
+  counter-increment: linenumber !important;
+  content: counter(linenumber) !important;
+  position: absolute !important;
+  left: -2.5rem !important;
+  top: 0 !important;
+  color: rgb(var(--code-muted)) !important;
+  font-size: 0.75rem !important;
+  text-align: right !important;
+  width: 2rem !important;
+  user-select: none !important;
+}
+
+/* Enhanced syntax highlighting using CSS variables */
+pre code .token.comment,
+pre code .token.prolog,
+pre code .token.doctype,
+pre code .token.cdata {
+  color: rgb(var(--code-comment)) !important;
+  font-style: italic !important;
+}
+
+pre code .token.punctuation {
+  color: rgb(var(--code-text)) !important;
+}
+
+pre code .token.property,
+pre code .token.tag,
+pre code .token.boolean,
+pre code .token.number,
+pre code .token.constant,
+pre code .token.symbol,
+pre code .token.deleted {
+  color: rgb(var(--code-number)) !important;
+}
+
+pre code .token.selector,
+pre code .token.attr-name,
+pre code .token.string,
+pre code .token.char,
+pre code .token.builtin,
+pre code .token.inserted {
+  color: rgb(var(--code-string)) !important;
+}
+
+pre code .token.operator,
+pre code .token.entity,
+pre code .token.url,
+pre code .language-css .token.string,
+pre code .style .token.string {
+  color: rgb(var(--code-operator)) !important;
+}
+
+pre code .token.atrule,
+pre code .token.attr-value,
+pre code .token.keyword {
+  color: rgb(var(--code-keyword)) !important;
+  font-weight: 600 !important;
+}
+
+pre code .token.function,
+pre code .token.class-name {
+  color: rgb(var(--code-function)) !important;
+}
+
+pre code .token.regex,
+pre code .token.important,
+pre code .token.variable {
+  color: rgb(var(--code-variable)) !important;
+}
+
+/* Type annotations and interfaces */
+pre code .token.type-annotation,
+pre code .token.interface,
+pre code .token.namespace {
+  color: rgb(var(--code-type)) !important;
+}
+
+/* JSX/HTML specific */
+pre code .token.tag .token.tag,
+pre code .token.tag .token.punctuation {
+  color: rgb(var(--code-tag)) !important;
+}
+
+pre code .token.attr-name {
+  color: rgb(var(--code-attribute)) !important;
+}
+
+/* Selection styles in code blocks */
+pre code::selection {
+  background: rgb(var(--code-operator) / 0.3) !important;
+}
+
+pre code::-moz-selection {
+  background: rgb(var(--code-operator) / 0.3) !important;
+}
+
+/* Copy button styling */
+.copy-button {
+  position: absolute !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  background: rgb(var(--code-bg)) !important;
+  border: 1px solid rgb(var(--code-border)) !important;
+  border-radius: 0.25rem !important;
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  color: rgb(var(--code-muted)) !important;
+  cursor: pointer !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s ease !important;
+  z-index: 10 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+}
+
+pre:hover .copy-button,
+pre:focus-within .copy-button {
+  opacity: 1 !important;
+}
+
+.copy-button:hover {
+  background: rgb(var(--code-operator) / 0.1) !important;
+  color: rgb(var(--code-text)) !important;
+  border-color: rgb(var(--code-operator) / 0.3) !important;
+}
+
+/* Language indicator */
+pre[data-language]::before {
+  content: attr(data-language) !important;
+  position: absolute !important;
+  top: 0.5rem !important;
+  left: 1rem !important;
+  background: rgb(var(--code-operator)) !important;
+  color: rgb(var(--code-bg)) !important;
+  padding: 0.125rem 0.5rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  z-index: 5 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  pre {
+    margin: 1rem -1rem !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    font-size: 0.8rem !important;
+  }
+
+  .code-block-container {
+    margin: 1rem -1rem !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  pre code {
+    font-size: 0.8rem !important;
+  }
+
+  code:not(pre code) {
+    font-size: 0.8em !important;
+  }
+
+  .copy-button {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.4rem !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  pre {
+    border-width: 2px !important;
+  }
+
+  code:not(pre code) {
+    border-width: 2px !important;
+  }
+
+  .copy-button {
+    border-width: 2px !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .copy-button {
+    transition: none !important;
+  }
+
+  pre::-webkit-scrollbar {
+    transition: none !important;
+  }
+}

@@ -170,14 +170,23 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     if (!state.activeId) return
     const container = listRef.current
     if (!container) return
-  const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
+    const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
     if (!el) return
+    
+    // Check if element is visible in container
     const cRect = container.getBoundingClientRect()
     const eRect = el.getBoundingClientRect()
     const isAbove = eRect.top < cRect.top + 8
     const isBelow = eRect.bottom > cRect.bottom - 8
+    
     if (isAbove || isBelow) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      // Respect user's motion preferences
+      const hasReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      el.scrollIntoView({ 
+        block: 'nearest', 
+        inline: 'nearest',
+        behavior: hasReducedMotion ? 'auto' : 'smooth' 
+      })
     }
   }, [state.activeId])
 

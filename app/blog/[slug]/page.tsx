@@ -21,13 +21,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import TableOfContents from '@/components/toc/TableOfContents'
-import PostActions from '@/components/post-actions'
+import PostActionsWrapper from '@/components/post/PostActionsWrapper'
 import CommentsSection from '@/components/comments-section'
 import ReadingProgress from '@/components/reading-progress'
-import FloatingActions from '@/components/floating-actions'
 import ContentDecorators from '@/components/content-decorators'
 import ReaderToolbarPortal from '@/components/reader-toolbar-portal'
-import BackToTopCenter from '@/components/back-to-top-center'
 import ViewsCounter from '@/components/views-counter'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
@@ -70,7 +68,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         if (!post) notFound()
 
     const rawHtml = post.contentHtml || ''
-    const safeHtml = sanitizeWP(rawHtml)
+    const safeHtml = await sanitizeWP(rawHtml)
 
     // Simple reading time based on words/minute
   const wordsPerMinute = 225
@@ -221,12 +219,10 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post as unknown)) }}
                 />
             </Head>
-            {/* Top-center reader pill (Zoom + theme), positioned respecting header */}
+            {/* Enhanced Reader Toolbar - positioned respecting header */}
             <ReaderToolbarPortal />
-            {/* Center back-to-top pill */}
-            <BackToTopCenter />
-
-            {/* 🚀 NEW: Reading Progress Bar */}
+            
+            {/* Reading Progress Bar */}
             <ReadingProgress />
 
             <div className="container mx-auto px-4 py-10 max-w-[90rem] 2xl:max-w-[96rem]">
@@ -251,7 +247,12 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                 <header className="relative mb-6">
                     {/* Actions pinned on desktop */}
                     <div className="hidden lg:block absolute right-0 top-0">
-                        <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
+                        <PostActionsWrapper 
+                          postId={Number(post.id)} 
+                          slug={post.slug} 
+                          title={post.title}
+                          authorId={post.authorId || undefined}
+                        />
                     </div>
                     <div className="max-w-3xl mx-auto text-center">
                         <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-6 break-words leading-snug">
@@ -290,14 +291,18 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                 <ViewsCounter postId={Number(post.id)} />
                             </span>
                         </div>
-                        {/* Actions inline on mobile */}
                         <div className="mt-3 lg:hidden flex justify-center">
-                            <PostActions postId={Number(post.id)} slug={post.slug} title={post.title} />
+                            <PostActionsWrapper 
+                              postId={Number(post.id)} 
+                              slug={post.slug} 
+                              title={post.title}
+                              authorId={post.authorId || undefined}
+                            />
                         </div>
                     </div>
                 </header>
 
-                <FloatingActions title={post.title} postId={Number(post.id)} />
+                {/* Remove duplicate FloatingActions - ReaderToolbarPortal handles this */}
                 
 
         {/* Featured banner */}

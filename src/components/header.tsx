@@ -4,44 +4,44 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Menu, ChevronDown } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { RoleGate } from "@/hooks/useRoleGate";
+import { getCurrentUserSlug } from "@/lib/user-slug";
+import { isAdmin } from "@/lib/permissions";
+import type { User } from "@/lib/auth";
 
 import { ThemeToggle } from "./theme-toggle";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from "./ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Articles" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
-  { href: "/profile", label: "Profile" },
 ];
-
-interface User {
-  id?: number | string
-  username: string
-  email: string
-  displayName: string
-  roles?: string[]
-  profile_fields?: Record<string, unknown>
-}
 
 export function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [userSlug, setUserSlug] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-  const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
+          
+          // Get user slug for profile link
+          if (data.user) {
+            const slug = await getCurrentUserSlug();
+            setUserSlug(slug);
+          }
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -67,33 +67,68 @@ export function Header() {
     const parts = p.split('/').filter(Boolean)
     return parts.length === 2 && parts[0] === 'blog'
   })()
+
+  // Filter nav links to exclude Profile when user is not logged in
+  const filteredNavLinks = navLinks.filter(link => {
+    if (link.label === "Profile") return false; // Always exclude old Profile link
+    return true;
+  });
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="mr-4 flex items-center">
-          <Link href="/" className="flex items-center gap-2 font-bold">
-            <span className="font-bold">
-              tech.oblivion
-            </span>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Link href="/" className="flex items-center gap-2 font-bold" aria-haspopup="menu">
+                <span className="font-bold">
+                  tech.oblivion
+                </span>
+              </Link>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {/* Show Admin Dash only if user is admin */}
+              {isAdmin(user) && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/dashboard">Admin Dash</Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/">Home</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/about">About</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/contact">Contact</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
   <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
-      {navLinks.map((link) => {
-        const computedHref = link.label === "Profile"
-          ? (user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile")
-          : link.href;
-        return (
-          <Link
-            key={link.label}
-            href={computedHref}
-            className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-            aria-current={pathname === computedHref ? 'page' : undefined}
-          >
-            {link.label}
-          </Link>
-        );
-      })}
+      {filteredNavLinks.map((link) => (
+        <Link
+          key={link.label}
+          href={link.href}
+          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+          aria-current={pathname === link.href ? 'page' : undefined}
+        >
+          {link.label}
+        </Link>
+      ))}
+
+      {/* Show Profile only if user is logged in, route to public profile */}
+      {user && userSlug && (
+        <Link
+          href={`/author/${userSlug}`}
+          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+          aria-current={pathname === `/author/${userSlug}` ? 'page' : undefined}
+        >
+          Profile
+        </Link>
+      )}
+
       {user && (
         <Link
           href="/bookmarks"
@@ -102,41 +137,8 @@ export function Header() {
           Bookmarks
         </Link>
       )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm text-muted-foreground hover:text-foreground px-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" aria-haspopup="menu" aria-expanded={undefined}>
-                  More <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <RoleGate action="admin" as="div">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Admin</DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem asChild><Link href="/admin">Dashboard</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/admin/posts">Posts</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/admin/users">Users</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/admin/comments">Comments</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/admin/settings">Settings</Link></DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                </RoleGate>
-                <RoleGate action="draft" as="div">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>Dashboard</DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                      <DropdownMenuSubContent>
-                        <DropdownMenuItem asChild><Link href="/account">My Account</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/editor">My Posts</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href="/account">Settings</Link></DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                  </DropdownMenuSub>
-                </RoleGate>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+      {/* "More" button removed as per requirements */}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -148,7 +150,7 @@ export function Header() {
                     <Button variant="ghost" aria-label="User menu">
                       {(() => {
                         const uname = user.username || ''
-                        const dname = user.displayName || ''
+                        const dname = user.display_name || ''
                         // If short username (<=10), show full
                         if (uname && uname.length <= 10) return `Hi, ${uname}`
                         // If displayName is long, use first + last initial
@@ -170,9 +172,11 @@ export function Header() {
                     <DropdownMenuItem>
                       <Link href="/account">Account Center</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link href={user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile"}>Public Profile</Link>
-                    </DropdownMenuItem>
+                    {userSlug && (
+                      <DropdownMenuItem>
+                        <Link href={`/author/${userSlug}`}>Public Profile</Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem>
                       <button onClick={handleLogout}>Logout</button>
                     </DropdownMenuItem>
@@ -206,29 +210,36 @@ export function Header() {
                 >
                   <span>tech.oblivion</span>
                 </Link>
-                {navLinks.map((link) => {
-                  const computedHref = link.label === "Profile"
-                    ? (user?.username ? `/profile/${encodeURIComponent(user.username)}` : "/profile")
-                    : link.href;
-                  return (
-                    <Link
-                      key={link.label}
-                      href={computedHref}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {link.label}
-                    </Link>
-                  );
-                })}
+                {filteredNavLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+
+                {/* Show Profile only if user is logged in, route to public profile */}
+                {user && userSlug && (
+                  <Link href={`/author/${userSlug}`} className="text-muted-foreground hover:text-foreground">
+                    Profile
+                  </Link>
+                )}
+
                 {user && (
                   <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
                 )}
-                 <RoleGate action="admin" as="div">
-                   <Link href="/admin" className="text-muted-foreground hover:text-foreground">Admin</Link>
-                 </RoleGate>
-                 <RoleGate action="draft" as="div">
+
+                {/* Show Admin Dash only if user is admin */}
+                {isAdmin(user) && (
+                  <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">Admin Dash</Link>
+                )}
+
+                <RoleGate action="draft" as="div">
                    <Link href="/account" className="text-muted-foreground hover:text-foreground">Account</Link>
-                 </RoleGate>
+                </RoleGate>
+
                 {!isLoading && (
                   <>
                     {user ? (

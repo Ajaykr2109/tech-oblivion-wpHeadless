@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import hljs from 'highlight.js'
-
 import sanitizeHtml from 'sanitize-html'
 import 'highlight.js/styles/github-dark.css'
 

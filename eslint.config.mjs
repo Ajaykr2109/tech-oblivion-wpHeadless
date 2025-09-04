@@ -17,6 +17,8 @@ export default [
       '.turbo/**',
       'coverage/**',
       'public/**/*.min.*',
+      // Next.js generated files
+      'next-env.d.ts',
       // Config and build scripts that shouldn't be linted by TS project service
       'eslint.config.mjs',
       'postcss.config.mjs',

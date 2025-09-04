@@ -7,6 +7,5 @@ From: [React Bits - Magic Bento](https://reactbits.dev/)
 - tilted card for blog post titles
 - masonry: for search results page/ authors page
 - folder: will see where we can put in
-- 
 
 

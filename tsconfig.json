@@ -36,9 +36,6 @@
       ],
       "react-simple-maps": [
         "./types/react-simple-maps.d.ts"
-      ],
-      "sanitize-html": [
-        "./types/sanitize-html.d.ts"
       ]
     }
   },
