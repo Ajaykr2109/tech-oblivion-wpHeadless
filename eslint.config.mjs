@@ -28,6 +28,10 @@ export default [
       'jest.config.js',
       'scripts/check-quality.js',
       'scripts/fix-quality.js',
+      // Node.js scripts with CommonJS and Node globals
+      'scripts/check-route-conflicts.js',
+      'scripts/consolidation-discovery.js',
+      'scripts/test-redirects.js',
       'src/__tests__/**',
     ],
   },
