@@ -18,6 +18,46 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
   
+  // Handle dynamic profile redirect: /profile → /author/[my-slug]
+  if (pathname === '/profile') {
+    const sessionCookie = process.env.SESSION_COOKIE_NAME ?? 'session'
+    const token = req.cookies.get(sessionCookie)?.value
+    
+    if (!token) {
+      // Not logged in - redirect to login
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('next', '/profile')
+      return NextResponse.redirect(loginUrl)
+    }
+    
+    try {
+      const claims = await verifySession(token) as {
+        slug?: string
+        username?: string
+        user_nicename?: string
+        [key: string]: unknown
+      }
+      
+      // Try multiple possible slug fields from JWT
+      const userSlug = claims.slug || claims.username || claims.user_nicename
+      if (userSlug) {
+        // Redirect to user's author page
+        return NextResponse.redirect(new URL(`/author/${userSlug}`, req.url))
+      } else {
+        // No user slug found - redirect to login
+        const loginUrl = new URL('/login', req.url)
+        loginUrl.searchParams.set('error', 'no_profile_slug')
+        return NextResponse.redirect(loginUrl)
+      }
+    } catch (error) {
+      console.error('Profile redirect failed:', error)
+      // Invalid session - redirect to login
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('next', '/profile')
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+  
   // Check if route requires protection
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
   const isEditor = EDITOR_ROUTES.some(route => pathname.startsWith(route))
