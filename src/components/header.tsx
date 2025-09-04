@@ -78,32 +78,11 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex items-center justify-between">
         <div className="mr-4 flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Link href="/" className="flex items-center gap-2 font-bold" aria-haspopup="menu">
-                <span className="font-bold">
-                  tech.oblivion
-                </span>
-              </Link>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {/* Show Admin Dash only if user is admin */}
-              {isAdmin(user) && (
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard">Admin Dash</Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem asChild>
-                <Link href="/">Home</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/about">About</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/contact">Contact</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link href="/" className="flex items-center gap-2 font-bold">
+            <span className="font-bold">
+              tech.oblivion
+            </span>
+          </Link>
         </div>
 
   <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
@@ -119,7 +98,7 @@ export function Header() {
       ))}
 
       {/* Show Profile only if user is logged in, route to public profile */}
-      {user && userSlug && (
+      {!isLoading && user && userSlug && (
         <Link
           href={`/author/${userSlug}`}
           className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
@@ -129,7 +108,7 @@ export function Header() {
         </Link>
       )}
 
-      {user && (
+      {!isLoading && user && (
         <Link
           href="/bookmarks"
           className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
@@ -142,6 +121,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {!isLoading && (
             <>
               {user ? (
@@ -166,6 +146,12 @@ export function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {/* Show Admin Dash only if user is admin */}
+                    {isAdmin(user) && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/dashboard">Admin Dash</Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem>
                       <Link href="/account">Account</Link>
                     </DropdownMenuItem>
@@ -183,9 +169,19 @@ export function Header() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Link href="/login">
-                  <Button variant="ghost">Login</Button>
-                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost">Login</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href="/login">Login</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/register">Register</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </>
           )}
@@ -221,18 +217,18 @@ export function Header() {
                 ))}
 
                 {/* Show Profile only if user is logged in, route to public profile */}
-                {user && userSlug && (
+                {!isLoading && user && userSlug && (
                   <Link href={`/author/${userSlug}`} className="text-muted-foreground hover:text-foreground">
                     Profile
                   </Link>
                 )}
 
-                {user && (
+                {!isLoading && user && (
                   <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
                 )}
 
                 {/* Show Admin Dash only if user is admin */}
-                {isAdmin(user) && (
+                {!isLoading && isAdmin(user) && (
                   <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">Admin Dash</Link>
                 )}
 

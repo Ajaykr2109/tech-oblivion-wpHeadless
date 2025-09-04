@@ -180,28 +180,8 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         console.warn('Failed to fetch popular posts:', e)
     }
 
-    // Recent posts (chronological)
-    let recent: EnhancedRecommendation[] = []
-    try {
-        const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-        const url = `${origin || ''}/api/wp/posts?per_page=6&_embed=1`
-        const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 120 } })
-        if (r.ok) {
-            const data = (await r.json()) as unknown[]
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            recent = (data || []).map((p: any) => ({
-                id: p.id,
-                slug: p.slug,
-                title: p.title?.rendered || '',
-                excerpt: (p.excerpt?.rendered || '').replace(/<[^>]+>/g, '').substring(0, 120) + '...',
-                featuredImage: p._embedded?.['wp:featuredmedia']?.[0]?.source_url || p.featured_media_url || p.jetpack_featured_media_url || '',
-                authorName: p._embedded?.author?.[0]?.name || '',
-                date: p.date || '',
-            }))
-        }
-    } catch (e) {
-        console.warn('Failed to fetch recent posts:', e)
-    }
+    // Recent posts (chronological) - REMOVED
+    // Note: removed recent posts from sidebar as per user request
 
     const floatImage = typeof searchParams?.floatImage === 'string' 
         ? ['1','true','yes','on'].includes(String(searchParams?.floatImage).toLowerCase())
@@ -441,29 +421,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                                     </div>
                                                 )}
 
-                                                {/* Recent Posts */}
-                                                {recent.length > 0 && (
-                                                    <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
-                                                        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Recent Posts</h3>
-                                                        <ul className="space-y-4">
-                                                            {recent.map(p => (
-                                                                <li key={p.id}>
-                                                                    <Link href={`/blog/${p.slug}`} className="group flex gap-3">
-                                                                        {p.featuredImage ? (
-                                                                            <div className="relative w-20 h-16 flex-shrink-0 overflow-hidden rounded">
-                                                                                <Image src={p.featuredImage} alt={p.title} fill className="object-cover transition-transform group-hover:scale-105" />
-                                                                            </div>
-                                                                        ) : null}
-                                                                        <div className="min-w-0">
-                                                                            <div className="text-sm font-medium group-hover:text-primary line-clamp-2">{p.title}</div>
-                                                                            {p.excerpt ? <div className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.excerpt}</div> : null}
-                                                                        </div>
-                                                                    </Link>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                )}
+                                                {/* Recent Posts - REMOVED */}
 
                                                 {/* Author's latest posts */}
                                                 {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (

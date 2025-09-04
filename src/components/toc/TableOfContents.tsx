@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronUp } from 'lucide-react'
 
 import { TocItem as FlatItem } from '@/lib/toc-md'
 import { useScrollSpy } from '@/hooks/useScrollSpy'
@@ -28,9 +28,10 @@ function flatIds(items: FlatItem[]): string[] {
 
 export default function TableOfContents({ items }: { items: FlatItem[] }) {
   const [zoom, setZoom] = useState<number>(100)
-  const [expanded, setExpanded] = useState<boolean>(items.length <= 24)
   const [focusedIndex, setFocusedIndex] = useState<number>(0)
   const [_open, _setOpen] = useState<boolean>(false) // floating disabled
+  const [mobileOpen, setMobileOpen] = useState<boolean>(false) // Mobile TOC state
+  const [tabletOpen, setTabletOpen] = useState<boolean>(false) // Tablet TOC state
 
   useEffect(() => {
     const fromReader = Number(localStorage.getItem('reader:scale') || '100')
@@ -137,7 +138,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     <div className={`overflow-hidden print:hidden`}>
       <div className="toc-scroll max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
         <div className="py-2">
-          {(expanded ? items : items.slice(0, 24)).map((i, idx) => {
+          {items.map((i, idx) => {
             const st = i.id === state.activeId
               ? 'active'
               : state.nearbyIds.has(i.id) ? 'nearby'
@@ -157,11 +158,6 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
           })}
         </div>
       </div>
-      {items.length > 24 && (
-        <button className="w-full text-xs py-1.5 hover:bg-muted border-t" onClick={() => setExpanded(!expanded)}>
-          {expanded ? 'Collapse' : `Show all ${items.length}`}
-        </button>
-      )}
     </div>
   )
 
@@ -201,22 +197,38 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
 
       {/* Tablet collapsible (sticky mode) */}
       <div className="hidden md:block lg:hidden print:hidden">
-        <details>
-          <summary className="cursor-pointer px-3 py-2 font-medium">On this page</summary>
-          <div className="p-3">{content}</div>
-        </details>
+        <div className="bg-card border rounded-lg">
+          <button 
+            className="w-full cursor-pointer px-3 py-2 font-medium text-left hover:bg-muted/50 flex items-center justify-between"
+            onClick={() => setTabletOpen(!tabletOpen)}
+          >
+            <span>On this page</span>
+            <ChevronUp className={`h-4 w-4 transition-transform ${tabletOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {tabletOpen && (
+            <div className="p-3 border-t">{content}</div>
+          )}
+        </div>
       </div>
 
       {/* Floating side flyout for md+ when mode=floating */}
 
       {/* Mobile bottom sheet (always available) */}
       <div className="md:hidden print:hidden">
-        <AnimatePresence>
-          <motion.details className="rounded-t-lg fixed bottom-0 left-0 right-0 z-40 bg-card border-t" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}>
-            <summary className="cursor-pointer px-3 py-2 font-medium text-center">On this page</summary>
-            <div className="p-3 max-h-[50vh] overflow-auto">{content}</div>
-          </motion.details>
-        </AnimatePresence>
+        <div 
+          className="rounded-t-lg fixed bottom-0 left-0 right-0 z-40 bg-card border-t" 
+        >
+          <button 
+            className="w-full cursor-pointer px-3 py-2 font-medium text-center hover:bg-muted/50 flex items-center justify-center gap-2"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            <span>On this page</span>
+            <ChevronUp className={`h-4 w-4 transition-transform ${mobileOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {mobileOpen && (
+            <div className="p-3 max-h-[50vh] overflow-auto border-t">{content}</div>
+          )}
+        </div>
       </div>
     </div>
   )

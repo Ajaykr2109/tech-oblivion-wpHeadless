@@ -46,13 +46,20 @@ export function useScrollSpy(
       raf = 0
       const offset = getTopOffset()
       let current: string | null = null
+      
+      // Check if we're at the bottom of the page
+      const isAtBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10
+      
       for (const el of elements) {
         const top = el.getBoundingClientRect().top
         if (top - offset <= 0) current = el.id
         else break
       }
+      
       // Fallbacks: top of page => first; bottom past last => last
       if (!current) current = elements[0].id
+      else if (isAtBottom) current = elements[elements.length - 1].id
+      
       const idx = idIndex.get(current) ?? 0
       const nearby = new Set<string>()
       const adjacent = new Set<string>()

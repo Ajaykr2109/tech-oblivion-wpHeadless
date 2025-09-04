@@ -29,7 +29,7 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
   currentPostId,
 }) => {
   const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
-  const [heading, setHeading] = useState<'Related Posts' | 'Recent Posts'>('Related Posts');
+  const [heading, setHeading] = useState<'Related Posts'>('Related Posts'); // Only Related Posts now
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,20 +68,8 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
         const filteredData = data.filter((post: RelatedPost) => post.id !== currentPostId);
 
         if (filteredData.length === 0) {
-          // Fallback: fetch recent posts in chronological order
-          const recentResp = await fetch(`/api/wp/posts?per_page=5&_embed=1`, { headers: { Accept: 'application/json' } })
-          if (recentResp.ok) {
-            const recent = (await recentResp.json()) as Array<Record<string, unknown>>
-            const simplified = recent.map((p: Record<string, unknown>) => ({ 
-              id: Number(p.id), 
-              slug: String(p.slug), 
-              title: { rendered: String((p.title as Record<string, unknown>)?.rendered || '') } 
-            }))
-            setRelatedPosts(simplified)
-            setHeading('Recent Posts')
-          } else {
-            setRelatedPosts([])
-          }
+          // No related posts found, show nothing instead of fallback
+          setRelatedPosts([])
         } else {
           setRelatedPosts(filteredData);
           setHeading('Related Posts')
