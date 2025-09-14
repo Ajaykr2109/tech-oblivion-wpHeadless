@@ -1,0 +1,189 @@
+<?php
+if (!defined('ABSPATH')) exit;
+if (defined('FE_ANALYTICS_ROUTES_LOADED')) return; define('FE_ANALYTICS_ROUTES_LOADED', true);
+
+add_action('rest_api_init', function () {
+    $ns = 'fe-analytics/v1';
+
+    // check
+    register_rest_route($ns, '/check', [
+        'methods'  => 'GET',
+        'permission_callback' => function () { return current_user_can('manage_options'); },
+        'callback' => function () {
+            global $wpdb;
+            $prefix = $wpdb->prefix;
+            $tables = [ 'post_views', 'post_view_meta', 'post_view_sessions', 'post_views_daily' ];
+            $results = [];
+            foreach ($tables as $tbl) {
+                $tbl  = sanitize_key($tbl);
+                $full = $prefix . $tbl;
+                $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $full));
+                if ($exists) {
+                    $count = $wpdb->get_var("SELECT COUNT(*) FROM `{$full}`");
+                    $results[$tbl] = [ 'exists' => true, 'rows' => is_numeric($count) ? (int)$count : 0, 'error' => $wpdb->last_error ?: null ];
+                } else {
+                    $results[$tbl] = [ 'exists' => false, 'rows' => null, 'error' => null ];
+                }
+            }
+            return [ 'status' => 'ok', 'checked' => current_time('mysql'), 'tables' => $results ];
+        }
+    ]);
+
+    // views (with optional from/to)
+    register_rest_route($ns, '/views', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb;
+            $prefix = $wpdb->prefix;
+            $period = $req->get_param('period') ?: 'month';
+            $from   = $req->get_param('from');
+            $to     = $req->get_param('to');
+
+            $interval = match ($period) {
+                'day'   => '1 DAY',
+                'week'  => '7 DAY',
+                'month' => '30 DAY',
+                default => '30 DAY',
+            };
+            $where = '1=1';
+            if ($from && preg_match('/^\d{4}-\d{2}-\d{2}$/', $from)) {
+                $where .= $wpdb->prepare(' AND v.viewed_at >= %s', $from . ' 00:00:00');
+            } else {
+                $where .= " AND v.viewed_at >= (NOW() - INTERVAL $interval)";
+            }
+            if ($to && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+                $where .= $wpdb->prepare(' AND v.viewed_at <= %s', $to . ' 23:59:59');
+            }
+
+        $sql = "SELECT DATE(v.viewed_at) as day, COUNT(*) as views
+            FROM {$prefix}post_views v
+            WHERE $where
+            GROUP BY day
+            ORDER BY day ASC";
+        $rows = $wpdb->get_results($sql);
+        if ($wpdb->last_error) error_log('FE Analytics /views SQL error: ' . $wpdb->last_error);
+        return $rows ?: [];
+        }
+    ]);
+
+    // devices
+    register_rest_route($ns, '/devices', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $limit = max(1, min(50, absint($req->get_param('limit') ?: 10)));
+            $sql = $wpdb->prepare("SELECT m.device_type as device, COUNT(*) as views
+                                   FROM {$prefix}post_view_meta m
+                                   GROUP BY m.device_type
+                                   ORDER BY views DESC
+                                   LIMIT %d", $limit);
+            $rows = $wpdb->get_results($sql);
+            if ($wpdb->last_error) error_log('FE Analytics /devices SQL error: ' . $wpdb->last_error);
+            return $rows ?: [];
+        }
+    ]);
+
+    // countries
+    register_rest_route($ns, '/countries', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $limit = max(1, min(100, absint($req->get_param('limit') ?: 50)));
+            $sql = $wpdb->prepare("SELECT m.country_code as country, COUNT(*) as views
+                                   FROM {$prefix}post_view_meta m
+                                   WHERE m.country_code IS NOT NULL AND m.country_code <> ''
+                                   GROUP BY m.country_code
+                                   ORDER BY views DESC
+                                   LIMIT %d", $limit);
+            $rows = $wpdb->get_results($sql);
+            if ($wpdb->last_error) error_log('FE Analytics /countries SQL error: ' . $wpdb->last_error);
+            return $rows ?: [];
+        }
+    ]);
+
+    // referers
+    register_rest_route($ns, '/referers', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $limit = max(1, min(100, absint($req->get_param('limit') ?: 50)));
+            $sql = $wpdb->prepare("SELECT m.referer, COUNT(*) as views
+                                   FROM {$prefix}post_view_meta m
+                                   WHERE m.referer IS NOT NULL AND m.referer <> ''
+                                   GROUP BY m.referer
+                                   ORDER BY views DESC
+                                   LIMIT %d", $limit);
+            $rows = $wpdb->get_results($sql);
+            if ($wpdb->last_error) error_log('FE Analytics /referers SQL error: ' . $wpdb->last_error);
+            return $rows ?: [];
+        }
+    ]);
+
+    // sessions
+    register_rest_route($ns, '/sessions', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $limit = absint($req->get_param('limit')) ?: 50;
+            $days  = absint($req->get_param('days')) ?: 30;
+            $tbl = $prefix . 'post_view_sessions';
+            $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $tbl));
+            if (!$exists) return [];
+            $sql = $wpdb->prepare("SELECT s.id, s.session_hash, s.user_id, s.first_seen, s.last_seen, s.total_views
+                                    FROM {$prefix}post_view_sessions s
+                                    WHERE s.last_seen >= (NOW() - INTERVAL %d DAY)
+                                    ORDER BY s.last_seen DESC
+                                    LIMIT %d", $days, $limit);
+            return rest_ensure_response($wpdb->get_results($sql) ?: []);
+        }
+    ]);
+
+    // top-posts
+    register_rest_route($ns, '/top-posts', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $period = $req->get_param('period') ?: 'month';
+            $interval = match ($period) {
+                'day'   => '1 DAY',
+                'week'  => '7 DAY',
+                'month' => '30 DAY',
+                default => '30 DAY',
+            };
+                        $sql = $wpdb->prepare("SELECT p.ID as id, p.post_title as title, p.post_name as slug, COUNT(v.id) as views
+                                                                        FROM {$prefix}posts p
+                                                                        JOIN {$prefix}post_views v ON v.post_id = p.ID
+                                                                        WHERE v.viewed_at >= (NOW() - INTERVAL $interval)
+                                                                            AND p.post_status = 'publish'
+                                                                        GROUP BY p.ID
+                                                                        ORDER BY views DESC
+                                                                        LIMIT 10");
+                        $rows = $wpdb->get_results($sql);
+                        if ($wpdb->last_error) error_log('FE Analytics /top-posts SQL error: ' . $wpdb->last_error);
+                        return $rows ?: [];
+        }
+    ]);
+
+    // summary
+    register_rest_route($ns, '/summary', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function () {
+            $viewsReq = rest_do_request(new WP_REST_Request('GET', '/fe-analytics/v1/views'));
+            $devicesReq = rest_do_request(new WP_REST_Request('GET', '/fe-analytics/v1/devices'));
+            $countriesReq = rest_do_request(new WP_REST_Request('GET', '/fe-analytics/v1/countries'));
+            $referersReq = rest_do_request(new WP_REST_Request('GET', '/fe-analytics/v1/referers'));
+            $views    = $viewsReq instanceof WP_REST_Response ? $viewsReq->get_data() : [];
+            $devices  = $devicesReq instanceof WP_REST_Response ? $devicesReq->get_data() : [];
+            $countries= $countriesReq instanceof WP_REST_Response ? $countriesReq->get_data() : [];
+            $referers = $referersReq instanceof WP_REST_Response ? $referersReq->get_data() : [];
+            return compact('views','devices','countries','referers');
+        }
+    ]);
+});
