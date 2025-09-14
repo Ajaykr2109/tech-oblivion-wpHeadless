@@ -46,8 +46,8 @@ type EnhancedRecommendation = {
   readingTime?: string
 }
 
-type PageParams = { params: { slug: string } }
-type PageProps = { params: { slug: string }, searchParams?: Record<string, string | string[] | undefined> }
+type PageParams = { params: Promise<{ slug: string }> }
+type PageProps = { params: Promise<{ slug: string }>, searchParams?: Record<string, string | string[] | undefined> }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
     const { slug } = await params

@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation'
 import { AuthorProfileView } from '@/components/author/AuthorProfileView'
 
 interface AuthorPageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 async function getAuthorData(slug: string) {
@@ -67,7 +67,7 @@ async function getAuthorData(slug: string) {
 }
 
 export default async function AuthorPage({ params }: AuthorPageProps) {
-  const { slug } = params
+  const { slug } = await params
   const data = await getAuthorData(slug)
   
   if (!data) {
@@ -86,7 +86,7 @@ export default async function AuthorPage({ params }: AuthorPageProps) {
 }
 
 export async function generateMetadata({ params }: AuthorPageProps) {
-  const { slug } = params
+  const { slug } = await params
   const data = await getAuthorData(slug)
   
   if (!data) {

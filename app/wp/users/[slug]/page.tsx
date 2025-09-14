@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-export default async function UserProfilePage({ params }: { params: { slug: string } }) {
+export default async function UserProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "";
   const proto = hdrs.get("x-forwarded-proto") || "http";
   const origin = (process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`).replace(/\/$/, "");
   const cookie = hdrs.get('cookie') || ''
 
-  const res = await fetch(`${origin}/api/wp/users/${encodeURIComponent(params.slug)}`, {
+  const res = await fetch(`${origin}/api/wp/users/${encodeURIComponent(slug)}`, {
     cache: "no-store",
     headers: { Accept: 'application/json', ...(cookie ? { cookie } : {}) },
   });

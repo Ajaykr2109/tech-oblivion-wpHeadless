@@ -1,186 +1,345 @@
-## Caching & Revalidation
+# Tech Oblivion - WordPress Headless Frontend
 
-- WordPress data fetches use Next.js ISR with tags for targeted revalidation.
-- TTL can be tuned via `WP_CACHE_TTL` (seconds), default 300.
-- Tags used:
-  - List: `wp:posts`
-  - Post: `wp:post:{slug}`
-  - Page: `wp:page:{slug}`
+A modern, high-performance headless WordPress frontend built with Next.js 15, featuring advanced caching, security, and user experience optimizations.
 
-Trigger revalidation (server-to-server or webhook):
+## 🚀 Features
 
-POST /api/revalidate?secret=YOUR_SECRET
-{
-  "slug": "post-slug"   // optional, revalidates that post detail
-}
+### Core Capabilities
+- **Headless WordPress Integration** - Seamless proxy to WordPress REST API
+- **Advanced Caching** - ISR with surgical cache invalidation via webhooks
+- **Secure Authentication** - JWT-based sessions with HttpOnly cookies
+- **Role-Based Access Control** - WordPress-compatible user roles and permissions
+- **Modern UI/UX** - Responsive design with dark/light theme support
+- **Performance Optimized** - Server-side rendering with intelligent prefetching
 
-POST /api/revalidate?secret=YOUR_SECRET
-{
-  "page": "about"       // optional, revalidates that page detail
-}
+### Content Management
+- **Rich Blog System** - Full WordPress post rendering with embedded media
+- **SEO Optimization** - Meta tags, OpenGraph, Twitter cards, structured data
+- **Media Management** - WordPress media library with Next.js image optimization
+- **Author Profiles** - Comprehensive user profiles with activity tracking
+- **Content Discovery** - Related posts, categories, tags, and search functionality
 
-POST /api/revalidate?secret=YOUR_SECRET
-{
-  "all": true            // optional, refreshes the homepage & list
-}
+### Admin & Analytics
+- **Unified Dashboard** - Analytics, moderation, and settings in one interface
+- **Real-time Analytics** - View tracking and engagement metrics
+- **User Management** - Role assignment and permission control
+- **Content Moderation** - Comment management and approval workflows
+- **Site Health** - System diagnostics and monitoring tools
 
-For advanced in-process caching of custom loaders, use `src/lib/serverCache.ts`.
+## 🛠️ Technology Stack
 
-This project implements a Next.js App Router frontend that proxies WordPress auth via API routes.
+### Frontend
+- **Next.js 15** - App Router with Server Components
+- **React 18** - Modern React with Suspense and Streaming
+- **TypeScript** - Full type safety and developer experience
+- **Tailwind CSS** - Utility-first styling with custom design system
+- **Radix UI** - Accessible component primitives
 
-## Authors API (minimal, fast)
+### Backend Integration
+- **WordPress REST API** - Headless CMS integration
+- **API Proxy Pattern** - Secure server-side WordPress communication
+- **JWT Authentication** - Session management with automatic renewal
+- **CSRF Protection** - Double-submit cookie pattern for security
 
-- Route: `GET /api/wp/users?include=1,2,3`
-- Backed by `wp-json/wp/v2/users` with `include[]` batching and `_fields=id,slug,name,description,avatar_urls,social` to reduce payload.
-- Output: ordered array of users with a consistent `social` object `{ twitter|null, linkedin|null, github|null }`. URLs are normalized to `https://` if missing scheme.
-- Intended for authors lists and bylines; use the profile route below for full details.
+### Development Tools
+- **Turbopack** - Lightning-fast development builds
+- **Jest** - Comprehensive testing framework
+- **ESLint** - Code quality and consistency
+- **React Query** - Powerful data fetching and caching
 
-## Profile API caching
+## 📦 Installation
 
-- Route: `GET /api/wp/users/[slug]`
-- Upstream: single call to `fe-auth/v1/public-user/{slug}`.
-- Optional Next.js cache: set `PROFILE_CACHE_SECONDS` (number of seconds) to enable ISR-style caching for this API route. When not set or `0`, it uses `no-store`.
-- The upstream plugin may also emit HTTP cache headers and support `?compact=1` to trim payload — see WordPress plugin notes below.
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- WordPress backend with REST API enabled
 
-## Api Routes
+### Setup Steps
 
-* `/wp-json/wp/v2/posts` → All published posts (title, content, excerpt, etc.).
-* `/wp-json/wp/v2/pages` → All public pages.
-* `/wp-json/wp/v2/media` → Media library info (URLs, captions).
-* `/wp-json/wp/v2/categories`, `/tags` → Taxonomies.
-* `/wp-json/wp/v2/users`
-  - Prefer `GET /api/wp/users?include=...` from the frontend for minimal, ordered authors data.
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd tech-oblivion-wpHeadless
+   ```
 
-## Key features:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-- Proxy auth: POST /api/auth/login, /api/auth/register, /api/auth/logout, GET /api/auth/me
-- HttpOnly session cookie is set on login (7 days)
-- CSRF double-submit: cookie 'csrf' must match x-csrf-token header for mutating routes
-- Middleware protects /dashboard and /account
-- Blog list and post pages fetch from WP REST and render server-side
+3. **Environment configuration**
+   ```bash
+   cp .env.example .env.local
+   ```
 
-## Testing
+4. **Configure environment variables** (see [Environment Variables](#environment-variables))
 
-1. Set environment in `.env.local`.
-2. Start dev server: npm run dev
-3. Visit `/register` to create account. With AIOS email activation, expect 201 { status: 'pending_verification' } and UI shows pending message.
-4. Try to login before verification → expect 401 and friendly message.
-5. After verifying via WP email link, login should succeed and set HttpOnly cookie. Visiting `/dashboard` should show the user.
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-## Instant cache purge / webhook
+The application will be available at `http://localhost:3200`
 
-1. Configure your WordPress site (or a webhook plugin) to POST to the revalidation endpoint when a post is published/updated.
+## ⚙️ Environment Variables
 
-- Endpoint: https://your-site.com/api/revalidate?secret=change-me-long-random
-- Body: { "slug": "the-post-slug" }
-- To revalidate lists instead, send { "all": true } or call the endpoint with ?secret=...&all=true
+### Required Variables
+```env
+# WordPress Backend
+WP_URL=https://your-wordpress-site.com
 
-## CI / developer checks
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-64-chars-minimum
+SESSION_COOKIE_NAME=session
 
-- Add these to CI for a cheap safety net:
-  - npm run typecheck
-  - npm run build
-  - npm test
+# Caching & Revalidation
+NEXT_REVALIDATE_SECRET=your-webhook-secret
+WP_CACHE_TTL=300
 
-Deployment & secrets
---------------------
+# Site Configuration
+NEXT_PUBLIC_SITE_URL=https://your-frontend-domain.com
+```
 
-When you deploy to production, do NOT keep production secrets in `.env.local` inside the repo. Use your host's environment variable/secret manager (Vercel, Netlify, AWS/GCP/Azure, etc.). Required production env vars:
+### Optional Variables
+```env
+# Profile API Caching
+PROFILE_CACHE_SECONDS=60
 
-- `WP_URL` (your WordPress URL)
-- `JWT_SECRET` (long random secret, used to sign session JWTs)
-- `NEXT_REVALIDATE_SECRET` (secret for the revalidate webhook)
-- `NEXT_PUBLIC_SITE_URL` (your public frontend URL)
-- `SESSION_COOKIE_NAME` (optional, cookie name; keep consistent)
-- `PROFILE_CACHE_SECONDS` (optional, seconds to cache `/api/wp/users/[slug]` responses on the Next.js side)
+# Analytics
+ANALYTICS_ENABLED=true
 
-Quick secret generation examples (PowerShell):
+# Development
+NODE_ENV=development
+```
 
-```powershell
-# 64 bytes hex
+### Generate Secure Secrets
+```bash
+# Generate JWT secret (64 bytes)
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
-# OpenSSL
-openssl rand -hex 48
+# Generate revalidation secret
+openssl rand -hex 32
 ```
 
-Local pre-deploy env check
---------------------------
+## 🚦 Available Scripts
 
-Add this to CI to fail fast if required production env vars are missing:
-
+### Development
 ```bash
-npm run check-env
+npm run dev          # Start development server with Turbopack
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run typecheck    # Type checking with TypeScript
 ```
 
-This runs a tiny validator that ensures required env keys are present when `NODE_ENV=production`.
-
-## WordPress → Next.js Revalidation
-
-When a post/page is published or updated in WordPress, we ping our Next.js route to invalidate cached HTML.
-
-### Next.js
-
-- Route: POST /api/revalidate
-- Secret: NEXT_REVALIDATE_SECRET in `.env.local`
-- Body: `{ "slug": "<post-slug>" }` (or `{ "all": true }` to refresh lists)
-
-### WordPress setup
-
-Use the MU plugin at `wp-content/mu-plugins/next-revalidate.php`.
-
-**Env vars on WP**
-
-- `NEXT_REVALIDATE_URL` → https://<frontend-domain>/api/revalidate
-- `NEXT_REVALIDATE_SECRET` → same as Next’s `NEXT_REVALIDATE_SECRET`
-
-**What it does**
-
-- On publish/update of `post` or `page`, it POSTs `{ slug, secret }`.
-- Next.js calls `revalidateTag('wp:post:{slug}')` and optionally `revalidateTag('wp:posts')`.
-- Only affected pages are purged. SEO wins, users get fresh content.
-
-### WordPress public-user endpoint (performance)
-
-Update your `fe-auth` public-user callback to:
-
-- Accept `?compact=1` to omit heavy rendered content in recent posts/comments.
-- Add HTTP caching headers and ETag. Example:
-
-```
-$resp->header('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
-$resp->header('ETag', '"' . md5(wp_json_encode([$user->ID, $recent_posts, $recent_comments])) . '"');
-```
-
-Verification:
-
-- `/api/wp/users?include=1,2` returns ordered minimal authors with `social`.
-- `/api/wp/users/ajay` returns full profile; set `PROFILE_CACHE_SECONDS` to cache briefly.
-- `/wp-json/fe-auth/v1/public-user/ajay?compact=1` returns lightweight profile with cache headers (200/304 as appropriate).
-
-### Manual test
-
+### Testing
 ```bash
-curl -X POST https://<frontend>/api/revalidate \
+npm test             # Run test suite
+npm run test:watch   # Run tests in watch mode
+```
+
+### WordPress Integration
+```bash
+npm run wp-api       # Test WordPress API connectivity
+npm run check-env    # Validate environment variables
+```
+
+### Documentation & Analysis
+```bash
+npm run build:docs   # Generate role matrix documentation
+npm run audit:rbac   # Audit role-based access control
+npm run build:api-map # Generate API endpoint mapping
+```
+
+## 🏗️ Project Structure
+
+```
+├── app/                    # Next.js App Router (Production)
+│   ├── api/               # API routes and WordPress proxy
+│   ├── admin/             # Admin dashboard
+│   ├── blog/              # Blog pages and post details
+│   ├── auth/              # Authentication pages
+│   └── dashboard/         # User dashboard
+├── src/                   # Core source code
+│   ├── components/        # Reusable UI components
+│   ├── lib/              # Utilities and WordPress integration
+│   ├── hooks/            # Custom React hooks
+│   ├── contexts/         # React context providers
+│   └── __tests__/        # Test suites
+├── scripts/              # Build and maintenance scripts
+├── types/               # TypeScript type definitions
+└── data/               # Static configuration data
+```
+
+## 🔒 Security Model
+
+### Authentication Flow
+1. **Login** - Credentials sent to `/api/auth/login`
+2. **JWT Creation** - Server creates signed JWT with user data
+3. **Cookie Storage** - JWT stored in HttpOnly cookie (7 days)
+4. **Route Protection** - Middleware validates sessions for protected routes
+5. **Automatic Renewal** - Sessions refreshed on valid requests
+
+### Protected Routes
+- `/dashboard/*` - User dashboard and settings
+- `/account/*` - Profile management
+- `/admin/*` - Administrative functions (admin only)
+- `/editor/*` - Content creation (contributor+ roles)
+
+### CSRF Protection
+- All state-changing operations require CSRF token
+- Double-submit cookie pattern implementation
+- Automatic token validation in middleware
+
+## 📊 Caching Strategy
+
+### Multi-Layer Caching
+1. **Browser Cache** - Standard HTTP caching headers
+2. **CDN Cache** - Edge caching for static assets
+3. **ISR Cache** - Next.js Incremental Static Regeneration
+4. **API Cache** - React Query for client-side data
+
+### Cache Tags
+- `wp:posts` - All posts listings
+- `wp:post:{slug}` - Individual post pages
+- `wp:page:{slug}` - Static pages
+- Surgical invalidation via webhook
+
+### Webhook Revalidation
+```bash
+# Revalidate specific post
+curl -X POST https://your-site.com/api/revalidate?secret=YOUR_SECRET \
   -H "Content-Type: application/json" \
-  -d '{"slug":"hello-world","secret":"<NEXT_REVALIDATE_SECRET>"}' -i
+  -d '{"slug":"post-slug"}'
+
+# Revalidate all posts
+curl -X POST https://your-site.com/api/revalidate?secret=YOUR_SECRET \
+  -H "Content-Type: application/json" \
+  -d '{"all":true}'
 ```
 
-# Firebase Studio
+## 🧪 Testing
 
-This is a NextJS starter in Firebase Studio.
+### Test Categories
+- **Unit Tests** - Component and utility testing
+- **Integration Tests** - API route testing
+- **Permission Tests** - Role-based access validation
+- **Smoke Tests** - Critical path verification
 
-To get started, take a look at src/app/page.tsx.
+### Running Tests
+```bash
+# Run all tests
+npm test
 
-## Security model (WP headless)
+# Run with coverage
+npm test -- --coverage
 
-- The browser never talks to WordPress directly for data or auth; all requests go through Next.js server routes under `/api/wp/*` and `/api/auth/*`.
-- We store the upstream WordPress JWT token inside the server-signed session to perform privileged actions; it is never exposed to the browser.
-- See `docs/api-reference/button-api-map.md` for the current mapping of UI actions to internal APIs and required roles.
+# Run specific test file
+npm test -- auth.test.ts
 
-## Unified Admin + Analytics
+# Watch mode for development
+npm run test:watch
+```
 
-- Unified Admin Dashboard at `/admin` combines Analytics, Moderation, and Settings in a tabbed UI (Tailwind + Radix Tabs).
-- Single normalized analytics endpoint: `GET /api/analytics/summary` → `GET {WP}/wp-json/fe-analytics/v1/summary`.
-- WordPress caches with transients; frontend caches with React Query (staleTime 60s, gcTime 5m).
-- Role-aware: access limited to `administrator` for now, enforced both server-side (WP REST permission) and client-side (React role guard).
+## 🚀 Deployment
+
+### Build Process
+```bash
+# Production build
+npm run build
+
+# Verify build
+npm run start
+
+# Run deployment checks
+npm run typecheck
+npm run lint:check
+npm test
+```
+
+### Environment Setup
+1. **Production Secrets** - Use hosting provider's secret management
+2. **WordPress Configuration** - Install revalidation webhook plugin
+3. **CDN Setup** - Configure caching rules for static assets
+4. **Monitoring** - Set up error tracking and performance monitoring
+
+### Hosting Platforms
+- **Vercel** - Optimized for Next.js with automatic deployments
+- **Netlify** - Static site hosting with serverless functions
+- **Railway** - Full-stack application hosting
+- **Self-hosted** - Docker containerization support
+
+## 📚 API Reference
+
+### Authentication Endpoints
+```bash
+POST /api/auth/login      # User login
+POST /api/auth/register   # User registration
+POST /api/auth/logout     # User logout
+GET  /api/auth/me         # Current user info
+```
+
+### WordPress Proxy Endpoints
+```bash
+GET  /api/wp/posts        # Blog posts listing
+GET  /api/wp/posts/[slug] # Individual post
+GET  /api/wp/users        # Authors listing
+GET  /api/wp/users/[slug] # User profile
+GET  /api/wp/media/[id]   # Media assets
+```
+
+### Admin Endpoints
+```bash
+GET  /api/admin/analytics # Site analytics
+GET  /api/admin/users     # User management
+POST /api/admin/settings  # Site configuration
+```
+
+## 🤝 Contributing
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
+
+### Code Standards
+- **TypeScript** - All code must be properly typed
+- **ESLint** - Follow established linting rules
+- **Testing** - Maintain test coverage for new features
+- **Documentation** - Update relevant documentation
+
+### Commit Convention
+```bash
+feat: add new feature
+fix: bug fix
+docs: documentation update
+test: add or update tests
+refactor: code refactoring
+style: formatting changes
+```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+### Documentation
+- **API Documentation** - `/docs/api` (when available)
+- **Component Storybook** - `/docs/components` (when available)
+- **Deployment Guide** - See deployment section above
+
+### Community
+- **Issues** - Report bugs or request features via GitHub Issues
+- **Discussions** - Community discussions and Q&A
+- **Discord** - Join our community Discord server
+
+### Professional Support
+For enterprise support, custom development, or consulting services, please contact the development team.
+
+---
+
+**Built with ❤️ by the Tech Oblivion team**
