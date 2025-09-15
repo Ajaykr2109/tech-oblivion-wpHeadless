@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { RoleGate, useRoleGate } from '@/hooks/useRoleGate'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { decodeEntities } from '@/lib/html-entities'
 // Removed likes UI per requirements
 
 type Comment = {
@@ -37,7 +38,8 @@ export default function CommentsSection({ postId }: { postId: number }) {
     const avatar = String(avatars['48'] || avatars[48] || avatars['96'] || avatars[96] || avatars['24'] || avatars[24] || '')
     const contentField = (obj.content && typeof obj.content === 'object' ? (obj.content as Record<string, unknown>).rendered : obj.content)
     const contentHtml = typeof contentField === 'string' ? contentField : ''
-    const contentText = typeof contentHtml === 'string' ? contentHtml.replace(/<[^>]*>/g, '').trim() : ''
+  // Strip tags and decode entities that may appear double-escaped (&amp;) in some responses
+  const contentText = typeof contentHtml === 'string' ? decodeEntities(contentHtml.replace(/<[^>]*>/g, '')).trim() : ''
     const createdAt = String(obj.date || obj.date_gmt || new Date().toISOString())
     const postId = Number((obj.post as number | string | undefined) ?? (obj.post_id as number | string | undefined) ?? 0) || undefined
     return {
@@ -132,7 +134,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
           setComments(prev => [{ 
             id: j.id, 
             author: { name: j.author_name || 'You', avatar: j.author_avatar_urls?.['48'] || '' }, 
-            content: (j.content?.rendered || '').replace(/<[^>]*>/g, '').trim(), 
+            content: decodeEntities((j.content?.rendered || '').replace(/<[^>]*>/g, '')).trim(), 
             createdAt: j.date || new Date().toISOString(),
             postId
           }, ...prev])
@@ -148,6 +150,13 @@ export default function CommentsSection({ postId }: { postId: number }) {
             // TODO: implement fetch error handling
           }
         }
+      } else {
+        // Non-OK response: optionally we could surface an error toast; for now log.
+        try {
+          const errText = await r.text();
+          // eslint-disable-next-line no-console
+          console.error('Comment submit failed:', r.status, errText);
+        } catch {/* ignore */}
       }
     } finally {
       setSubmitting(false)

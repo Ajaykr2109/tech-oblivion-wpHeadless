@@ -7,7 +7,6 @@ import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { RoleGate } from "@/hooks/useRoleGate";
 import { getCurrentUserSlug } from "@/lib/user-slug";
 import { isAdmin } from "@/lib/permissions";
 import type { User } from "@/lib/auth";
@@ -25,6 +24,7 @@ const navLinks = [
   { href: "/blog", label: "Articles" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  // Profile & Bookmarks intentionally excluded from main nav; moved into user dropdown per requirements
 ];
 
 export function Header() {
@@ -65,7 +65,8 @@ export function Header() {
     }
   };
 
-  const filteredNavLinks = navLinks.filter((link) => link.label !== "Profile");
+  // Profile & Bookmarks removed from main navigation (desktop & mobile)
+  const filteredNavLinks = navLinks;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,24 +89,7 @@ export function Header() {
             </Link>
           ))}
 
-          {!isLoading && user && userSlug && (
-            <Link
-              href={`/author/${userSlug}`}
-              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-              aria-current={pathname === `/author/${userSlug}` ? "page" : undefined}
-            >
-              Profile
-            </Link>
-          )}
-
-          {!isLoading && user && (
-            <Link
-              href="/bookmarks"
-              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-            >
-              Bookmarks
-            </Link>
-          )}
+          {/* Profile & Bookmarks moved into user dropdown */}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -135,36 +119,24 @@ export function Header() {
                         <Link href="/admin/dashboard">Admin Dash</Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem>
-                      <Link href="/account">Account</Link>
+                    {userSlug && (
+                      <DropdownMenuItem>
+                        <Link href={`/profile/${userSlug}`}>Profile</Link>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookmarks">Bookmarks</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Link href="/account">Account Center</Link>
                     </DropdownMenuItem>
-                    {userSlug && (
-                      <DropdownMenuItem>
-                        <Link href={`/author/${userSlug}`}>Public Profile</Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem>
                       <button onClick={handleLogout}>Logout</button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">Login</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/login">Login</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/register">Register</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="ghost" onClick={() => { window.location.href = '/login'; }}>Login</Button>
               )}
             </>
           )}
@@ -195,17 +167,7 @@ export function Header() {
                   </Link>
                 ))}
 
-                {!isLoading && user && userSlug && (
-                  <Link href={`/author/${userSlug}`} className="text-muted-foreground hover:text-foreground">
-                    Profile
-                  </Link>
-                )}
-
-                {!isLoading && user && (
-                  <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">
-                    Bookmarks
-                  </Link>
-                )}
+                {/* Profile & Bookmarks removed from mobile sheet main list to consolidate in dropdown */}
 
                 {!isLoading && isAdmin(user) && (
                   <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">
@@ -213,33 +175,24 @@ export function Header() {
                   </Link>
                 )}
 
-                <RoleGate action="draft" as="div">
-                  <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                    Account
-                  </Link>
-                </RoleGate>
+                {/* Account link removed from main nav per requirements (Account option removed). */}
 
                 {!isLoading && (
                   <>
                     {user ? (
                       <>
                         <div className="text-muted-foreground">Welcome, {user.username}</div>
-                        <RoleGate action="draft" as="div">
-                          <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                            Dashboard
-                          </Link>
-                        </RoleGate>
-                        <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                          Account Center
-                        </Link>
+                        <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
+                        <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
+                        {userSlug && (
+                          <Link href={`/profile/${userSlug}`} className="text-muted-foreground hover:text-foreground">Profile</Link>
+                        )}
                         <a href="/api/auth/logout?redirect=/" className="text-left text-muted-foreground hover:text-foreground">
                           Logout
                         </a>
                       </>
                     ) : (
-                      <Link href="/login" className="text-muted-foreground hover:text-foreground">
-                        Login
-                      </Link>
+                      <Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
                     )}
                   </>
                 )}
