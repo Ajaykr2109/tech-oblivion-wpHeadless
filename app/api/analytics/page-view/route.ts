@@ -44,8 +44,34 @@ export async function POST(req: Request) {
   try {
     const incomingCookies = req.headers.get('cookie') || ''
     const userAgent = req.headers.get('user-agent') || body.user_agent || 'techoblivion-next-proxy'
-    const forwardedFor = req.headers.get('x-forwarded-for') || ''
-    const realIp = req.headers.get('x-real-ip') || ''
+    
+    // Enhanced IP detection with multiple headers
+    const getClientIP = () => {
+      const ipHeaders = [
+        'cf-connecting-ip',      // Cloudflare
+        'x-real-ip',             // Nginx proxy
+        'x-forwarded-for',       // Standard proxy
+        'x-client-ip',           // Alternative
+        'x-cluster-client-ip',   // Cluster
+        'forwarded-for',         // Alternative
+        'forwarded'              // Standard
+      ]
+      
+      for (const header of ipHeaders) {
+        const value = req.headers.get(header)
+        if (value) {
+          // Handle comma-separated IPs (take the first one)
+          const ip = value.split(',')[0].trim()
+          if (ip && ip !== '127.0.0.1' && ip !== '::1') {
+            return ip
+          }
+        }
+      }
+      
+      return null
+    }
+    
+    const clientIP = getClientIP()
     
     // Prepare the tracking data
     const trackingData = {
@@ -67,8 +93,11 @@ export async function POST(req: Request) {
         ...(incomingCookies ? { cookie: incomingCookies } : {}),
         'User-Agent': userAgent,
         // Forward IP information for accurate geolocation
-        ...(forwardedFor ? { 'X-Forwarded-For': forwardedFor } : {}),
-        ...(realIp ? { 'X-Real-IP': realIp } : {}),
+        ...(clientIP ? { 'X-Forwarded-For': clientIP, 'X-Real-IP': clientIP } : {}),
+        // Forward other geolocation headers
+        ...(req.headers.get('cf-connecting-ip') ? { 'CF-Connecting-IP': req.headers.get('cf-connecting-ip')! } : {}),
+        ...(req.headers.get('cf-ipcountry') ? { 'CF-IPCountry': req.headers.get('cf-ipcountry')! } : {}),
+        ...(req.headers.get('cf-ipcity') ? { 'CF-IPCity': req.headers.get('cf-ipcity')! } : {}),
       },
       cache: 'no-store',
       body: JSON.stringify(trackingData)

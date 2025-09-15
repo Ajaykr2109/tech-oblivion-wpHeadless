@@ -1,6 +1,9 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+// Load the geolocation service
+require_once __DIR__ . '/geolocation.php';
+
 add_action('rest_api_init', function () {
   $ns = 'fe-auth/v1';
 
@@ -127,12 +130,17 @@ add_action('rest_api_init', function () {
         }
       }
 
-      // Gather metadata
-      $ip_raw = $_SERVER['REMOTE_ADDR'] ?? null;
+      // Gather metadata with enhanced geolocation
+      $ip_raw = FE_Geolocation_Service::get_client_ip();
       $ip_bin = $ip_raw ? @inet_pton($ip_raw) : null;
       $ua = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 65535);
-      $cc = $_SERVER['CF-IPCountry'] ?? ($_SERVER['GEOIP_COUNTRY_CODE'] ?? null);
-
+      
+      // Get comprehensive geolocation data
+      $geo_data = FE_Geolocation_Service::get_location_data($ip_raw);
+      
+      // Legacy fallback for country code
+      $cc = $geo_data['country_code'] ?? ($_SERVER['CF-IPCountry'] ?? ($_SERVER['GEOIP_COUNTRY_CODE'] ?? null));
+      
       // Enhanced device detection
       $ua_lc = strtolower($ua);
       $device = 'unknown';
@@ -146,7 +154,7 @@ add_action('rest_api_init', function () {
         }
       }
 
-      // Insert metadata
+      // Insert metadata with enhanced geolocation
       $meta_id = null;
       $wpdb->insert(
         $wpdb->prefix . 'page_view_meta',
@@ -156,11 +164,16 @@ add_action('rest_api_init', function () {
           'user_agent' => $ua,
           'device_type' => $device,
           'country_code' => $cc ? substr($cc, 0, 2) : null,
+          'country_name' => $geo_data['country_name'] ? substr($geo_data['country_name'], 0, 100) : null,
+          'city_name' => $geo_data['city_name'] ? substr($geo_data['city_name'], 0, 100) : null,
+          'region_name' => $geo_data['region_name'] ? substr($geo_data['region_name'], 0, 100) : null,
+          'latitude' => $geo_data['latitude'],
+          'longitude' => $geo_data['longitude'],
           'screen_resolution' => substr($screen_resolution, 0, 20),
           'timezone' => substr($timezone, 0, 50),
           'language' => substr($language, 0, 10),
         ],
-        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
+        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s']
       );
       
       if (!$wpdb->last_error) {

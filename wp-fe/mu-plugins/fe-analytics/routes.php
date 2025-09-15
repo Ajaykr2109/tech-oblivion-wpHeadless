@@ -92,14 +92,56 @@ add_action('rest_api_init', function () {
         'callback' => function (WP_REST_Request $req) {
             global $wpdb; $prefix = $wpdb->prefix;
             $limit = max(1, min(100, absint($req->get_param('limit') ?: 50)));
-            $sql = $wpdb->prepare("SELECT m.country_code as country, COUNT(*) as views
+            
+            // Enhanced query to include city and country names
+            $sql = $wpdb->prepare("SELECT 
+                                        COALESCE(m.country_name, m.country_code) as country,
+                                        m.country_code,
+                                        m.city_name,
+                                        m.region_name,
+                                        COUNT(*) as views
                                    FROM {$prefix}post_view_meta m
-                                   WHERE m.country_code IS NOT NULL AND m.country_code <> ''
-                                   GROUP BY m.country_code
+                                   WHERE (m.country_code IS NOT NULL AND m.country_code <> '') 
+                                      OR (m.country_name IS NOT NULL AND m.country_name <> '')
+                                   GROUP BY m.country_code, m.country_name, m.city_name, m.region_name
                                    ORDER BY views DESC
                                    LIMIT %d", $limit);
             $rows = $wpdb->get_results($sql);
             if ($wpdb->last_error) error_log('FE Analytics /countries SQL error: ' . $wpdb->last_error);
+            return $rows ?: [];
+        }
+    ]);
+
+    // cities - New endpoint for city-level analytics
+    register_rest_route($ns, '/cities', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $limit = max(1, min(100, absint($req->get_param('limit') ?: 50)));
+            $country = $req->get_param('country'); // Optional filter by country
+            
+            $where_clause = "WHERE m.city_name IS NOT NULL AND m.city_name <> ''";
+            $params = [$limit];
+            
+            if ($country) {
+                $where_clause .= " AND m.country_code = %s";
+                array_unshift($params, $country);
+            }
+            
+            $sql = $wpdb->prepare("SELECT 
+                                        m.city_name as city,
+                                        m.region_name as region,
+                                        COALESCE(m.country_name, m.country_code) as country,
+                                        m.country_code,
+                                        COUNT(*) as views
+                                   FROM {$prefix}post_view_meta m
+                                   $where_clause
+                                   GROUP BY m.city_name, m.region_name, m.country_code, m.country_name
+                                   ORDER BY views DESC
+                                   LIMIT %d", ...$params);
+            $rows = $wpdb->get_results($sql);
+            if ($wpdb->last_error) error_log('FE Analytics /cities SQL error: ' . $wpdb->last_error);
             return $rows ?: [];
         }
     ]);

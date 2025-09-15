@@ -22,12 +22,19 @@ function fe_ensure_analytics_tables() {
             user_agent TEXT,
             device_type ENUM('mobile','tablet','desktop','unknown') DEFAULT 'unknown',
             country_code CHAR(2) DEFAULT NULL,
+            country_name VARCHAR(100) DEFAULT NULL,
+            city_name VARCHAR(100) DEFAULT NULL,
+            region_name VARCHAR(100) DEFAULT NULL,
+            latitude DECIMAL(10,8) DEFAULT NULL,
+            longitude DECIMAL(11,8) DEFAULT NULL,
             screen_resolution VARCHAR(20) DEFAULT NULL,
             timezone VARCHAR(50) DEFAULT NULL,
             language VARCHAR(10) DEFAULT 'en',
             PRIMARY KEY (id),
             KEY device_type (device_type),
-            KEY country_code (country_code)
+            KEY country_code (country_code),
+            KEY city_name (city_name),
+            KEY ip_address (ip_address)
         ) $charset_collate;";
 
         // Page Views (universal tracking)
@@ -93,9 +100,15 @@ function fe_ensure_analytics_tables() {
             user_agent TEXT,
             device_type ENUM('mobile','tablet','desktop','unknown') DEFAULT 'unknown',
             country_code CHAR(2) DEFAULT NULL,
+            country_name VARCHAR(100) DEFAULT NULL,
+            city_name VARCHAR(100) DEFAULT NULL,
+            region_name VARCHAR(100) DEFAULT NULL,
+            latitude DECIMAL(10,8) DEFAULT NULL,
+            longitude DECIMAL(11,8) DEFAULT NULL,
             PRIMARY KEY (id),
             KEY device_type (device_type),
-            KEY country_code (country_code)
+            KEY country_code (country_code),
+            KEY city_name (city_name)
         ) $charset_collate;";
 
         // Daily Rollups (keeping for backward compatibility)

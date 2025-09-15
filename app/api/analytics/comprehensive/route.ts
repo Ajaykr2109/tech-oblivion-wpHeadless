@@ -1,37 +1,36 @@
 import { cookies } from 'next/headers'
 
-import { fetchWithAuth } from '@/lib/fetchWithAuth'
 import { verifySession } from '@/lib/jwt'
 import { apiMap } from '@/lib/wpAPIMap'
 
 // Type definitions for API responses
 interface ViewsItem {
-  date: string
-  views: number
+  date?: string
+  day?: string
+  views?: number | string
   post_id?: number
 }
 
 interface CountryItem {
   country?: string
   country_code?: string
-  count: number
+  count?: number
+  views?: number | string
 }
 
 interface DeviceItem {
   device_type?: string
   device?: string
-  count: number
+  count?: number
+  views?: number | string
 }
 
 interface RefererItem {
   source?: string
   referer?: string
   medium?: string
-  count: number
-}
-
-interface ViewsResponse {
-  series?: ViewsItem[]
+  count?: number
+  views?: number | string
 }
 
 export const runtime = 'nodejs'
@@ -39,14 +38,14 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
   try {
-    // Get authentication token
-    let wpToken: string | null = null
+    // Get authentication token (optional for analytics viewing)
+    let _wpToken: string | null = null
     try {
       const store = await cookies()
       const sessionCookie = store.get(process.env.SESSION_COOKIE_NAME ?? 'session')?.value
       if (sessionCookie) {
         const claims = await verifySession(sessionCookie) as { wpToken?: string }
-        wpToken = claims?.wpToken || null
+        _wpToken = claims?.wpToken || null
       }
     } catch {
       // ignore cookie/verify errors
@@ -64,12 +63,17 @@ export async function GET(req: Request) {
     }
 
     // Fetch data from all available endpoints
-    const tokenOrReq = wpToken || req
-    const [viewsRes, devicesRes, countriesRes, referersRes] = await Promise.all([
-      fetchWithAuth(tokenOrReq, `${analytics.views}?period=${period}`, { next: { revalidate: 60 } }),
-      analytics.devices ? fetchWithAuth(tokenOrReq, `${analytics.devices}?period=${period}`, { next: { revalidate: 60 } }) : null,
-      analytics.countries ? fetchWithAuth(tokenOrReq, `${analytics.countries}?period=${period}`, { next: { revalidate: 60 } }) : null,
-      analytics.referers ? fetchWithAuth(tokenOrReq, `${analytics.referers}?period=${period}`, { next: { revalidate: 60 } }) : null,
+    const baseUrl = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL || ''
+    if (!baseUrl) {
+      throw new Error('WP_URL not configured')
+    }
+
+    const [viewsRes, devicesRes, countriesRes, referersRes, _citiesRes] = await Promise.all([
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/views?period=${period}`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/devices?period=${period}`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/countries?period=${period}`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/referers?period=${period}`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/cities?period=${period}`, { next: { revalidate: 60 } }),
     ])
 
     const parseJSON = async (r: Response | null) => {
@@ -86,7 +90,7 @@ export async function GET(req: Request) {
     ])
 
     // Transform and enhance the data to match our comprehensive interface
-    const totalViews = (views as ViewsResponse)?.series?.reduce((sum: number, item: ViewsItem) => sum + (item.views || 0), 0) || 0
+    const totalViews = views ? views.reduce((sum: number, item: ViewsItem) => sum + parseInt(String(item.views || 0)), 0) : 0
     const uniqueVisitors = Math.floor(totalViews * 0.7) // Estimate unique visitors as 70% of total views
     const totalSessions = Math.floor(totalViews * 0.8) // Estimate sessions
     const avgSessionDuration = 240 // 4 minutes average
@@ -97,14 +101,14 @@ export async function GET(req: Request) {
     const exitRate = 28.5
 
     // Generate time series data
-    const timeSeries = (views as ViewsResponse)?.series?.map((item: ViewsItem) => ({
-      date: item.date,
-      views: item.views || 0,
-      visitors: Math.floor((item.views || 0) * 0.7),
-      sessions: Math.floor((item.views || 0) * 0.8),
+    const timeSeries = views ? views.map((item: ViewsItem) => ({
+      date: item.date || '',
+      views: parseInt(String(item.views || 0)),
+      visitors: Math.floor(parseInt(String(item.views || 0)) * 0.7),
+      sessions: Math.floor(parseInt(String(item.views || 0)) * 0.8),
       bounceRate: 35 + Math.random() * 10, // Simulated
       avgDuration: 200 + Math.random() * 80, // Simulated
-    })) || []
+    })) : []
 
     // Process countries data
     const processedCountries = (countries as CountryItem[] || []).map((country: CountryItem, index: number) => ({

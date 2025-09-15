@@ -1,6 +1,9 @@
 <?php
 if (!defined('ABSPATH')) { exit; }
 
+// Load the geolocation service
+require_once __DIR__ . '/geolocation.php';
+
 add_action('rest_api_init', function () {
   $ns = 'fe-auth/v1';
 
@@ -39,12 +42,15 @@ add_action('rest_api_init', function () {
         $user_views_for_post = $current;
       }
 
-      // Analytics tables per schema
-      $ip_raw  = $_SERVER['REMOTE_ADDR'] ?? null;
-      $ip_bin  = $ip_raw ? @inet_pton($ip_raw) : null;
+      // Analytics tables per schema with enhanced geolocation
+      $ip_raw = FE_Geolocation_Service::get_client_ip();
+      $ip_bin = $ip_raw ? @inet_pton($ip_raw) : null;
       $referer = isset($_SERVER['HTTP_REFERER']) ? substr((string)$_SERVER['HTTP_REFERER'], 0, 255) : null;
-      $ua      = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 65535);
-      $cc      = $_SERVER['CF-IPCountry'] ?? ($_SERVER['GEOIP_COUNTRY_CODE'] ?? null);
+      $ua = substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 65535);
+      
+      // Get comprehensive geolocation data
+      $geo_data = FE_Geolocation_Service::get_location_data($ip_raw);
+      $cc = $geo_data['country_code'] ?? ($_SERVER['CF-IPCountry'] ?? ($_SERVER['GEOIP_COUNTRY_CODE'] ?? null));
 
       $ua_lc = strtolower($ua);
       $device = 'unknown';
@@ -59,16 +65,21 @@ add_action('rest_api_init', function () {
       }
 
       $meta_id = null;
-  $wpdb->insert(
+      $wpdb->insert(
         $wpdb->prefix . 'post_view_meta',
         [
-          'ip_address'   => $ip_bin,
-          'referer'      => $referer,
-          'user_agent'   => $ua,
-          'device_type'  => $device,
+          'ip_address' => $ip_bin,
+          'referer' => $referer,
+          'user_agent' => $ua,
+          'device_type' => $device,
           'country_code' => $cc ? substr($cc, 0, 2) : null,
+          'country_name' => $geo_data['country_name'] ? substr($geo_data['country_name'], 0, 100) : null,
+          'city_name' => $geo_data['city_name'] ? substr($geo_data['city_name'], 0, 100) : null,
+          'region_name' => $geo_data['region_name'] ? substr($geo_data['region_name'], 0, 100) : null,
+          'latitude' => $geo_data['latitude'],
+          'longitude' => $geo_data['longitude'],
         ],
-        ['%s','%s','%s','%s','%s']
+        ['%s','%s','%s','%s','%s','%s','%s','%s','%f','%f']
       );
       if (!$wpdb->last_error) {
         $meta_id = (int)$wpdb->insert_id;
