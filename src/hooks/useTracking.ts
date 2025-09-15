@@ -133,7 +133,6 @@ export function useTracking(options: UseTrackingOptions = {}) {
     }
   }, [enableRealTimeMetrics])
 
-  // Enhanced tracking function
   const trackPageView = useCallback(async (path: string, options: { immediate?: boolean } = {}) => {
     if (!path) return
 

@@ -142,9 +142,12 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
   const [tagInput, setTagInput] = useState("");
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTags, setLoadingTags] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   // Fetch categories and tags on component mount - do this first
   useEffect(() => {
+    setMounted(true);
+    
     async function fetchCategoriesAndTags() {
       try {
         // Fetch categories
@@ -891,7 +894,7 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
                   <div className="space-y-4">
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Category</Label>
-                      {process.env.NODE_ENV === 'development' && (
+                      {mounted && process.env.NODE_ENV === 'development' && (
                         <div className="text-xs text-muted-foreground mb-2">
                           Debug: Selected category ID: {selectedCategoryId || 'none'}
                         </div>
@@ -924,7 +927,7 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
                     
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Tags</Label>
-                      {process.env.NODE_ENV === 'development' && (
+                      {mounted && process.env.NODE_ENV === 'development' && (
                         <div className="text-xs text-muted-foreground mb-2">
                           Debug: Selected tag IDs: [{selectedTagIds.join(', ') || 'none'}]
                         </div>

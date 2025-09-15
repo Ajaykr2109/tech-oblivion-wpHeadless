@@ -65,12 +65,6 @@ export function Header() {
     }
   };
 
-  const isPostDetail = (() => {
-    const p = pathname || "/";
-    const parts = p.split("/").filter(Boolean);
-    return parts.length === 2 && parts[0] === "blog";
-  })();
-
   const filteredNavLinks = navLinks.filter((link) => link.label !== "Profile");
 
   return (
@@ -175,8 +169,8 @@ export function Header() {
             </>
           )}
 
-          {/* Single ThemeToggle (conditional) */}
-          {!isPostDetail && <ThemeToggle />}
+          {/* Single ThemeToggle */}
+          <ThemeToggle />
 
           <Sheet>
             <SheetTrigger asChild>

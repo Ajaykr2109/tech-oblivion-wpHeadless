@@ -1,198 +1,344 @@
 'use client'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import dynamic from 'next/dynamic'
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { 
+  Users, FileText, Image, MessageSquare, TrendingUp, Eye, 
+  Globe, Clock
+} from 'lucide-react'
 
-// Use a dynamic client-only wrapper to robustly resolve CJS/ESM exports
-import type { Layout as RGLLayout } from 'react-grid-layout'
-import 'react-grid-layout/css/styles.css'
-import 'react-resizable/css/styles.css'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 
-interface ResponsiveGridLayoutProps {
-  className?: string;
-  breakpoints: { lg: number; md: number; sm: number; };
-  cols: { lg: number; md: number; sm: number; };
-  rowHeight: number;
-  margin: number[];
-  containerPadding: number[];
-  onLayoutChange: (current: RGLLayout[]) => void;
-  layouts: Record<string, RGLLayout[]>;
-  isDraggable?: boolean;
-  isResizable?: boolean;
-  children?: React.ReactNode;
-}
-
-// Proper ResponsiveGridLayout wrapper for client-only usage
-const ResponsiveGridLayout = dynamic(() =>
-  import('react-grid-layout').then((mod: unknown) => {
-    // Try both CJS and ESM default/named exports
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const Responsive = (mod as any).default?.Responsive || (mod as any).Responsive;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const WidthProvider = (mod as any).default?.WidthProvider || (mod as any).WidthProvider;
-    if (!Responsive || !WidthProvider) {
-      throw new Error('Could not load Responsive or WidthProvider from react-grid-layout');
-    }
-    return WidthProvider(Responsive);
-  }),
-  { ssr: false }
-) as React.ComponentType<ResponsiveGridLayoutProps>;
-
-import { useLayoutPersistence } from '../../hooks/useLayoutPersistence'
-
-import Tile from './tiles/Tile'
-
-const PostEditorTile = dynamic(() => import('./tiles/PostEditorTile'), { ssr: false })
-// Lazy heavy tiles example (actual tiles can be split per section later)
-const CrewMan = dynamic(() => import('../dashboard/CrewMan'), { ssr: false })
+import CategoriesManagement from './CategoriesManagement'
+import TagsManagement from './TagsManagement'
+import UsersManagement from './UsersManagement'
+import ExtensiveAnalytics from './ExtensiveAnalytics'
+import PostsManagement from './PostsManagement'
 
 export type SectionKey =
   | 'dashboard' | 'analytics' | 'posts' | 'media' | 'categories' | 'tags' | 'comments' | 'users' | 'settings' | 'plugins' | 'themes' | 'site-health' | 'debug'
 
-type LayoutItem = { i: string; x: number; y: number; w: number; h: number }
-// Default layouts provided by user
-const DEFAULTS: Record<SectionKey, LayoutItem[]> = {
-  dashboard: [
-    { i: 'postsCount', x: 0, y: 0, w: 3, h: 2 },
-    { i: 'usersCount', x: 3, y: 0, w: 3, h: 2 },
-    { i: 'commentsCount', x: 6, y: 0, w: 3, h: 2 },
-    { i: 'sessionsToday', x: 9, y: 0, w: 3, h: 2 },
-  ],
-  analytics: [
-    { i: 'sessionsTrend', x: 0, y: 0, w: 6, h: 4 },
-    { i: 'sessionTimeseries', x: 6, y: 0, w: 6, h: 4 },
-    { i: 'topCountries', x: 0, y: 4, w: 4, h: 4 },
-    { i: 'devicesBreakdown', x: 4, y: 4, w: 4, h: 4 },
-    { i: 'topPosts', x: 8, y: 4, w: 4, h: 4 },
-    { i: 'referrers', x: 0, y: 8, w: 12, h: 3 },
-  ],
-  posts: [
-    { i: 'latestDrafts', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'publishQueue', x: 6, y: 0, w: 6, h: 3 },
-    { i: 'pendingReviews', x: 0, y: 3, w: 6, h: 3 },
-    { i: 'addPost', x: 6, y: 3, w: 3, h: 2 },
-    { i: 'postEditor', x: 0, y: 6, w: 12, h: 6 },
-  ],
-  media: [
-    { i: 'recentUploads', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'storageUsage', x: 6, y: 0, w: 6, h: 2 },
-    { i: 'uploadWidget', x: 0, y: 3, w: 6, h: 3 },
-    { i: 'deletionsPending', x: 6, y: 2, w: 6, h: 2 },
-  ],
-  categories: [
-    { i: 'categoriesList', x: 0, y: 0, w: 8, h: 4 },
-    { i: 'addCategory', x: 8, y: 0, w: 4, h: 2 },
-  ],
-  tags: [
-    { i: 'tagsCloud', x: 0, y: 0, w: 8, h: 4 },
-    { i: 'addTag', x: 8, y: 0, w: 4, h: 2 },
-  ],
-  comments: [
-    { i: 'commentsStream', x: 0, y: 0, w: 8, h: 4 },
-    { i: 'toxicityAlerts', x: 8, y: 0, w: 4, h: 2 },
-    { i: 'bulkModeration', x: 0, y: 4, w: 12, h: 3 },
-  ],
-  users: [
-    { i: 'activeUsers', x: 0, y: 0, w: 6, h: 2 },
-    { i: 'presence', x: 6, y: 0, w: 6, h: 2 },
-    { i: 'roleBreakdown', x: 0, y: 2, w: 6, h: 3 },
-    { i: 'inviteUser', x: 6, y: 2, w: 6, h: 2 },
-  ],
-  settings: [
-    { i: 'siteSettings', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'themeToggle', x: 6, y: 0, w: 6, h: 2 },
-    { i: 'apiLatency', x: 0, y: 3, w: 6, h: 2 },
-    { i: 'siteHealthSummary', x: 6, y: 2, w: 6, h: 3 },
-  ],
-  plugins: [
-    { i: 'pluginsList', x: 0, y: 0, w: 8, h: 4 },
-    { i: 'updateAlerts', x: 8, y: 0, w: 4, h: 2 },
-  ],
-  themes: [
-    { i: 'themesList', x: 0, y: 0, w: 8, h: 4 },
-    { i: 'themeUpdateAlerts', x: 8, y: 0, w: 4, h: 2 },
-  ],
-  'site-health': [
-    { i: 'healthSummary', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'cacheHitRate', x: 6, y: 0, w: 6, h: 2 },
-    { i: 'serverInfo', x: 0, y: 3, w: 12, h: 3 },
-  ],
-  debug: [
-    { i: 'crewMan', x: 0, y: 0, w: 12, h: 6 },
-    { i: 'endpointDiscovery', x: 0, y: 6, w: 6, h: 3 },
-    { i: 'logsViewer', x: 6, y: 6, w: 6, h: 3 },
-  ],
+interface DashboardStats {
+  posts: { total: number, published: number, draft: number, pending: number }
+  pages: { total: number, published: number, draft: number }
+  users: { total: number, admins: number, editors: number, authors: number }
+  comments: { total: number, approved: number, pending: number, spam: number }
+  media: { total: number, images: number, videos: number, documents: number }
+  categories: { total: number }
+  tags: { total: number }
 }
 
-const breakpoints = { lg: 1200, md: 996, sm: 768 }
-const cols = { lg: 12, md: 8, sm: 4 }
+interface _AnalyticsResponse {
+  summary: {
+    views?: {
+      total?: number
+      today?: number
+      change?: string
+      series?: Array<{ date: string; views: number }>
+    }
+    devices?: Array<{ device: string; count: number }>
+    countries?: Array<{ country: string; count: number }>
+    referers?: Array<{ referer: string; count: number }>
+  }
+}
 
-export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey }) {
-  const { loadLayout, saveLayout } = useLayoutPersistence()
-  const validSectionKey = sectionKey || 'dashboard' // Default to 'dashboard' if undefined
-  const [layout, setLayout] = useState<LayoutItem[]>(DEFAULTS[validSectionKey] || [])
+interface AnalyticsData {
+  views?: { total?: number, today?: number, change?: string }
+  visitors?: { total?: number, today?: number, change?: string }
+  sessions?: { total?: number, avg_duration?: number }
+  bounce_rate?: number
+  top_pages?: Array<{ path: string, title: string, views: number }>
+  top_countries?: Array<{ country: string, count: number }>
+  devices?: Array<{ device: string, count: number }>
+}
 
-  // Load saved per-user layout
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-    const saved = await loadLayout(validSectionKey)
-    if (alive && Array.isArray(saved) && saved.length) setLayout(saved as LayoutItem[])
-      if (!saved?.length) setLayout(DEFAULTS[validSectionKey] || [])
-    })()
-    return () => { alive = false }
-  }, [loadLayout, validSectionKey])
-
-  const onLayoutChange = useCallback((current: RGLLayout[]) => {
-    // Only track lg layout for now; ResponsiveGridLayout supplies per-breakpoint
-    const cleaned: LayoutItem[] = current.map(({ i, x, y, w, h }) => ({ i, x, y, w, h }))
-    setLayout(cleaned)
-  }, [])
-
-  const onLayoutSave = useCallback(async () => {
-    await saveLayout(validSectionKey, layout)
-  }, [layout, saveLayout, validSectionKey])
-
-  // Simple placeholder tiles by id for now
-  const tileIds = useMemo(() => (DEFAULTS[validSectionKey] || []).map((d: LayoutItem) => d.i), [validSectionKey])
-
-  const layouts = useMemo(() => ({
-    lg: layout.map((it) => ({ ...it } as RGLLayout)),
-    md: layout.map((it) => ({ ...it } as RGLLayout)),
-    sm: layout.map((it) => ({ ...it } as RGLLayout)),
-  }) as Record<string, RGLLayout[]>, [layout])
-
+function MetricCard({ 
+  title, 
+  value, 
+  subtitle, 
+  change, 
+  icon: Icon, 
+  trend,
+  onClick 
+}: {
+  title: string
+  value: string | number
+  subtitle?: string
+  change?: string
+  icon: React.ComponentType<{ className?: string }>
+  trend?: 'up' | 'down' | 'neutral'
+  onClick?: () => void
+}) {
+  const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-600'
+  
   return (
-    <div className="p-4 space-y-3">
-      <div className="flex gap-2 justify-end">
-        <button onClick={onLayoutSave} className="px-3 py-1 text-sm rounded bg-primary text-primary-foreground">Save Layout</button>
-      </div>
-      <ResponsiveGridLayout
-        className="layout"
-        breakpoints={breakpoints}
-        cols={cols}
-        rowHeight={48}
-        margin={[16, 16]}
-        containerPadding={[0, 0]}
-        onLayoutChange={onLayoutChange}
-        layouts={layouts}
-        isDraggable
-        isResizable
-      >
-        {tileIds.map((id: string) => (
-          <div key={id}>
-            <Tile>
-              <div className="text-sm font-semibold mb-1">{id}</div>
-              {id === 'postEditor' ? (
-                <PostEditorTile />
-              ) : id === 'crewMan' ? (
-                <CrewMan />
-              ) : (
-                <div className="text-xs text-muted-foreground">Content for {id}</div>
-              )}
-            </Tile>
-          </div>
+    <Card className={onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2" onClick={onClick}>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+        {change && (
+          <p className={`text-xs ${trendColor} mt-1`}>
+            {change}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="space-y-0 pb-2">
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+            </CardContent>
+          </Card>
         ))}
-      </ResponsiveGridLayout>
+      </div>
     </div>
   )
+}
+
+export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey }) {
+  const validSectionKey = sectionKey || 'dashboard'
+
+  const renderContent = () => {
+    switch (validSectionKey) {
+      case 'dashboard':
+        return <DashboardOverview />
+      case 'analytics':
+        return <AnalyticsSection />
+      case 'categories':
+        return <CategoriesManagement />
+      case 'tags':
+        return <TagsManagement />
+      case 'users':
+        return <UsersManagement />
+      case 'posts':
+        return <PostsSection />
+      case 'media':
+        return <MediaManagement />
+      case 'comments':
+        return <CommentsManagement />
+      case 'settings':
+        return <SettingsManagement />
+      default:
+        return (
+          <div className="bg-card rounded-lg border p-6">
+            <p className="text-muted-foreground text-center py-12">
+              {validSectionKey} content will be implemented here.
+            </p>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div className="p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 capitalize">
+          {validSectionKey === 'site-health' ? 'Site Health' : validSectionKey}
+        </h1>
+        {renderContent()}
+      </div>
+    </div>
+  )
+}
+
+function DashboardOverview() {
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async (): Promise<DashboardStats> => {
+      const response = await fetch('/api/admin/stats')
+      if (!response.ok) throw new Error('Failed to fetch stats')
+      return response.json()
+    },
+    staleTime: 30000
+  })
+
+  const { data: analyticsResponse, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['admin-analytics'],
+    queryFn: async (): Promise<_AnalyticsResponse> => {
+      const response = await fetch('/api/analytics/summary')
+      if (!response.ok) throw new Error('Failed to fetch analytics')
+      const data = await response.json()
+      console.log('📊 Analytics API Response:', data) // Debug logging
+      return data
+    },
+    staleTime: 30000
+  })
+
+  // Transform the API response to match our component expectations
+  const analytics: AnalyticsData | undefined = analyticsResponse?.summary ? {
+    views: analyticsResponse.summary.views,
+    visitors: { total: 0, today: 0, change: '+0%' }, // Mock data - not available in current API
+    sessions: { total: 0, avg_duration: 0 }, // Mock data - not available in current API
+    bounce_rate: 0, // Mock data - not available in current API
+    top_pages: [], // Mock data - not available in current API
+    top_countries: analyticsResponse.summary.countries?.map((c: { country?: string; count?: number }) => ({ country: c.country || 'Unknown', count: c.count || 0 })) || [],
+    devices: analyticsResponse.summary.devices || []
+  } : undefined
+
+  if (statsLoading || analyticsLoading) {
+    return <LoadingSkeleton />
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Content Overview */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Content Overview</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            title="Posts"
+            value={stats?.posts.total || 0}
+            subtitle={`${stats?.posts.published || 0} published, ${stats?.posts.draft || 0} drafts`}
+            icon={FileText}
+          />
+          <MetricCard
+            title="Pages"
+            value={stats?.pages.total || 0}
+            subtitle={`${stats?.pages.published || 0} published`}
+            icon={FileText}
+          />
+          <MetricCard
+            title="Media Files"
+            value={stats?.media.total || 0}
+            subtitle={`${stats?.media.images || 0} images, ${stats?.media.videos || 0} videos`}
+            icon={Image}
+          />
+          <MetricCard
+            title="Comments"
+            value={stats?.comments.total || 0}
+            subtitle={`${stats?.comments.pending || 0} pending approval`}
+            icon={MessageSquare}
+          />
+        </div>
+      </div>
+
+      {/* Analytics Overview */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            title="Total Views"
+            value={analytics?.views?.total || 0}
+            subtitle={`${analytics?.views?.today || 0} today`}
+            change={analytics?.views?.change}
+            icon={Eye}
+            trend="up"
+          />
+          <MetricCard
+            title="Unique Visitors"
+            value={analytics?.visitors?.total || 0}
+            subtitle={`${analytics?.visitors?.today || 0} today`}
+            change={analytics?.visitors?.change}
+            icon={Users}
+            trend="up"
+          />
+          <MetricCard
+            title="Avg. Session Duration"
+            value={`${Math.floor((analytics?.sessions?.avg_duration || 0) / 60)}m`}
+            subtitle="minutes per session"
+            icon={Clock}
+          />
+          <MetricCard
+            title="Bounce Rate"
+            value={`${analytics?.bounce_rate || 0}%`}
+            icon={TrendingUp}
+          />
+        </div>
+      </div>
+
+      {/* Quick Insights */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Top Performing Pages
+              <Button variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {analytics?.top_pages?.slice(0, 5).map((page, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{page.title || page.path}</p>
+                    <p className="text-xs text-muted-foreground truncate">{page.path}</p>
+                  </div>
+                  <Badge variant="secondary">{page.views} views</Badge>
+                </div>
+              )) || (
+                <p className="text-sm text-muted-foreground">No data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Top Countries
+              <Button variant="outline" size="sm">
+                <Globe className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {analytics?.top_countries?.slice(0, 5).map((country, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    <span className="text-sm">{country.country}</span>
+                  </div>
+                  <Badge variant="secondary">{country.count}</Badge>
+                </div>
+              )) || (
+                <p className="text-sm text-muted-foreground">No data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+// Placeholder components - will be implemented in separate files
+function AnalyticsSection() {
+  return <ExtensiveAnalytics />
+}
+
+function PostsSection() {
+  return <PostsManagement />
+}
+
+function MediaManagement() {
+  return <div>Media Management - Coming Soon</div>
+}
+
+function CommentsManagement() {
+  return <div>Comments Management - Coming Soon</div>
+}
+
+function SettingsManagement() {
+  return <div>Settings Management - Coming Soon</div>
 }
