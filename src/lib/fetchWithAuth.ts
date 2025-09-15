@@ -59,5 +59,23 @@ export async function fetchWithAuth(reqOrToken: Request | string | null | undefi
     return new Response(JSON.stringify({ error: 'unauthorized', message }), { status: res.status, headers: { 'Content-Type': 'application/json' } })
   }
   const text = await res.text()
-  return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
+  let contentType = res.headers.get('Content-Type') || 'application/json'
+  
+  // If upstream returned HTML but we expected JSON, try to detect and handle it
+  if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+    // WordPress returned an HTML error page instead of JSON
+    const errorMessage = `WordPress returned HTML error page instead of JSON response`
+    const errorResponse = { error: 'wp_html_response', message: errorMessage, originalStatus: res.status }
+    return new Response(JSON.stringify(errorResponse), { 
+      status: res.status >= 400 ? res.status : 502, 
+      headers: { 'Content-Type': 'application/json' } 
+    })
+  }
+  
+  // For non-JSON responses, preserve the original content type
+  if (!contentType.includes('application/json') && text.trim().startsWith('{')) {
+    contentType = 'application/json'
+  }
+  
+  return new Response(text, { status: res.status, headers: { 'Content-Type': contentType } })
 }

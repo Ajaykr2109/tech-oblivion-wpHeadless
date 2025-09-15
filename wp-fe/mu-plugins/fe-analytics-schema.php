@@ -13,23 +13,7 @@ function fe_ensure_analytics_tables() {
     $charset_collate = $wpdb->get_charset_collate();
 
     try {
-        // Raw Events
-        $table_events = $wpdb->prefix . 'post_views';
-        $sql_events = "CREATE TABLE $table_events (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            post_id BIGINT UNSIGNED NOT NULL,
-            user_id BIGINT UNSIGNED DEFAULT NULL,
-            session_id BIGINT UNSIGNED DEFAULT NULL,
-            meta_id BIGINT UNSIGNED DEFAULT NULL,
-            viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY post_id (post_id),
-            KEY viewed_at (viewed_at),
-            KEY session_id (session_id),
-            KEY meta_id (meta_id)
-        ) $charset_collate;";
-
-        // Metadata
+        // Enhanced metadata table (used by both page_views and post_views)
         $table_meta = $wpdb->prefix . 'page_view_meta';
         $sql_meta = "CREATE TABLE $table_meta (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -84,7 +68,7 @@ function fe_ensure_analytics_tables() {
             KEY last_seen (last_seen)
         ) $charset_collate;";
 
-        // Keep legacy post_views table for backward compatibility
+        // Legacy post_views table (for backward compatibility)
         $table_post_views = $wpdb->prefix . 'post_views';
         $sql_post_views = "CREATE TABLE $table_post_views (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -114,12 +98,23 @@ function fe_ensure_analytics_tables() {
             KEY country_code (country_code)
         ) $charset_collate;";
 
+        // Daily Rollups (keeping for backward compatibility)
+        $table_daily = $wpdb->prefix . 'post_views_daily';
+        $sql_daily = "CREATE TABLE $table_daily (
+            post_id BIGINT UNSIGNED NOT NULL,
+            day DATE NOT NULL,
+            views INT UNSIGNED NOT NULL,
+            unique_visitors INT UNSIGNED DEFAULT 0,
+            PRIMARY KEY (post_id, day)
+        ) $charset_collate;";
+
         // Create/Update tables
         dbDelta($sql_meta);
         dbDelta($sql_page_views);
         dbDelta($sql_sessions);
         dbDelta($sql_post_views);
         dbDelta($sql_legacy_meta);
+        dbDelta($sql_daily);
 
         // Cleanup: if older runs created multiple indexes on session_hash due to inline UNIQUE,
         // drop all duplicates keeping only the named one we just declared.
@@ -140,18 +135,6 @@ function fe_ensure_analytics_tables() {
         } catch (Exception $e) {
             // ignore
         }
-
-        // Daily Rollups (keeping for backward compatibility)
-        $table_daily = $wpdb->prefix . 'post_views_daily';
-        $sql_daily = "CREATE TABLE $table_daily (
-            post_id BIGINT UNSIGNED NOT NULL,
-            day DATE NOT NULL,
-            views INT UNSIGNED NOT NULL,
-            unique_visitors INT UNSIGNED DEFAULT 0,
-            PRIMARY KEY (post_id, day)
-        ) $charset_collate;";
-        
-        dbDelta($sql_daily);
 
     } catch (Exception $e) {
         error_log('FE Analytics table creation failed: ' . $e->getMessage());

@@ -188,8 +188,9 @@ add_action('rest_api_init', function () {
       );
 
       if ($wpdb->last_error) {
-        error_log('FE Auth page-track insert error: ' . $wpdb->last_error);
-        return new WP_REST_Response(['success' => false, 'error' => 'database_error'], 500);
+        error_log('FE Auth page-track insert error: ' . $wpdb->last_error . ' | SQL: INSERT INTO page_views');
+        error_log('FE Auth page-track insert values: path=' . $path . ' | page_type=' . $page_type . ' | user_id=' . $user_id . ' | session_id=' . $session_record_id . ' | meta_id=' . $meta_id);
+        return new WP_REST_Response(['success' => false, 'error' => 'database_error', 'details' => $wpdb->last_error], 500);
       }
 
       // Update session view count

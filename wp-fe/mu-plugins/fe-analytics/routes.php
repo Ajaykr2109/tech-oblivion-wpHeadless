@@ -123,7 +123,7 @@ add_action('rest_api_init', function () {
         }
     ]);
 
-    // sessions
+    // sessions (basic list)
     register_rest_route($ns, '/sessions', [
         'methods'  => 'GET',
         'permission_callback' => '__return_true',
@@ -140,6 +140,84 @@ add_action('rest_api_init', function () {
                                     ORDER BY s.last_seen DESC
                                     LIMIT %d", $days, $limit);
             return rest_ensure_response($wpdb->get_results($sql) ?: []);
+        }
+    ]);
+
+    // sessions/summary
+    register_rest_route($ns, '/sessions/summary', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function () {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $tbl = $prefix . 'post_view_sessions';
+            $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $tbl));
+            if (!$exists) return ['totalSessions' => 0, 'activeSessions' => 0];
+            
+            $total = $wpdb->get_var("SELECT COUNT(*) FROM {$prefix}post_view_sessions");
+            $active = $wpdb->get_var("SELECT COUNT(*) FROM {$prefix}post_view_sessions WHERE last_seen >= (NOW() - INTERVAL 1 HOUR)");
+            
+            return [
+                'totalSessions' => (int)$total,
+                'activeSessions' => (int)$active,
+                'timestamp' => current_time('mysql')
+            ];
+        }
+    ]);
+
+    // sessions/timeseries
+    register_rest_route($ns, '/sessions/timeseries', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb; $prefix = $wpdb->prefix;
+            $days = absint($req->get_param('days')) ?: 7;
+            $tbl = $prefix . 'post_view_sessions';
+            $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $tbl));
+            if (!$exists) return [];
+            
+            $sql = $wpdb->prepare("
+                SELECT DATE(first_seen) as date, COUNT(*) as sessions
+                FROM {$prefix}post_view_sessions 
+                WHERE first_seen >= (NOW() - INTERVAL %d DAY)
+                GROUP BY DATE(first_seen)
+                ORDER BY date ASC
+            ", $days);
+            
+            $rows = $wpdb->get_results($sql);
+            return $rows ?: [];
+        }
+    ]);
+
+    // stream (Server-Sent Events for real-time analytics)
+    register_rest_route($ns, '/stream', [
+        'methods'  => 'GET',
+        'permission_callback' => function () { return current_user_can('read'); },
+        'callback' => function () {
+            // Set headers for SSE
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            header('Connection: keep-alive');
+            
+            global $wpdb; $prefix = $wpdb->prefix;
+            
+            // Send initial data
+            $sessions = $wpdb->get_var("SELECT COUNT(*) FROM {$prefix}post_view_sessions WHERE last_seen >= (NOW() - INTERVAL 1 HOUR)") ?: 0;
+            
+            $data = [
+                'sessions' => ['sessionsNow' => (int)$sessions, 'timestamp' => current_time('c')],
+                'presence' => [] // Could be enhanced with actual user presence data
+            ];
+            
+            echo "data: " . json_encode($data) . "\n\n";
+            
+            // Keep connection alive for SSE
+            if (ob_get_level()) {
+                ob_end_flush();
+            }
+            flush();
+            
+            // Exit after sending initial data (for basic implementation)
+            exit;
         }
     ]);
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Bot, X } from "lucide-react";
+import { Upload, LinkIcon, Bot, X, Settings, FileText, Search, Camera, Zap, BarChart3, Bold, Italic, Heading, List, Link as LinkIcon2, Code } from "lucide-react";
 import React, { useState, useEffect, use } from "react";
+import ReactMarkdown from 'react-markdown';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
 import { RoleGate } from "@/hooks/useRoleGate";
+// Import new editor components
+import { FloatingToolbar } from "@/components/editor/FloatingToolbar";
+import { CollapsibleCard } from "@/components/editor/CollapsibleCard";
+import { ZenModeToggle } from "@/components/editor/ZenModeToggle";
+import { SeoHints } from "@/components/editor/SeoHints";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Helper function to decode HTML entities
 function decodeHtmlEntities(text: string): string {
@@ -88,95 +93,6 @@ function convertHtmlToMarkdown(html: string): string {
   return markdown.trim();
 }
 
-const EditorToolbar = ({ onFormat }: { onFormat: (type: string) => void }) => (
-  <div className="flex items-center gap-0.5">
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('bold')}>
-            <Bold className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Bold</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('italic')}>
-            <Italic className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Italic</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('strikethrough')}>
-            <Strikethrough className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Strikethrough</p></TooltipContent>
-      </Tooltip>
-      <div className="w-px h-4 bg-border mx-1" />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('heading')}>
-            <Type className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Heading</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('list')}>
-            <List className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>List</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('orderedList')}>
-            <ListOrdered className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Numbered List</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('quote')}>
-            <Quote className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Quote</p></TooltipContent>
-      </Tooltip>
-      <div className="w-px h-4 bg-border mx-1" />
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('link')}>
-            <LinkIcon className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Link</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('image')}>
-            <ImageIcon className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Image</p></TooltipContent>
-      </Tooltip>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onFormat('code')}>
-            <Code className="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent><p>Code</p></TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  </div>
-);
-
 const SeoPreview = ({ title, description, slug }: { title: string, description: string, slug: string }) => {
     const siteUrl = "https://tech.oblivion";
     const fullUrl = `${siteUrl}/blog/${slug}`;
@@ -210,6 +126,13 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // New UI states
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'write' | 'split' | 'preview'>('write');
+  
+  // Ref for the content textarea
+  const contentTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   
   // Categories and tags state
   const [availableCategories, setAvailableCategories] = useState<WpCategory[]>([]);
@@ -462,6 +385,44 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
     }
   }, [id, loadingCategories, loadingTags]) // Add dependencies so it refetches when taxonomies are loaded
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!modKey) return;
+
+      if (e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        handleFormat('bold');
+      }
+      if (e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        handleFormat('italic');
+      }
+      if (e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        handleFormat('link');
+      }
+      if (e.shiftKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        handleFormat('heading');
+      }
+      if (e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        handleFormat('list');
+      }
+      if (e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        handleFormat('code');
+      }
+    };
+
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   useEffect(() => {
     const words = post.content.trim().split(/\s+/).filter(Boolean);
     const count = words.length;
@@ -475,15 +436,15 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
   };
 
   // Handle tag management
-  const handleAddTag = async () => {
-    if (!tagInput.trim()) return;
+  const handleAddTag = async (tagName?: string) => {
+    const nameToAdd = tagName || tagInput.trim();
+    if (!nameToAdd) return;
     
-    const tagName = tagInput.trim();
-    console.log('Adding tag:', tagName);
+    console.log('Adding tag:', nameToAdd);
     
     // Check if tag already exists in available tags
     const existingTag = availableTags.find(tag => 
-      tag.name.toLowerCase() === tagName.toLowerCase()
+      tag.name.toLowerCase() === nameToAdd.toLowerCase()
     );
     
     if (existingTag) {
@@ -499,11 +460,11 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
     } else {
       // Create new tag
       try {
-        console.log('Creating new tag:', tagName);
+        console.log('Creating new tag:', nameToAdd);
         const response = await fetch('/api/wp/tags', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: tagName })
+          body: JSON.stringify({ name: nameToAdd })
         });
         if (response.ok) {
           const newTag = await response.json();
@@ -518,7 +479,7 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
       }
     }
     
-    setTagInput('');
+    if (!tagName) setTagInput(''); // Only clear input if called without explicit tag name
   };
   
   const handleRemoveTag = (tagId: number) => {
@@ -537,7 +498,7 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
 
   // Handle markdown formatting
   const handleFormat = (type: string) => {
-    const textarea = document.getElementById('content') as HTMLTextAreaElement;
+    const textarea = contentTextareaRef.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -618,19 +579,55 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Header */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container mx-auto px-4 py-3">
+      {/* Floating Toolbar */}
+      <FloatingToolbar onFormat={handleFormat} textareaRef={contentTextareaRef} />
+      
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 border-b border-border/50">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold">Edit Post</h1>
-              {error && <div className="text-sm text-red-500 bg-red-50 px-2 py-1 rounded">{error}</div>}
+            <div className="flex items-center gap-3 sm:gap-6">
+              <h1 className="text-lg sm:text-xl font-semibold text-foreground">Edit Post</h1>
+              {error && (
+                <div className="text-xs sm:text-sm text-destructive bg-destructive/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md">
+                  {error}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-muted-foreground hidden sm:block">
-                {wordCount} words • {readingTime} min read
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="text-xs sm:text-sm text-muted-foreground hidden md:flex items-center gap-2 sm:gap-4">
+                <span>{wordCount} words</span>
+                <span>•</span>
+                <span>{readingTime} min read</span>
               </div>
-              <Button variant="outline" size="sm">Preview</Button>
+              {/* Preview mode toggle */}
+                    {/* Preview mode toggle */}
+              <div className="flex border rounded-md overflow-hidden">
+                <Button
+                  size="sm"
+                  variant={previewMode === 'write' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('write')}
+                  className="border-r"
+                >
+                  Write
+                </Button>
+                <Button
+                  size="sm"
+                  variant={previewMode === 'split' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('split')}
+                  className="border-r"
+                >
+                  Split
+                </Button>
+                <Button
+                  size="sm"
+                  variant={previewMode === 'preview' ? 'default' : 'outline'}
+                  onClick={() => setPreviewMode('preview')}
+                >
+                  Preview
+                </Button>
+              </div>
+              <ZenModeToggle isZenMode={isZenMode} onToggle={() => setIsZenMode(!isZenMode)} iconOnly />
               <RoleGate action="draft" as="span">
                 <Button size="sm" disabled={saving || loading} onClick={updatePost}>
                   {saving ? 'Saving…' : 'Update'}
@@ -648,251 +645,413 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       ) : (
-        <div className="flex">
-          {/* Main Editor */}
-          <div className="flex-1 min-w-0">
-            <div className="container mx-auto px-4 py-6 max-w-4xl">
-              <div className="space-y-1">
-                {/* Title */}
-                <Input 
-                  id="title" 
-                  name="title"
-                  value={post.title} 
-                  onChange={handleInputChange}
-                  placeholder="Enter post title..." 
-                  className="text-2xl font-bold border-none px-0 py-2 h-auto focus-visible:ring-0 shadow-none bg-transparent" 
-                />
-                
-                {/* Compact Toolbar */}
-                <div className="flex items-center gap-1 py-2 border-b border-border/50">
-                  <EditorToolbar onFormat={handleFormat} />
+        <div className={`flex flex-col lg:flex-row transition-all duration-300 ${isZenMode ? 'max-w-none' : ''}`}>
+          {/* Main Editor Area (60% in normal mode, 100% in zen mode) */}
+          <div className={`transition-all duration-300 ${
+            isZenMode ? 'flex-1' : 'flex-1 lg:max-w-[60%]'
+          }`}>
+            <div className="px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+              <div className="max-w-4xl mx-auto space-y-6">
+                {/* Title Input */}
+                <div>
+                  <Input 
+                    id="title" 
+                    name="title"
+                    value={post.title} 
+                    onChange={handleInputChange}
+                    placeholder="Enter your post title..." 
+                    className="text-2xl sm:text-3xl font-bold border-none px-0 py-4 h-auto focus-visible:ring-0 shadow-none bg-transparent placeholder:text-muted-foreground/50" 
+                  />
                 </div>
+                
+                {/* Persistent Toolbar */}
+                <TooltipProvider>
+                  <div className="flex gap-2 mb-4 p-2 border rounded-lg bg-muted/20">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('bold')}>
+                          <Bold className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Bold (Ctrl+B)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('italic')}>
+                          <Italic className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Italic (Ctrl+I)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('heading')}>
+                          <Heading className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Heading (Ctrl+Shift+H)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('list')}>
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>List (Ctrl+Shift+L)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('link')}>
+                          <LinkIcon2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Link (Ctrl+K)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="sm" onClick={() => handleFormat('code')}>
+                          <Code className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Code (Ctrl+Shift+C)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
                 
                 {/* Content Editor */}
-                <Textarea 
-                  id="content" 
-                  name="content"
-                  value={post.content} 
-                  onChange={handleInputChange}
-                  placeholder="Start writing your content in Markdown format..."
-                  className="min-h-[60vh] border-none px-0 py-4 focus-visible:ring-0 shadow-none text-base font-mono resize-none bg-transparent leading-relaxed"
-                />
-              </div>
-            </div>
-          </div>
+                <div className="space-y-4">
+                  {previewMode === 'write' && (
+                    <Textarea 
+                      ref={contentTextareaRef}
+                      id="content" 
+                      name="content"
+                      value={post.content} 
+                      onChange={handleInputChange}
+                      placeholder="Start writing your story..."
+                      className="min-h-[50vh] sm:min-h-[60vh] lg:min-h-[70vh] border-none px-0 py-6 focus-visible:ring-0 shadow-none text-base sm:text-lg resize-none bg-transparent leading-relaxed placeholder:text-muted-foreground/50 font-normal"
+                    />
+                  )}
 
-          {/* Compact Sidebar */}
-          <div className="w-80 border-l bg-muted/30 min-h-screen">
-            <div className="p-4 space-y-4">
-              {/* Quick Publish */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium">Status</Label>
-                  <RoleGate action="draft" as="span">
-                    <Button size="sm" variant="outline" disabled={saving} onClick={updatePost}>
-                      {saving ? 'Saving…' : 'Save'}
-                    </Button>
-                  </RoleGate>
-                </div>
-                <Select value={post.status} onValueChange={(value) => setPost(p => ({...p, status: value}))}>
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Published">Published</SelectItem>
-                    <SelectItem value="Draft">Draft</SelectItem>
-                    <SelectItem value="Pending Review">Pending Review</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator />
-
-              {/* Categories & Tags */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Category</Label>
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-muted-foreground mb-2">
-                    Debug: Selected category ID: {selectedCategoryId || 'none'}
-                  </div>
-                )}
-                {loadingCategories ? (
-                  <div className="text-sm text-muted-foreground">Loading categories...</div>
-                ) : (
-                  <Select 
-                    value={selectedCategoryId?.toString() || "none"} 
-                    onValueChange={(value) => {
-                      const newCategoryId = value === "none" ? null : parseInt(value);
-                      setSelectedCategoryId(newCategoryId);
-                      console.log('Category changed to:', newCategoryId);
-                    }}
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No category</SelectItem>
-                      {availableCategories.map(category => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                
-                <Label className="text-sm font-medium">Tags</Label>
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="text-xs text-muted-foreground mb-2">
-                    Debug: Selected tag IDs: [{selectedTagIds.join(', ') || 'none'}]
-                  </div>
-                )}
-                {loadingTags ? (
-                  <div className="text-sm text-muted-foreground">Loading tags...</div>
-                ) : (
-                  <>
-                    <div className="flex gap-2">
-                      <Input 
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        placeholder="Add a tag" 
-                        className="h-8 flex-1"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-8"
-                        onClick={handleAddTag}
-                      >
-                        Add
-                      </Button>
-                    </div>
-                    {getSelectedTags().length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {getSelectedTags().map(tag => (
-                          <Badge key={tag.id} variant="secondary" className="text-xs px-2 py-0 flex items-center gap-1">
-                            {tag.name}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto w-auto p-0 hover:bg-transparent"
-                              onClick={() => handleRemoveTag(tag.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
+                  {previewMode === 'split' && (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <span>Editor</span>
+                          <span className="text-xs text-muted-foreground">Markdown</span>
+                        </h3>
+                        <Textarea 
+                          ref={contentTextareaRef}
+                          id="content" 
+                          name="content"
+                          value={post.content} 
+                          onChange={handleInputChange}
+                          placeholder="Start writing your story..."
+                          className="min-h-[50vh] border px-4 py-4 focus-visible:ring-2 text-base resize-none leading-relaxed placeholder:text-muted-foreground/50 font-mono"
+                        />
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* SEO Quick Settings */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">SEO Title</Label>
-                <Input 
-                  name="seoTitle" 
-                  value={post.seoTitle} 
-                  onChange={handleInputChange} 
-                  placeholder="Meta title for search engines" 
-                  className="h-8 text-sm"
-                />
-                
-                <Label className="text-sm font-medium">Meta Description</Label>
-                <Textarea 
-                  name="seoDescription" 
-                  value={post.seoDescription} 
-                  onChange={handleInputChange} 
-                  placeholder="Description for search engines" 
-                  className="text-sm min-h-[60px] resize-none"
-                />
-                
-                <Label className="text-sm font-medium">Focus Keyword</Label>
-                <Input 
-                  name="focusKeyword" 
-                  value={post.focusKeyword} 
-                  onChange={handleInputChange} 
-                  placeholder="Main keyword" 
-                  className="h-8 text-sm"
-                />
-              </div>
-
-              <Separator />
-
-              {/* SEO Preview */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Search Preview</Label>
-                <SeoPreview title={post.seoTitle || post.title} description={post.seoDescription} slug={post.slug} />
-              </div>
-
-              <Separator />
-
-              {/* Featured Image Upload */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Featured Image</Label>
-                <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary">
-                  <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground mt-1">Click to upload</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Quick Tools */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Quick Tools</Label>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start h-8">
-                    <Bot className="mr-2 h-3 w-3" /> 
-                    AI Writing Assistant
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start h-8">
-                    <LinkIcon className="mr-2 h-3 w-3" /> 
-                    Find Internal Links
-                  </Button>
-                </div>
-              </div>
-
-              {/* SEO Score */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">SEO Score</Label>
-                <div className="bg-background rounded-lg p-3 border">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm">Overall Score</span>
-                    <span className="text-sm font-medium text-green-600">Good</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{width: '75%'}}></div>
-                  </div>
-                  <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Title length optimized
+                      <div>
+                        <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <span>Preview</span>
+                          <span className="text-xs text-muted-foreground">Live Render</span>
+                        </h3>
+                        <div className="border rounded-lg p-4 bg-background min-h-[50vh] overflow-y-auto prose prose-sm dark:prose-invert max-w-none">
+                          {post.content ? (
+                            <ReactMarkdown>{post.content}</ReactMarkdown>
+                          ) : (
+                            <p className="text-muted-foreground italic">Start typing to see preview...</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Meta description set
+                  )}
+
+                  {previewMode === 'preview' && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <span>Preview Mode</span>
+                        <span className="text-xs text-muted-foreground">Full Preview</span>
+                      </h3>
+                      <div className="border rounded-lg p-6 bg-background min-h-[60vh] prose dark:prose-invert max-w-none">
+                        {post.content ? (
+                          <ReactMarkdown>{post.content}</ReactMarkdown>
+                        ) : (
+                          <p className="text-muted-foreground italic text-center py-20">No content to preview</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      Add focus keyword to content
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Dual Sidebar (60% in normal mode, hidden in zen mode) */}
+          {!isZenMode && (
+            <div className="w-full lg:w-[40%] lg:min-w-[400px] lg:max-w-[600px] border-t lg:border-t-0 lg:border-l border-border/50 bg-muted/20 order-first lg:order-last flex flex-col lg:flex-row">
+              {/* Left Info Panel - SEO, Analytics, Quick Tools */}
+              <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto border-r border-border/50">
+                {/* Search Preview */}
+                <CollapsibleCard 
+                  title="Search Preview" 
+                  icon={<BarChart3 className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <SeoPreview 
+                    title={post.seoTitle || post.title} 
+                    description={post.seoDescription} 
+                    slug={post.slug} 
+                  />
+                </CollapsibleCard>
+
+                {/* SEO Hints */}
+                <CollapsibleCard 
+                  title="SEO Score" 
+                  icon={<Search className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <SeoHints 
+                    title={post.seoTitle || post.title}
+                    description={post.seoDescription}
+                    keyword={post.focusKeyword}
+                    content={post.content}
+                  />
+                </CollapsibleCard>
+
+                {/* Quick Tools */}
+                <CollapsibleCard 
+                  title="Quick Tools" 
+                  icon={<Zap className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <div className="space-y-3">
+                    <Button variant="outline" size="sm" className="w-full justify-start h-9">
+                      <Bot className="mr-2 h-4 w-4" /> 
+                      AI Writing Assistant
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start h-9">
+                      <LinkIcon className="mr-2 h-4 w-4" /> 
+                      Find Internal Links
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full justify-start h-9">
+                      <FileText className="mr-2 h-4 w-4" /> 
+                      Content Analysis
+                    </Button>
+                  </div>
+                </CollapsibleCard>
+              </div>
+
+              {/* Right Settings Panel - Status, Categories, Tags, SEO */}
+              <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto">
+                {/* Status & Publishing */}
+                <CollapsibleCard 
+                  title="Status & Publishing" 
+                  icon={<Settings className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">Status</Label>
+                      <RoleGate action="draft" as="span">
+                        <Button size="sm" variant="outline" disabled={saving} onClick={updatePost}>
+                          {saving ? 'Saving…' : 'Save Draft'}
+                        </Button>
+                      </RoleGate>
+                    </div>
+                    <Select value={post.status} onValueChange={(value) => setPost(p => ({...p, status: value}))}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Published">Published</SelectItem>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="Pending Review">Pending Review</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CollapsibleCard>
+
+                {/* Categories & Tags */}
+                <CollapsibleCard 
+                  title="Categories & Tags" 
+                  icon={<FileText className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Category</Label>
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Debug: Selected category ID: {selectedCategoryId || 'none'}
+                        </div>
+                      )}
+                      {loadingCategories ? (
+                        <div className="text-sm text-muted-foreground">Loading categories...</div>
+                      ) : (
+                        <Select 
+                          value={selectedCategoryId?.toString() || "none"} 
+                          onValueChange={(value) => {
+                            const newCategoryId = value === "none" ? null : parseInt(value);
+                            setSelectedCategoryId(newCategoryId);
+                            console.log('Category changed to:', newCategoryId);
+                          }}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No category</SelectItem>
+                            {availableCategories.map(category => (
+                              <SelectItem key={category.id} value={category.id.toString()}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Tags</Label>
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Debug: Selected tag IDs: [{selectedTagIds.join(', ') || 'none'}]
+                        </div>
+                      )}
+                      {loadingTags ? (
+                        <div className="text-sm text-muted-foreground">Loading tags...</div>
+                      ) : (
+                        <>
+                          <Input 
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            placeholder="Type to add tags..." 
+                            className="h-9 mb-2"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                if (tagInput.trim()) {
+                                  handleAddTag(tagInput.trim());
+                                  setTagInput('');
+                                }
+                              }
+                            }}
+                          />
+                          {tagInput && (
+                            <div className="border rounded mt-1 bg-background shadow-sm max-h-32 overflow-y-auto mb-3">
+                              {availableTags
+                                .filter(tag => tag.name.toLowerCase().includes(tagInput.toLowerCase()))
+                                .map(tag => (
+                                  <div
+                                    key={tag.id}
+                                    className="px-2 py-1 hover:bg-muted cursor-pointer text-sm"
+                                    onClick={() => {
+                                      handleAddTag(tag.name);
+                                      setTagInput('');
+                                    }}
+                                  >
+                                    {tag.name}
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                          {getSelectedTags().length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {getSelectedTags().map(tag => (
+                                <Badge key={tag.id} variant="secondary" className="text-xs px-2 py-1 flex items-center gap-1">
+                                  {tag.name}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-auto w-auto p-0 hover:bg-transparent"
+                                    onClick={() => handleRemoveTag(tag.id)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CollapsibleCard>
+
+                {/* SEO & Metadata */}
+                <CollapsibleCard 
+                  title="SEO & Metadata" 
+                  icon={<Search className="h-4 w-4" />}
+                  defaultExpanded
+                >
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">SEO Title</Label>
+                      <Input 
+                        name="seoTitle" 
+                        value={post.seoTitle} 
+                        onChange={handleInputChange} 
+                        placeholder="Meta title for search engines" 
+                        className="h-9 text-sm"
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {post.seoTitle.length}/60 characters
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Meta Description</Label>
+                      <Textarea 
+                        name="seoDescription" 
+                        value={post.seoDescription} 
+                        onChange={handleInputChange} 
+                        placeholder="Description for search engines" 
+                        className="text-sm min-h-[80px] resize-none"
+                      />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {post.seoDescription.length}/160 characters
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">Focus Keyword</Label>
+                      <Input 
+                        name="focusKeyword" 
+                        value={post.focusKeyword} 
+                        onChange={handleInputChange} 
+                        placeholder="Main keyword" 
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                  </div>
+                </CollapsibleCard>
+
+                {/* Featured Image */}
+                <CollapsibleCard 
+                  title="Featured Image" 
+                  icon={<Camera className="h-4 w-4" />}
+                >
+                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors">
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF up to 10MB</p>
+                  </div>
+                </CollapsibleCard>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
