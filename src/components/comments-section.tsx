@@ -16,6 +16,8 @@ type Comment = {
   author: { name: string; avatar?: string; id?: number; slug?: string }
   content: string
   createdAt: string
+  // Upstream WP post ID for safety filtering— some environments were returning all comments
+  postId?: number
   replies?: Comment[]
 }
 
@@ -37,11 +39,13 @@ export default function CommentsSection({ postId }: { postId: number }) {
     const contentHtml = typeof contentField === 'string' ? contentField : ''
     const contentText = typeof contentHtml === 'string' ? contentHtml.replace(/<[^>]*>/g, '').trim() : ''
     const createdAt = String(obj.date || obj.date_gmt || new Date().toISOString())
+    const postId = Number((obj.post as number | string | undefined) ?? (obj.post_id as number | string | undefined) ?? 0) || undefined
     return {
       id: (obj.id as string | number | undefined) ?? (obj.comment_ID as string | number | undefined) ?? String(Math.random()),
       author: { name, avatar, id: typeof obj.author === 'number' ? (obj.author as number) : undefined },
       content: contentText,
       createdAt,
+      postId,
     }
   }
 
@@ -55,8 +59,12 @@ export default function CommentsSection({ postId }: { postId: number }) {
         if (!cancelled && r.ok) {
           const data = await r.json().catch(() => [])
           const arr = Array.isArray(data) ? data : []
+          // Map early so we can filter by post id server-side safety net
+          let mapped = arr.map(mapWpToComment)
+          // Safety filter: some upstream responses ignored the ?post= filter returning global comments
+          mapped = mapped.filter(c => !c.postId || c.postId === postId)
+          
           // Enrich with author slugs in a single batch
-          const mapped = arr.map(mapWpToComment)
           const ids = Array.from(new Set(mapped.map(c => c.author?.id).filter(Boolean))) as number[]
           if (ids.length) {
             try {
@@ -121,14 +129,21 @@ export default function CommentsSection({ postId }: { postId: number }) {
         const j = await r.json().catch(() => null)
         // Optimistic: prepend new comment if returned, else refetch
         if (j && j.id) {
-          setComments(prev => [{ id: j.id, author: { name: j.author_name || 'You', avatar: j.author_avatar_urls?.['48'] || '' }, content: (j.content?.rendered || '').replace(/<[^>]*>/g, '').trim(), createdAt: j.date || new Date().toISOString() }, ...prev])
+          setComments(prev => [{ 
+            id: j.id, 
+            author: { name: j.author_name || 'You', avatar: j.author_avatar_urls?.['48'] || '' }, 
+            content: (j.content?.rendered || '').replace(/<[^>]*>/g, '').trim(), 
+            createdAt: j.date || new Date().toISOString(),
+            postId
+          }, ...prev])
         } else {
           // best-effort refetch
           try {
             const rr = await fetch(`/api/wp/comments?post=${postId}`, { cache: 'no-store' })
             const data = await rr.json().catch(() => [])
             const arr = Array.isArray(data) ? data : []
-            setComments(arr.map((d: unknown) => mapWpToComment(d)))
+            const mapped = arr.map((d: unknown) => mapWpToComment(d)).filter(c => !c.postId || c.postId === postId)
+            setComments(mapped)
           } catch {
             // TODO: implement fetch error handling
           }

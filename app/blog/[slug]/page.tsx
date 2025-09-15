@@ -120,6 +120,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     let latestByAuthor: unknown[] = []
     let authorSocial: { twitter?: string | null; linkedin?: string | null; github?: string | null } = {}
     
+    let authorDescription: string | undefined
     if (authorId) {
         latestByAuthor = await getLatestByAuthor(Number(authorId), Number(post.id), 3)
         
@@ -128,7 +129,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             latestByAuthor = await getEditorPicks()
         }
         
-        // Fetch author social information
+        // Fetch author social information & description (profile bio)
         try {
             const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
             const authorResponse = await fetch(`${origin || ''}/api/wp/users/${post.authorSlug}`, {
@@ -138,9 +139,12 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             if (authorResponse.ok) {
                 const authorData = await authorResponse.json()
                 authorSocial = authorData.social || {}
+                if (authorData && typeof authorData.description === 'string') {
+                    authorDescription = authorData.description.trim()
+                }
             }
         } catch (error) {
-            console.warn('Failed to fetch author social links:', error)
+            console.warn('Failed to fetch author profile:', error)
         }
     } else {
         // No author ID, fallback to editor picks
@@ -492,10 +496,11 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                             <Link href={`/profile/${post.authorSlug || 'unknown'}`} className="hover:text-primary transition-colors">
                                 <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
                             </Link>
-                            <p className="text-muted-foreground mb-4">
-                                An avid writer and technologist sharing insights on modern development practices. 
-                                {/* This could be pulled from author bio field */}
-                            </p>
+                                                        {authorDescription && authorDescription.trim().length > 0 && (
+                                                            <p className="text-muted-foreground mb-4">
+                                                                {authorDescription}
+                                                            </p>
+                                                        )}
                             {/* Social links - only show if author has provided them */}
                             {(authorSocial.twitter || authorSocial.linkedin || authorSocial.github) && (
                                 <div className="flex items-center gap-4 mb-4">
