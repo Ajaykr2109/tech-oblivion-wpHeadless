@@ -104,6 +104,9 @@ export default function SiteTracking() {
     if (trackingRef.current.has(viewKey)) return
     trackingRef.current.add(viewKey)
 
+    // Capture the current ref value for use in cleanup
+    const currentTrackingSet = trackingRef.current
+
     // Small delay to ensure the page is fully loaded and title is set
     const timeoutId = setTimeout(async () => {
       const trackingData = getTrackingData(pathname)
@@ -130,8 +133,9 @@ export default function SiteTracking() {
     return () => {
       clearTimeout(timeoutId)
       // Clean up old tracking keys to prevent memory leaks
-      if (trackingRef.current.size > 50) {
-        trackingRef.current.clear()
+      // Use the captured ref value instead of accessing trackingRef.current
+      if (currentTrackingSet.size > 50) {
+        currentTrackingSet.clear()
       }
     }
   }, [pathname])
