@@ -7,11 +7,10 @@ import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 
 const dummyComments = [
-  { id: 1, author: "Alex Johnson", avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d", text: "This was an incredibly insightful article. The section on server components really cleared things up for me. Thanks!", post: "A Deep Dive into React Server Components", date: "2024-07-29" },
-  { id: 2, author: "Maria Garcia", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026703d", text: "I'm not sure I agree with point number 3. Have you considered the performance implications on larger-scale applications?", post: "The Future of AI in Web Development", date: "2024-07-28" },
-  { id: 3, author: "Sam Lee", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", text: "Great post! Do you have a GitHub repository with the code examples?", post: "Mastering Tailwind CSS for Modern UIs", date: "2024-07-28" },
+ 
 ]
 
 export default function CommentsClient() {
@@ -51,6 +50,12 @@ export default function CommentsClient() {
 
   return (
     <div>
+      <div className="mb-4">
+        <DummyDataIndicator 
+          type="banner" 
+          message="Comment data is using sample/dummy comments for demonstration purposes."
+        />
+      </div>
       <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
       <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
     </div>

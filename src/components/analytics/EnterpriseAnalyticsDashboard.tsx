@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
+import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 // import { Separator } from '@/components/ui/separator' // Unused for now
 
 // Types for comprehensive analytics data
@@ -288,7 +289,13 @@ export default function EnterpriseAnalyticsDashboard() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Enterprise Analytics</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-bold">Enterprise Analytics</h1>
+            <DummyDataIndicator 
+              type="badge" 
+              message="Analytics contains real page views/countries/devices but mock behavior and performance data"
+            />
+          </div>
           <p className="text-muted-foreground">
             Comprehensive insights and performance metrics for your content platform
           </p>
@@ -534,6 +541,11 @@ export default function EnterpriseAnalyticsDashboard() {
         {/* Additional tabs would be implemented here */}
         {/* Audience Tab */}
         <TabsContent value="audience" className="space-y-6">
+          <DummyDataIndicator 
+            type="banner" 
+            message="Audience data: Geographic distribution uses real data, but browser, OS, screen resolution, and language data are mock values for demonstration."
+            className="mb-6"
+          />
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Geographic Distribution */}
             <Card>
@@ -561,7 +573,13 @@ export default function EnterpriseAnalyticsDashboard() {
             {/* Technology Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle>Technology Breakdown</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Technology Breakdown</CardTitle>
+                  <DummyDataIndicator 
+                    type="dot" 
+                    message="Browser and OS data are mock values"
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Browsers */}
@@ -637,6 +655,11 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Content Performance Tab */}
         <TabsContent value="content" className="space-y-6">
+          <DummyDataIndicator 
+            type="banner" 
+            message="Content performance data contains mock page analytics, bounce rates, and conversion metrics."
+            className="mb-6"
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -765,6 +788,11 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* User Behavior Tab */}
         <TabsContent value="behavior" className="space-y-6">
+          <DummyDataIndicator 
+            type="banner" 
+            message="User behavior analytics including user flow, scroll depth, and session patterns are entirely mock data."
+            className="mb-6"
+          />
           <div className="grid gap-6 lg:grid-cols-2">
             {/* User Flow */}
             <Card>
@@ -844,6 +872,11 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6">
+          <DummyDataIndicator 
+            type="banner" 
+            message="Performance metrics including Core Web Vitals, load times, and device performance are mock data."
+            className="mb-6"
+          />
           <div className="grid gap-6">
             {/* Core Web Vitals */}
             <Card>
@@ -936,6 +969,11 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Real-time Tab */}
         <TabsContent value="realtime" className="space-y-6">
+          <DummyDataIndicator 
+            type="banner" 
+            message="Real-time analytics including active users and recent activity are simulated with mock data."
+            className="mb-6"
+          />
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Active Users */}
             <Card>

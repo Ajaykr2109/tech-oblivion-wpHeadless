@@ -12,12 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import SelectableTable from '@/components/admin/SelectableTable'
+import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 
 const dummyUsers = [
-  { id: 1, name: "Jane Doe", email: "jane.doe@example.com", role: "Administrator", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d" },
-  { id: 2, name: "John Smith", email: "john.smith@example.com", role: "Editor", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026705d" },
-  { id: 3, name: "Emily White", email: "emily.white@example.com", role: "Author", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026706d" },
-  { id: 4, name: "Chris Green", email: "chris.green@example.com", role: "Subscriber", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026707d" },
 ];
 
 export default function UsersClient() {
@@ -74,7 +71,13 @@ export default function UsersClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>All Users</CardTitle>
+            <DummyDataIndicator 
+              type="badge" 
+              message="User data is using sample/dummy users for demonstration"
+            />
+          </div>
           <div className="mt-4 flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />

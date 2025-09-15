@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 
 import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
 
@@ -138,10 +139,16 @@ export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey
         return <SettingsManagement />
       default:
         return (
-          <div className="bg-card rounded-lg border p-6">
-            <p className="text-muted-foreground text-center py-12">
-              {validSectionKey} content will be implemented here.
-            </p>
+          <div>
+            <DummyDataIndicator 
+              type="banner" 
+              message={`${validSectionKey} features are still in development and showing placeholder content.`}
+            />
+            <div className="bg-card rounded-lg border p-6">
+              <p className="text-muted-foreground text-center py-12">
+                {validSectionKey} content will be implemented here.
+              </p>
+            </div>
           </div>
         )
     }
@@ -150,9 +157,17 @@ export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 capitalize">
-          {validSectionKey === 'site-health' ? 'Site Health' : validSectionKey}
-        </h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold capitalize">
+            {validSectionKey === 'site-health' ? 'Site Health' : validSectionKey}
+          </h1>
+          {(['dashboard', 'analytics', 'users', 'comments', 'media', 'settings', 'themes', 'plugins', 'site-health'].includes(validSectionKey)) && (
+            <DummyDataIndicator 
+              type="badge" 
+              message={`This ${validSectionKey} section contains dummy/placeholder data`}
+            />
+          )}
+        </div>
         {renderContent()}
       </div>
     </div>
@@ -232,7 +247,14 @@ function DashboardOverview() {
 
       {/* Analytics Overview */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Analytics Overview</h2>
+          <DummyDataIndicator 
+            type="badge" 
+            message="Analytics data contains mock values for sessions, bounce rate, and visitor metrics"
+            className="text-xs"
+          />
+        </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Total Views"
@@ -335,13 +357,43 @@ function PostsSection() {
 }
 
 function MediaManagement() {
-  return <div>Media Management - Coming Soon</div>
+  return (
+    <div>
+      <DummyDataIndicator 
+        type="banner" 
+        message="Media Management features are still in development."
+      />
+      <div className="text-center py-12 text-muted-foreground">
+        Media Management - Coming Soon
+      </div>
+    </div>
+  )
 }
 
 function CommentsManagement() {
-  return <div>Comments Management - Coming Soon</div>
+  return (
+    <div>
+      <DummyDataIndicator 
+        type="banner" 
+        message="Comments Management features are still in development."
+      />
+      <div className="text-center py-12 text-muted-foreground">
+        Comments Management - Coming Soon
+      </div>
+    </div>
+  )
 }
 
 function SettingsManagement() {
-  return <div>Settings Management - Coming Soon</div>
+  return (
+    <div>
+      <DummyDataIndicator 
+        type="banner" 
+        message="Settings Management features are still in development."
+      />
+      <div className="text-center py-12 text-muted-foreground">
+        Settings Management - Coming Soon
+      </div>
+    </div>
+  )
 }
