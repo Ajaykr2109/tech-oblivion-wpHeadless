@@ -13,7 +13,7 @@ import { getPostBySlug, type PostDetail } from '@/lib/wp'
 import { getOrBuildToc } from '@/lib/toc'
 import { autoLinkFirst, type AutoLinkTarget } from '@/lib/autolink'
 import { sanitizeWP } from '@/lib/sanitize'
-import { getLatestByAuthor } from '@/lib/wp-author'
+import { getLatestByAuthor, getEditorPicks } from '@/lib/wp-author'
 import { extractTocFromMarkdown } from '@/lib/toc-md'
 import { decodeEntities } from '@/lib/entities'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
@@ -115,7 +115,37 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     let recommended: EnhancedRecommendation[] = []
     // Try to infer author id from categories/tags data model; fallback 0 (no fetch)
     const authorId = post.authorId ?? 0
-    const latestByAuthor = authorId ? await getLatestByAuthor(Number(authorId), Number(post.id), 3) : []
+    
+    // Get author posts sorted by views with fallback to editor picks
+    let latestByAuthor: unknown[] = []
+    let authorSocial: { twitter?: string | null; linkedin?: string | null; github?: string | null } = {}
+    
+    if (authorId) {
+        latestByAuthor = await getLatestByAuthor(Number(authorId), Number(post.id), 3)
+        
+        // If no posts from author, fallback to editor picks
+        if (latestByAuthor.length === 0) {
+            latestByAuthor = await getEditorPicks()
+        }
+        
+        // Fetch author social information
+        try {
+            const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
+            const authorResponse = await fetch(`${origin || ''}/api/wp/users/${post.authorSlug}`, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            })
+            if (authorResponse.ok) {
+                const authorData = await authorResponse.json()
+                authorSocial = authorData.social || {}
+            }
+        } catch (error) {
+            console.warn('Failed to fetch author social links:', error)
+        }
+    } else {
+        // No author ID, fallback to editor picks
+        latestByAuthor = await getEditorPicks()
+    }
     try {
         const cats = (post.categories || []).map(c => c.id).join(',')
         const tags = (post.tags || []).map(t => t.id).join(',')
@@ -161,7 +191,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     let popular: EnhancedRecommendation[] = []
     try {
         const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-        const url = `${origin || ''}/api/wp/popular?limit=6`
+        const url = `${origin || ''}/api/wp/popular?limit=4`
         const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
         if (r.ok) {
             const data = (await r.json()) as unknown[]
@@ -363,15 +393,14 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
                                         {/* Enhanced Right sidebar: Related, Recommended, Popular, Recent, Author latest */}
                                         <aside className="self-start">
-                                                <div className="bg-card p-6 rounded-lg shadow-lg">
-                                                        <ErrorBoundary fallback={<div className="text-sm text-muted-foreground">Failed to load related posts.</div>}>
-                                                                <RelatedPostsSidebar
-                                                                                currentPostId={Number(post.id)}
-                                                                                currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
-                                                                                currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
-                                                                />
-                                                        </ErrorBoundary>
-                                                </div>
+                                                {/* Related Posts - only show container if there are posts */}
+                                                <ErrorBoundary fallback={<div className="bg-card p-6 rounded-lg shadow-lg"><div className="text-sm text-muted-foreground">Failed to load related posts.</div></div>}>
+                                                        <RelatedPostsSidebar
+                                                                        currentPostId={Number(post.id)}
+                                                                        currentPostCategories={post.categories?.map(c => ({ id: c.id, name: c.name || '', slug: c.slug || '' }))}
+                                                                        currentPostTags={post.tags?.map(t => ({ id: t.id, name: t.name || '', slug: t.slug || '' }))}
+                                                        />
+                                                </ErrorBoundary>
 
                                                 {/* Recommended Posts */}
                                                 {recommended.length > 0 && (
@@ -423,10 +452,19 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
                                                 {/* Recent Posts - REMOVED */}
 
-                                                {/* Author's latest posts */}
+                                                {/* Author's latest posts or editor picks */}
                                                 {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (
                                                         <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
-                                                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">More from the author</h3>
+                                                                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                                                                    {(() => {
+                                                                        // Check if we have actual author posts by checking if any post matches the current author
+                                                                        const hasAuthorPosts = latestByAuthor.some((p: unknown) => {
+                                                                            const post = p as Record<string, unknown>
+                                                                            return post.author === authorId
+                                                                        })
+                                                                        return hasAuthorPosts ? "More from the author" : "Editor's Picks"
+                                                                    })()} 
+                                                                </h3>
                                                                 <ul className="space-y-3">
                                                                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                                                         {latestByAuthor.map((p: any) => (
@@ -451,29 +489,37 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                         </Avatar>
                         <div className="flex-1">
                             <h3 className="text-sm font-semibold text-muted-foreground mb-1">WRITTEN BY</h3>
-                            <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
+                            <Link href={`/profile/${post.authorSlug || 'unknown'}`} className="hover:text-primary transition-colors">
+                                <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
+                            </Link>
                             <p className="text-muted-foreground mb-4">
                                 An avid writer and technologist sharing insights on modern development practices. 
                                 {/* This could be pulled from author bio field */}
                             </p>
-                            <div className="flex items-center gap-4 mb-4">
-                                <a href={post.seo?.twitterImage ? post.seo?.canonical || '#' : '#'} aria-label="Twitter" className="text-muted-foreground hover:text-blue-500 transition-colors">
-                                    <Twitter className="h-5 w-5" />
-                                </a>
-                                <a href={post.seo?.canonical || '#'} aria-label="LinkedIn" className="text-muted-foreground hover:text-blue-600 transition-colors">
-                                    <Linkedin className="h-5 w-5" />
-                                </a>
-                                <a href={post.authorName ? `https://github.com/${encodeURIComponent(post.authorName.replace(/\s+/g,'').toLowerCase())}` : '#'} aria-label="GitHub" className="text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors">
-                                    <Github className="h-5 w-5" />
-                                </a>
-                            </div>
+                            {/* Social links - only show if author has provided them */}
+                            {(authorSocial.twitter || authorSocial.linkedin || authorSocial.github) && (
+                                <div className="flex items-center gap-4 mb-4">
+                                    {authorSocial.twitter && (
+                                        <a href={authorSocial.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-muted-foreground hover:text-blue-500 transition-colors">
+                                            <Twitter className="h-5 w-5" />
+                                        </a>
+                                    )}
+                                    {authorSocial.linkedin && (
+                                        <a href={authorSocial.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-muted-foreground hover:text-blue-600 transition-colors">
+                                            <Linkedin className="h-5 w-5" />
+                                        </a>
+                                    )}
+                                    {authorSocial.github && (
+                                        <a href={authorSocial.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-muted-foreground hover:text-gray-900 dark:hover:text-white transition-colors">
+                                            <Github className="h-5 w-5" />
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                             <div className="flex items-center gap-4">
-                                <Link href="/profile" className="text-sm text-primary hover:underline font-medium">
+                                <Link href={`/profile/${post.authorSlug || 'unknown'}`} className="text-sm text-primary hover:underline font-medium">
                                     View full profile →
                                 </Link>
-                                <button className="text-sm bg-primary text-primary-foreground px-4 py-1 rounded-full hover:bg-primary/90 transition-colors">
-                                    + Follow
-                                </button>
                             </div>
                         </div>
                     </div>

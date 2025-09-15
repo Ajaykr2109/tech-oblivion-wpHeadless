@@ -49,10 +49,53 @@ add_filter('rest_prepare_user', function($response, $user, $request) {
   return $response;
 }, 10, 3);
 
-// Allow filtering comments by user_id
+// Allow filtering comments by user_id and enhance post filtering
 add_filter('rest_comment_query', function ($args, $request) {
+  // Debug logging
+  error_log('[FE Auth Rest Fields] Comment query filter called with request: ' . json_encode($request->get_params()));
+  
   if (isset($request['user_id'])) $args['user_id'] = intval($request['user_id']);
+  
+  // Enhance author parameter handling for comments
+  if (isset($request['author'])) {
+    if (is_array($request['author'])) {
+      $args['user_id__in'] = array_map('intval', $request['author']);
+      error_log('[FE Auth Rest Fields] Set user_id__in: ' . json_encode($args['user_id__in']));
+    } else {
+      $args['user_id'] = intval($request['author']);
+      error_log('[FE Auth Rest Fields] Set user_id: ' . $args['user_id']);
+    }
+  }
+  
+  // Enhanced post parameter filtering - this is the critical part for comment filtering
+  if (isset($request['post'])) {
+    if (is_array($request['post'])) {
+      $post_ids = array_map('intval', $request['post']);
+      $args['post__in'] = $post_ids;
+      error_log('[FE Auth Rest Fields] Set post__in: ' . json_encode($post_ids));
+    } else {
+      $post_id = intval($request['post']);
+      $args['post_id'] = $post_id;
+      error_log('[FE Auth Rest Fields] Set post_id: ' . $post_id);
+    }
+  }
+  
+  error_log('[FE Auth Rest Fields] Final comment args: ' . json_encode($args));
   return $args;
+}, 10, 2);
+
+// Enhance posts query filtering
+add_filter('rest_post_query', function ($query_vars, $request) {
+  // Ensure author parameter works correctly for posts
+  if (isset($request['author'])) {
+    if (is_array($request['author'])) {
+      $query_vars['author__in'] = array_map('intval', $request['author']);
+    } else {
+      $query_vars['author'] = intval($request['author']);
+    }
+  }
+  
+  return $query_vars;
 }, 10, 2);
 
 // Expose raw content fields

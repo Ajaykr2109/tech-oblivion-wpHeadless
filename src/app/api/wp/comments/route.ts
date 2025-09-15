@@ -21,7 +21,19 @@ export async function GET(req: NextRequest) {
   if (!search.has('orderby')) search.set('orderby', 'date')
   if (!search.has('order')) search.set('order', 'desc')
 
-  // Try MU proxy first when available
+  // Debug: Log the post parameter
+  const postParam = search.get('post')
+  console.log('Comments API: post parameter received:', postParam)
+  console.log('Comments API: full search params:', search.toString())
+  
+  // For WordPress REST API, we need to ensure proper post filtering
+  // The 'post' parameter should work as-is, but let's ensure it's properly handled
+  if (postParam) {
+    // Ensure the post parameter is treated as an array in WordPress
+    console.log('Comments API: Post filtering enabled for post ID:', postParam)
+  }
+
+  // Try MU proxy first when available (re-enabled after fixing post parameter handling)
   const secret = process.env.FE_PROXY_SECRET || ''
   const path = 'wp/v2/comments'
   if (secret) {
@@ -31,18 +43,34 @@ export async function GET(req: NextRequest) {
     const ts = String(Math.floor(Date.now() / 1000))
     const base = `GET\n${path}\n${ts}\n`
     const sign = createHmac('sha256', secret).update(base).digest('base64')
+    console.log('Comments API: Using proxy with URL:', proxy.toString())
     const res = await fetch(proxy.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
     if (res.ok) {
       const text = await res.text()
+      console.log('Comments API: Proxy response length:', text.length)
+      // Parse and debug the response
+      try {
+        const data = JSON.parse(text)
+        if (Array.isArray(data)) {
+          console.log('Comments API: Proxy returned', data.length, 'comments')
+          console.log('Comments API: Post IDs in proxy response:', data.map(c => c.post).slice(0, 5))
+        }
+      } catch {
+        console.log('Comments API: Failed to parse proxy response for debugging')
+      }
       return new Response(text, { status: 200, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json', 'Cache-Control': 'public, max-age=60', 'X-Upstream': 'proxy', 'X-Upstream-Url': proxy.toString() } })
+    } else {
+      console.log('Comments API: Proxy failed with status:', res.status, res.statusText)
     }
   }
 
   const out = id ? new URL(`/wp-json/wp/v2/comments/${id}`, WP) : new URL('/wp-json/wp/v2/comments', WP)
   if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
+  console.log('Comments API: Final WordPress URL:', out.toString())
   const authHeader = req.headers.get('authorization')
   const res = await fetch(out.toString(), { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
   if (!res.ok) {
+    console.log('Comments API: WordPress response not OK:', res.status, res.statusText)
     if (res.status === 404 || res.status === 400) {
       return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
     }
@@ -50,6 +78,19 @@ export async function GET(req: NextRequest) {
   }
 
   const text = await res.text()
+  console.log('Comments API: WordPress response length:', text.length)
+  
+  // Parse response to check filtering
+  try {
+    const data = JSON.parse(text)
+    if (Array.isArray(data)) {
+      console.log('Comments API: Number of comments received:', data.length)
+      console.log('Comments API: Post IDs in comments:', data.map(c => c.post).slice(0, 5))
+    }
+  } catch {
+    console.log('Comments API: Failed to parse response for debugging')
+  }
+  
   return new Response(text, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'X-Upstream-Url': out.toString() } })
 }
 

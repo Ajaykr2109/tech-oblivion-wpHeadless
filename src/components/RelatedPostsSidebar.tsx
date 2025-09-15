@@ -98,12 +98,12 @@ const RelatedPostsSidebar: React.FC<RelatedPostsSidebarProps> = ({
   }
 
   return (
-    <div className="w-full lg:w-64 lg:sticky lg:top-20 lg:self-start mt-8 lg:mt-0">
-  <h3 className="text-lg font-semibold mb-4 border-b pb-2">{heading}</h3>
-      <ul>
+    <div className="bg-card p-6 rounded-lg shadow-lg">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">{heading}</h3>
+      <ul className="space-y-3">
         {relatedPosts.map((post) => (
-          <li key={post.id} className="mb-3 last:mb-0">
-            <Link href={`/blog/${post.slug}`} className="text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-400 transition-colors duration-200">
+          <li key={post.id}>
+            <Link href={`/blog/${post.slug}`} className="text-sm hover:underline line-clamp-2">
               {post.title.rendered}
             </Link>
           </li>

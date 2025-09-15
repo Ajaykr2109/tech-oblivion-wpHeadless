@@ -3,12 +3,11 @@ export const dynamic = 'force-dynamic'
 
 import type { NextRequest } from 'next/server'
 
-const WP_BASE = process.env.WP_API_URL
-if (!WP_BASE) {
-  throw new Error('WP_API_URL environment variable is required')
-}
-
 export async function GET(request: NextRequest) {
+  const WP_BASE = process.env.WP_URL
+  if (!WP_BASE) {
+    return new Response('WP_URL env required', { status: 500 })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const page = searchParams.get('page') || '1'
@@ -98,6 +97,10 @@ interface MediaItem {
 }
 
 export async function POST(_request: NextRequest) {
+  const WP_BASE = process.env.WP_URL
+  if (!WP_BASE) {
+    return new Response('WP_URL env required', { status: 500 })
+  }
   try {
     // This would handle media uploads
     // For now, return a not implemented response

@@ -28,6 +28,14 @@ export async function GET(req: NextRequest) {
   }
   if (!search.has('_embed')) search.set('_embed', '1')
   if (!search.has('per_page')) search.set('per_page', '10')
+  
+  // WordPress REST API expects 'author' as array parameter, so convert single values
+  const authorParam = search.get('author')
+  if (authorParam && !search.has('author[]')) {
+    search.delete('author')
+    search.append('author[]', authorParam)
+    console.log('Posts API: Converted author param to array format')
+  }
 
   // Try MU proxy first if configured (helps on locked-down sites)
   const secret = process.env.FE_PROXY_SECRET || ''

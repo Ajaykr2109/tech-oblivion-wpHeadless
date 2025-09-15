@@ -3,30 +3,29 @@ export const dynamic = 'force-dynamic'
 
 import type { NextRequest } from 'next/server'
 
-const WP_BASE = process.env.WP_API_URL
-if (!WP_BASE) {
-  throw new Error('WP_API_URL environment variable is required')
-}
-
-interface WordPressSettings {
-  title: string
-  description: string
-  url: string
-  email: string
-  timezone: string
-  date_format: string
-  time_format: string
-  start_of_week: number
-  language: string
-  use_smilies: boolean
-  default_category: number
-  default_post_format: string
-  posts_per_page: number
-  default_ping_status: string
-  default_comment_status: string
-}
-
 export async function GET(_request: NextRequest) {
+  const WP_BASE = process.env.WP_URL
+  if (!WP_BASE) {
+    return new Response('WP_URL env required', { status: 500 })
+  }
+  
+  interface WordPressSettings {
+    title: string
+    description: string
+    url: string
+    email: string
+    timezone: string
+    date_format: string
+    time_format: string
+    start_of_week: number
+    language: string
+    use_smilies: boolean
+    default_category: number
+    default_post_format: string
+    posts_per_page: number
+    default_ping_status: string
+    default_comment_status: string
+  }
   try {
     // WordPress settings endpoint
     const wpUrl = new URL('/wp-json/wp/v2/settings', WP_BASE)
@@ -88,6 +87,10 @@ export async function GET(_request: NextRequest) {
 }
 
 export async function POST(_request: NextRequest) {
+  const WP_BASE = process.env.WP_URL
+  if (!WP_BASE) {
+    return new Response('WP_URL env required', { status: 500 })
+  }
   try {
     // This would handle settings updates
     // For now, return a not implemented response

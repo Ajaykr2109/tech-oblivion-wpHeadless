@@ -31,6 +31,62 @@ add_action('rest_api_init', function () {
 
       $method = $req->get_method();
       $url = rest_url(ltrim($path, '/'));
+      
+      // Forward all query parameters from the original request
+      $query_params = [];
+      foreach ($req->get_params() as $key => $value) {
+        if ($key !== 'path') { // Skip the 'path' parameter used by proxy
+          if (strpos($key, 'query[') === 0 && substr($key, -1) === ']') {
+            // Handle query[param] format from Next.js proxy
+            $param_name = substr($key, 6, -1);
+            $query_params[$param_name] = $value;
+          } else {
+            $query_params[$key] = $value;
+          }
+        }
+      }
+      
+      // Special handling for WordPress array parameters based on endpoint
+      // Comments endpoint expects 'post' (singular) not 'post[]'
+      // Posts endpoint can use 'post[]' for multiple post filtering
+      $is_comments_endpoint = strpos($path, '/wp/v2/comments') === 0;
+      
+      if (!$is_comments_endpoint) {
+        // Convert single 'post' parameter to array format for non-comments endpoints
+        if (isset($query_params['post']) && !isset($query_params['post[]'])) {
+          $query_params['post[]'] = $query_params['post'];
+          unset($query_params['post']);
+          error_log('[FE Auth Proxy] Converted post parameter to array format: ' . $query_params['post[]']);
+        }
+      } else {
+        // For comments endpoint, keep 'post' parameter as singular
+        error_log('[FE Auth Proxy] Comments endpoint detected, keeping post parameter as singular: ' . ($query_params['post'] ?? 'not set'));
+      }
+      
+      // Convert single 'author' parameter to array format for non-comments endpoints  
+      if (!$is_comments_endpoint) {
+        if (isset($query_params['author']) && !isset($query_params['author[]'])) {
+          $query_params['author[]'] = $query_params['author'];
+          unset($query_params['author']);
+          error_log('[FE Auth Proxy] Converted author parameter to array format: ' . $query_params['author[]']);
+        }
+      } else {
+        // For comments endpoint, keep 'author' parameter as singular
+        error_log('[FE Auth Proxy] Comments endpoint detected, keeping author parameter as singular: ' . ($query_params['author'] ?? 'not set'));
+      }
+      
+      // Add query parameters to URL
+      if (!empty($query_params)) {
+        $url_parts = wp_parse_url($url);
+        $existing_query = [];
+        if (isset($url_parts['query'])) {
+          parse_str($url_parts['query'], $existing_query);
+        }
+        $all_params = array_merge($existing_query, $query_params);
+        $url = add_query_arg($all_params, $url);
+      }
+      
+      error_log('[FE Auth Proxy] Final URL: ' . $url);
 
       $headers = [];
       $auth = $req->get_header('authorization');
