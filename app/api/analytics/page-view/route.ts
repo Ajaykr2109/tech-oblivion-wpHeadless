@@ -11,6 +11,10 @@ interface PageTrackingRequest {
   screen_resolution?: string
   timezone?: string
   language?: string
+  performance_metrics?: Record<string, unknown>
+  scroll_depth?: number
+  time_on_page?: number
+  page_exit?: boolean
 }
 
 export async function POST(req: Request) {
@@ -81,7 +85,11 @@ export async function POST(req: Request) {
       session_id: body.session_id || '',
       screen_resolution: body.screen_resolution || '',
       timezone: body.timezone || '',
-      language: body.language || 'en'
+      language: body.language || 'en',
+      performance_metrics: body.performance_metrics,
+      scroll_depth: body.scroll_depth || 0,
+      time_on_page: body.time_on_page || 0,
+      page_exit: body.page_exit || false
     }
 
     const response = await fetch(url.toString(), {

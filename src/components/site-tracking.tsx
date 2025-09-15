@@ -2,6 +2,8 @@
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 
+import { initializeAnalytics, trackPageView as trackEnhancedPageView } from '@/lib/enhanced-analytics'
+
 interface TrackingData {
   path: string
   title: string
@@ -93,6 +95,15 @@ export default function SiteTracking() {
   const pathname = usePathname()
   const trackingRef = useRef<Set<string>>(new Set())
   const lastPathRef = useRef<string>('')
+  const analyticsInitialized = useRef(false)
+
+  // Initialize enhanced analytics once
+  useEffect(() => {
+    if (!analyticsInitialized.current) {
+      initializeAnalytics()
+      analyticsInitialized.current = true
+    }
+  }, [])
 
   useEffect(() => {
     // Avoid duplicate tracking for the same path in rapid succession
@@ -110,9 +121,19 @@ export default function SiteTracking() {
     // Small delay to ensure the page is fully loaded and title is set
     const timeoutId = setTimeout(async () => {
       const trackingData = getTrackingData(pathname)
-      const result = await trackPageView(trackingData)
       
-      if (result?.success) {
+      // Track with both legacy and enhanced analytics
+      const [legacyResult] = await Promise.all([
+        trackPageView(trackingData),
+        trackEnhancedPageView({ 
+          path: pathname, 
+          title: document.title,
+          referrer: document.referrer,
+          sessionId: trackingData.session_id
+        })
+      ])
+      
+      if (legacyResult?.success) {
         // Store successful tracking in localStorage for offline analysis
         const trackingHistory = JSON.parse(localStorage.getItem('to_tracking_history') || '[]')
         trackingHistory.push({

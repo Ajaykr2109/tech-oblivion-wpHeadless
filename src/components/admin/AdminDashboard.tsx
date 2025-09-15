@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
+
 
 import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
 
@@ -19,6 +19,30 @@ import TagsManagement from './TagsManagement'
 import UsersManagement from './UsersManagement'
 // import ExtensiveAnalytics from './ExtensiveAnalytics' // Replaced with EnterpriseAnalyticsDashboard
 import PostsManagement from './PostsManagement'
+
+interface MediaItem {
+  id: number
+  source_url: string
+  alt_text?: string
+  title?: { rendered?: string }
+}
+
+interface CommentItem {
+  id: number
+  author_name: string
+  author_email: string
+  content?: { rendered?: string }
+  post?: { title?: string }
+  date: string
+}
+
+interface WordPressSettings {
+  title?: string
+  description?: string
+  admin_email?: string
+  language?: string
+  posts_per_page?: number
+}
 
 export type SectionKey =
   | 'dashboard' | 'analytics' | 'posts' | 'media' | 'categories' | 'tags' | 'comments' | 'users' | 'settings' | 'plugins' | 'themes' | 'site-health' | 'debug'
@@ -139,16 +163,10 @@ export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey
         return <SettingsManagement />
       default:
         return (
-          <div>
-            <DummyDataIndicator 
-              type="banner" 
-              message={`${validSectionKey} features are still in development and showing placeholder content.`}
-            />
-            <div className="bg-card rounded-lg border p-6">
-              <p className="text-muted-foreground text-center py-12">
-                {validSectionKey} content will be implemented here.
-              </p>
-            </div>
+          <div className="bg-card rounded-lg border p-6">
+            <p className="text-muted-foreground text-center py-12">
+              {validSectionKey} features will be implemented soon.
+            </p>
           </div>
         )
     }
@@ -161,12 +179,7 @@ export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey
           <h1 className="text-3xl font-bold capitalize">
             {validSectionKey === 'site-health' ? 'Site Health' : validSectionKey}
           </h1>
-          {(['dashboard', 'analytics', 'users', 'comments', 'media', 'settings', 'themes', 'plugins', 'site-health'].includes(validSectionKey)) && (
-            <DummyDataIndicator 
-              type="badge" 
-              message={`This ${validSectionKey} section contains dummy/placeholder data`}
-            />
-          )}
+
         </div>
         {renderContent()}
       </div>
@@ -249,11 +262,7 @@ function DashboardOverview() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Analytics Overview</h2>
-          <DummyDataIndicator 
-            type="badge" 
-            message="Analytics data contains mock values for sessions, bounce rate, and visitor metrics"
-            className="text-xs"
-          />
+
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
@@ -357,42 +366,166 @@ function PostsSection() {
 }
 
 function MediaManagement() {
+  const { data: media, isLoading } = useQuery<MediaItem[]>({
+    queryKey: ['admin-media'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/media')
+      if (!response.ok) throw new Error('Failed to fetch media')
+      return response.json()
+    }
+  })
+
+  if (isLoading) {
+    return <div className="p-6">Loading media...</div>
+  }
+
   return (
-    <div>
-      <DummyDataIndicator 
-        type="banner" 
-        message="Media Management features are still in development."
-      />
-      <div className="text-center py-12 text-muted-foreground">
-        Media Management - Coming Soon
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Media Library</h2>
+        <Button>Upload Media</Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {media && media.length > 0 ? (
+          media.map((item: MediaItem) => (
+            <Card key={item.id} className="overflow-hidden">
+              <div className="aspect-square bg-muted">
+                <img 
+                  src={item.source_url} 
+                  alt={item.alt_text || 'Media'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardContent className="p-2">
+                <p className="text-sm truncate">{item.title?.rendered || 'Untitled'}</p>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            No media files found
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 function CommentsManagement() {
+  const { data: comments, isLoading } = useQuery<CommentItem[]>({
+    queryKey: ['admin-comments'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/comments')
+      if (!response.ok) throw new Error('Failed to fetch comments')
+      return response.json()
+    }
+  })
+
+  if (isLoading) {
+    return <div className="p-6">Loading comments...</div>
+  }
+
   return (
-    <div>
-      <DummyDataIndicator 
-        type="banner" 
-        message="Comments Management features are still in development."
-      />
-      <div className="text-center py-12 text-muted-foreground">
-        Comments Management - Coming Soon
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Comments Management</h2>
+        <div className="flex gap-2">
+          <Button variant="outline">Bulk Actions</Button>
+          <Button>Moderate</Button>
+        </div>
       </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="space-y-4 p-6">
+            {comments && comments.length > 0 ? (
+              comments.map((comment: CommentItem) => (
+                <div key={comment.id} className="border-b pb-4 last:border-b-0">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium">{comment.author_name}</span>
+                        <span className="text-sm text-muted-foreground">{comment.author_email}</span>
+                      </div>
+                      <div className="text-sm mb-2" dangerouslySetInnerHTML={{ __html: comment.content?.rendered || '' }} />
+                      <div className="text-xs text-muted-foreground">
+                        On: {comment.post?.title} • {new Date(comment.date).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">Approve</Button>
+                      <Button size="sm" variant="destructive">Delete</Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                No comments found
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 function SettingsManagement() {
+  const { data: settings, isLoading } = useQuery<WordPressSettings>({
+    queryKey: ['wp-settings'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/settings')
+      if (!response.ok) throw new Error('Failed to fetch settings')
+      return response.json()
+    }
+  })
+
+  if (isLoading) {
+    return <div className="p-6">Loading settings...</div>
+  }
+
   return (
-    <div>
-      <DummyDataIndicator 
-        type="banner" 
-        message="Settings Management features are still in development."
-      />
-      <div className="text-center py-12 text-muted-foreground">
-        Settings Management - Coming Soon
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold">WordPress Settings</h2>
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>General Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Site Title</label>
+                <p className="text-sm text-muted-foreground">{settings?.title || 'Loading...'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Tagline</label>
+                <p className="text-sm text-muted-foreground">{settings?.description || 'Loading...'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Admin Email</label>
+                <p className="text-sm text-muted-foreground">{settings?.admin_email || 'Loading...'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Site Language</label>
+                <p className="text-sm text-muted-foreground">{settings?.language || 'en_US'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Reading Settings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Posts per page</label>
+                <p className="text-sm text-muted-foreground">{settings?.posts_per_page || 10}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

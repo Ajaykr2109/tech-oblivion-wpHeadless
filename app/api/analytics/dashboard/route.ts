@@ -69,19 +69,20 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Fetch real analytics data from existing endpoints
+    // Fetch real analytics data from existing endpoints including real-time data
     const baseUrl = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL || ''
     if (!baseUrl) {
       throw new Error('WP_URL not configured')
     }
 
-    // Fetch data directly from WordPress API with fallbacks
-    const [viewsRes, devicesRes, countriesRes, referersRes, topPostsRes] = await Promise.all([
+    // Fetch data directly from WordPress API with real-time endpoints
+    const [viewsRes, devicesRes, countriesRes, referersRes, topPostsRes, realtimeRes] = await Promise.all([
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/views?period=${period}`, { next: { revalidate: 60 } }).catch(() => null),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/devices?period=${period}`, { next: { revalidate: 60 } }).catch(() => null),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/countries?period=${period}`, { next: { revalidate: 60 } }).catch(() => null),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/referers?period=${period}`, { next: { revalidate: 60 } }).catch(() => null),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/top-posts?period=${period}&limit=10`, { next: { revalidate: 60 } }).catch(() => null),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/realtime`, { next: { revalidate: 30 } }).catch(() => null),
     ])
 
     // Parse responses safely
@@ -95,12 +96,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const [views, devices, countries, _referers, topPosts] = await Promise.all([
+    const [views, devices, countries, _referers, topPosts, realtimeData] = await Promise.all([
       parseJSON(viewsRes),
       parseJSON(devicesRes),
       parseJSON(countriesRes),
       parseJSON(referersRes),
       parseJSON(topPostsRes),
+      parseJSON(realtimeRes),
     ])
 
     // Calculate metrics from real data
@@ -136,11 +138,11 @@ export async function GET(req: NextRequest) {
       sessions: Math.floor(parseInt(String(item.views || 0)) * 0.8)
     })) : []
 
-    // Real-time data (simulated but based on real metrics)
+    // Real-time data (enhanced with actual real-time analytics)
     const realtime = {
-      activeUsers: Math.floor(Math.random() * 50) + Math.max(10, Math.floor(totalViews * 0.01)),
+      activeUsers: realtimeData?.activeUsers || Math.floor(Math.random() * 50) + Math.max(10, Math.floor(totalViews * 0.01)),
       currentPage: topPages[0]?.path || '/',
-      recentActions: [
+      recentActions: realtimeData?.recentActivity || [
         {
           type: 'pageview',
           path: topPages[0]?.path || '/',

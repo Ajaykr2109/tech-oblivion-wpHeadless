@@ -263,6 +263,101 @@ add_action('rest_api_init', function () {
         }
     ]);
 
+    // Real-time analytics endpoint
+    register_rest_route($ns, '/realtime', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb;
+            $prefix = $wpdb->prefix;
+            
+            // Active users (last 5 minutes)
+            $active_users = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(DISTINCT s.session_hash) 
+                 FROM {$prefix}page_view_sessions s 
+                 WHERE s.last_seen >= %s",
+                date('Y-m-d H:i:s', time() - 300)
+            )) ?: 0;
+            
+            // Recent activity (last 50 page views)
+            $recent_activity = $wpdb->get_results($wpdb->prepare(
+                "SELECT v.path, v.page_title, v.viewed_at, m.country_code, m.device_type, m.city_name
+                 FROM {$prefix}page_views v
+                 LEFT JOIN {$prefix}page_view_meta m ON v.meta_id = m.id
+                 ORDER BY v.viewed_at DESC
+                 LIMIT %d",
+                50
+            ));
+            
+            // Top active pages (last hour)
+            $top_active_pages = $wpdb->get_results($wpdb->prepare(
+                "SELECT v.path, v.page_title, COUNT(*) as active_users
+                 FROM {$prefix}page_views v
+                 WHERE v.viewed_at >= %s
+                 GROUP BY v.path, v.page_title
+                 ORDER BY active_users DESC
+                 LIMIT 10",
+                date('Y-m-d H:i:s', time() - 3600)
+            ));
+            
+            return [
+                'activeUsers' => (int)$active_users,
+                'recentActivity' => $recent_activity ?: [],
+                'topActivePages' => $top_active_pages ?: [],
+                'timestamp' => current_time('c')
+            ];
+        }
+    ]);
+
+    // Performance metrics endpoint
+    register_rest_route($ns, '/performance', [
+        'methods'  => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function (WP_REST_Request $req) {
+            global $wpdb;
+            $prefix = $wpdb->prefix;
+            $period = $req->get_param('period') ?: 'week';
+            
+            $interval = match ($period) {
+                'day'   => '1 DAY',
+                'week'  => '7 DAY',
+                'month' => '30 DAY',
+                default => '7 DAY',
+            };
+            
+            // Get performance data from metadata
+            $performance_data = $wpdb->get_results($wpdb->prepare(
+                "SELECT v.path, v.page_title, 
+                        AVG(v.time_on_page) as avg_time_on_page,
+                        AVG(m.scroll_depth) as avg_scroll_depth,
+                        COUNT(*) as page_views,
+                        SUM(v.is_exit) as exits
+                 FROM {$prefix}page_views v
+                 LEFT JOIN {$prefix}page_view_meta m ON v.meta_id = m.id
+                 WHERE v.viewed_at >= (NOW() - INTERVAL $interval)
+                 GROUP BY v.path, v.page_title
+                 ORDER BY page_views DESC
+                 LIMIT 20"
+            ));
+            
+            // Calculate bounce rates
+            $bounce_rates = [];
+            foreach ($performance_data as $page) {
+                $bounce_rate = $page->page_views > 0 ? ($page->exits / $page->page_views) * 100 : 0;
+                $bounce_rates[] = [
+                    'path' => $page->path,
+                    'title' => $page->page_title,
+                    'avg_time_on_page' => round($page->avg_time_on_page ?: 0),
+                    'avg_scroll_depth' => round($page->avg_scroll_depth ?: 0, 2),
+                    'page_views' => (int)$page->page_views,
+                    'bounce_rate' => round($bounce_rate, 2)
+                ];
+            }
+            
+            return $bounce_rates;
+        }
+    ]);
+
     // top-posts
     register_rest_route($ns, '/top-posts', [
         'methods'  => 'GET',

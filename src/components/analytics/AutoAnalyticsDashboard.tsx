@@ -178,9 +178,9 @@ export default function AutoAnalyticsDashboard() {
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold">Real-time Analytics Dashboard</h1>
           <p className="text-muted-foreground">
-            Real-time insights and performance metrics
+            Live insights and performance metrics with automatic refresh
           </p>
         </div>
         <div className="flex items-center gap-2">

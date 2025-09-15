@@ -46,6 +46,26 @@ add_action('rest_api_init', function () {
         'type' => 'string',
         'default' => 'en',
       ],
+      'performance_metrics' => [
+        'required' => false,
+        'type' => 'object',
+        'default' => null,
+      ],
+      'scroll_depth' => [
+        'required' => false,
+        'type' => 'number',
+        'default' => 0,
+      ],
+      'time_on_page' => [
+        'required' => false,
+        'type' => 'number',
+        'default' => 0,
+      ],
+      'page_exit' => [
+        'required' => false,
+        'type' => 'boolean',
+        'default' => false,
+      ],
     ],
     'callback' => function (WP_REST_Request $req) {
       global $wpdb;
@@ -57,6 +77,10 @@ add_action('rest_api_init', function () {
       $screen_resolution = sanitize_text_field($req->get_param('screen_resolution') ?: '');
       $timezone = sanitize_text_field($req->get_param('timezone') ?: '');
       $language = sanitize_text_field($req->get_param('language') ?: 'en');
+      $performance_metrics = $req->get_param('performance_metrics');
+      $scroll_depth = floatval($req->get_param('scroll_depth') ?: 0);
+      $time_on_page = intval($req->get_param('time_on_page') ?: 0);
+      $page_exit = boolval($req->get_param('page_exit') ?: false);
 
       // Determine page type and extract IDs where possible
       $page_type = 'page';
@@ -154,8 +178,13 @@ add_action('rest_api_init', function () {
         }
       }
 
-      // Insert metadata with enhanced geolocation
+      // Insert metadata with enhanced geolocation and performance tracking
       $meta_id = null;
+      $performance_json = null;
+      if ($performance_metrics && is_array($performance_metrics)) {
+        $performance_json = wp_json_encode($performance_metrics);
+      }
+      
       $wpdb->insert(
         $wpdb->prefix . 'page_view_meta',
         [
@@ -172,8 +201,10 @@ add_action('rest_api_init', function () {
           'screen_resolution' => substr($screen_resolution, 0, 20),
           'timezone' => substr($timezone, 0, 50),
           'language' => substr($language, 0, 10),
+          'performance_data' => $performance_json,
+          'scroll_depth' => $scroll_depth,
         ],
-        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s']
+        ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%s', '%s', '%s', '%s', '%f']
       );
       
       if (!$wpdb->last_error) {
@@ -182,7 +213,7 @@ add_action('rest_api_init', function () {
         error_log('FE Auth page-track meta insert error: ' . $wpdb->last_error);
       }
 
-      // Insert page view
+      // Insert page view with enhanced tracking
       $user_id = get_current_user_id() ?: null;
       $wpdb->insert(
         $wpdb->prefix . 'page_views',
@@ -195,9 +226,11 @@ add_action('rest_api_init', function () {
           'session_id' => $session_record_id,
           'meta_id' => $meta_id,
           'page_title' => substr($title, 0, 255),
+          'time_on_page' => $time_on_page,
+          'is_exit' => $page_exit ? 1 : 0,
           'viewed_at' => current_time('mysql'),
         ],
-        ['%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%s']
+        ['%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s', '%d', '%d', '%s']
       );
 
       if ($wpdb->last_error) {

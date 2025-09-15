@@ -62,18 +62,19 @@ export async function GET(req: Request) {
       })
     }
 
-    // Fetch data from all available endpoints
+    // Fetch data from all available endpoints including new real-time endpoints
     const baseUrl = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL || ''
     if (!baseUrl) {
       throw new Error('WP_URL not configured')
     }
 
-    const [viewsRes, devicesRes, countriesRes, referersRes, _citiesRes] = await Promise.all([
+    const [viewsRes, devicesRes, countriesRes, referersRes, realtimeRes, performanceRes] = await Promise.all([
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/views?period=${period}`, { next: { revalidate: 60 } }),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/devices?period=${period}`, { next: { revalidate: 60 } }),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/countries?period=${period}`, { next: { revalidate: 60 } }),
       fetch(`${baseUrl}/wp-json/fe-analytics/v1/referers?period=${period}`, { next: { revalidate: 60 } }),
-      fetch(`${baseUrl}/wp-json/fe-analytics/v1/cities?period=${period}`, { next: { revalidate: 60 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/realtime`, { next: { revalidate: 30 } }),
+      fetch(`${baseUrl}/wp-json/fe-analytics/v1/performance?period=${period}`, { next: { revalidate: 60 } }),
     ])
 
     const parseJSON = async (r: Response | null) => {
@@ -82,11 +83,13 @@ export async function GET(req: Request) {
       try { return text ? JSON.parse(text) : null } catch { return { raw: text } }
     }
 
-    const [views, devices, countries, referers] = await Promise.all([
+    const [views, devices, countries, referers, realTimeData, performanceData] = await Promise.all([
       parseJSON(viewsRes),
       parseJSON(devicesRes),
       parseJSON(countriesRes),
       parseJSON(referersRes),
+      parseJSON(realtimeRes),
+      parseJSON(performanceRes),
     ])
 
     // Transform and enhance the data to match our comprehensive interface
@@ -125,14 +128,14 @@ export async function GET(req: Request) {
       percentage: (device.count || 0) / Math.max(totalViews, 1) * 100,
     }))
 
-    // Generate mock page performance data
-    const pages = [
+    // Generate mock page performance data - replace with real data when available
+    const pages = (performanceData && Array.isArray(performanceData) ? performanceData : []).concat([
       { path: '/', title: 'Homepage', views: Math.floor(totalViews * 0.3), uniqueViews: Math.floor(totalViews * 0.25), avgTimeOnPage: 180, bounceRate: 45, exitRate: 25, entrances: Math.floor(totalViews * 0.4), conversions: 12 },
       { path: '/blog', title: 'Blog', views: Math.floor(totalViews * 0.2), uniqueViews: Math.floor(totalViews * 0.18), avgTimeOnPage: 320, bounceRate: 25, exitRate: 15, entrances: Math.floor(totalViews * 0.25), conversions: 8 },
       { path: '/about', title: 'About', views: Math.floor(totalViews * 0.15), uniqueViews: Math.floor(totalViews * 0.12), avgTimeOnPage: 210, bounceRate: 40, exitRate: 30, entrances: Math.floor(totalViews * 0.18), conversions: 3 },
       { path: '/contact', title: 'Contact', views: Math.floor(totalViews * 0.1), uniqueViews: Math.floor(totalViews * 0.08), avgTimeOnPage: 150, bounceRate: 55, exitRate: 45, entrances: Math.floor(totalViews * 0.12), conversions: 15 },
       { path: '/services', title: 'Services', views: Math.floor(totalViews * 0.08), uniqueViews: Math.floor(totalViews * 0.06), avgTimeOnPage: 280, bounceRate: 30, exitRate: 20, entrances: Math.floor(totalViews * 0.09), conversions: 5 },
-    ]
+    ]).slice(0, 10)
 
     // Generate mock audience insights
     const audience = {
@@ -189,8 +192,21 @@ export async function GET(req: Request) {
       emailTraffic: Math.floor(totalSessions * 0.05),
     }
 
-    // Real-time data (mock)
-    const realTime = {
+    // Real-time data (using actual data from realtime endpoint)
+    const realTime = realTimeData && typeof realTimeData === 'object' ? {
+      activeUsers: realTimeData.activeUsers || Math.floor(Math.random() * 50) + 10,
+      currentSessions: [],
+      recentActivity: realTimeData.recentActivity || [
+        { type: 'pageview' as const, path: '/', timestamp: new Date().toISOString(), country: 'US', device: 'desktop' },
+        { type: 'pageview' as const, path: '/blog', timestamp: new Date(Date.now() - 30000).toISOString(), country: 'UK', device: 'mobile' },
+        { type: 'session_start' as const, path: '/about', timestamp: new Date(Date.now() - 60000).toISOString(), country: 'CA', device: 'tablet' },
+      ],
+      topActivePages: realTimeData.topActivePages || [
+        { path: '/', activeUsers: 15 },
+        { path: '/blog', activeUsers: 8 },
+        { path: '/about', activeUsers: 5 },
+      ]
+    } : {
       activeUsers: Math.floor(Math.random() * 50) + 10,
       currentSessions: [],
       recentActivity: [

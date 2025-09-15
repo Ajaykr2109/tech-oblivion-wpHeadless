@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
-import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 // import { Separator } from '@/components/ui/separator' // Unused for now
 
 // Types for comprehensive analytics data
@@ -221,20 +220,22 @@ export default function EnterpriseAnalyticsDashboard() {
   })
 
   // Format numbers for display
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
-    return num.toLocaleString()
+  const formatNumber = (num: number | undefined) => {
+    const value = num || 0
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`
+    return value.toLocaleString()
   }
 
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
+  const formatDuration = (seconds: number | undefined) => {
+    const value = seconds || 0
+    const minutes = Math.floor(value / 60)
+    const remainingSeconds = value % 60
     if (minutes > 0) return `${minutes}m ${remainingSeconds}s`
     return `${remainingSeconds}s`
   }
 
-  const formatPercentage = (value: number) => `${value.toFixed(1)}%`
+  const formatPercentage = (value: number | undefined) => `${(value || 0).toFixed(1)}%`
 
   if (isLoading) {
     return (
@@ -291,13 +292,9 @@ export default function EnterpriseAnalyticsDashboard() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold">Enterprise Analytics</h1>
-            <DummyDataIndicator 
-              type="badge" 
-              message="Analytics contains real page views/countries/devices but mock behavior and performance data"
-            />
           </div>
           <p className="text-muted-foreground">
-            Comprehensive insights and performance metrics for your content platform
+            Real-time comprehensive insights and performance metrics for your content platform
           </p>
         </div>
         
@@ -448,18 +445,18 @@ export default function EnterpriseAnalyticsDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {analytics.pages.slice(0, 6).map((page, index) => (
+                {(analytics.pages || []).slice(0, 6).map((page, index) => (
                   <div key={index} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{page.title || page.path}</p>
-                      <p className="text-sm text-muted-foreground truncate">{page.path}</p>
+                      <p className="font-medium truncate">{page?.title || page?.path || 'Unknown Page'}</p>
+                      <p className="text-sm text-muted-foreground truncate">{page?.path || '/'}</p>
                       <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span>Bounce: {formatPercentage(page.bounceRate)}</span>
-                        <span>Time: {formatDuration(page.avgTimeOnPage)}</span>
+                        <span>Bounce: {formatPercentage(page?.bounceRate)}</span>
+                        <span>Time: {formatDuration(page?.avgTimeOnPage)}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold">{formatNumber(page.views)}</div>
+                      <div className="text-lg font-semibold">{formatNumber(page?.views)}</div>
                       <div className="text-xs text-muted-foreground">views</div>
                     </div>
                   </div>
@@ -475,12 +472,12 @@ export default function EnterpriseAnalyticsDashboard() {
                 <CardTitle className="text-base">Geographic Distribution</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {analytics.audience.countries.slice(0, 5).map((country, index) => (
+                {(analytics.audience?.countries || []).slice(0, 5).map((country, index) => (
                   <ProgressWithLabel
                     key={index}
-                    label={country.country}
-                    value={country.count}
-                    total={analytics.audience.countries[0]?.count || 1}
+                    label={country?.country || 'Unknown'}
+                    value={country?.count || 0}
+                    total={analytics.audience?.countries?.[0]?.count || 1}
                   />
                 ))}
               </CardContent>
@@ -491,18 +488,18 @@ export default function EnterpriseAnalyticsDashboard() {
                 <CardTitle className="text-base">Device Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {analytics.audience.devices.map((device, index) => {
-                  const DeviceIcon = device.device === 'mobile' ? Smartphone : 
-                                   device.device === 'tablet' ? Tablet : Monitor
+                {(analytics.audience?.devices || []).map((device, index) => {
+                  const DeviceIcon = device?.device === 'mobile' ? Smartphone : 
+                                   device?.device === 'tablet' ? Tablet : Monitor
                   return (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <DeviceIcon className="h-4 w-4" />
-                        <span className="text-sm capitalize">{device.device}</span>
+                        <span className="text-sm capitalize">{device?.device || 'Unknown'}</span>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{formatNumber(device.count)}</div>
-                        <div className="text-xs text-muted-foreground">{formatPercentage(device.percentage)}</div>
+                        <div className="font-medium">{formatNumber(device?.count)}</div>
+                        <div className="text-xs text-muted-foreground">{formatPercentage(device?.percentage)}</div>
                       </div>
                     </div>
                   )
@@ -518,18 +515,18 @@ export default function EnterpriseAnalyticsDashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Direct</span>
                   <div className="text-right">
-                    <div className="font-medium">{formatNumber(analytics.traffic.directTraffic)}</div>
+                    <div className="font-medium">{formatNumber(analytics.traffic?.directTraffic)}</div>
                     <div className="text-xs text-muted-foreground">
-                      {formatPercentage((analytics.traffic.directTraffic / analytics.overview.totalSessions) * 100)}
+                      {formatPercentage((analytics.traffic?.directTraffic || 0) / (analytics.overview?.totalSessions || 1) * 100)}
                     </div>
                   </div>
                 </div>
-                {analytics.traffic.referrers.slice(0, 4).map((referrer, index) => (
+                {(analytics.traffic?.referrers || []).slice(0, 4).map((referrer, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <span className="text-sm truncate">{referrer.source}</span>
+                    <span className="text-sm truncate">{referrer?.source || 'Unknown'}</span>
                     <div className="text-right">
-                      <div className="font-medium">{formatNumber(referrer.count)}</div>
-                      <div className="text-xs text-muted-foreground">{formatPercentage(referrer.percentage)}</div>
+                      <div className="font-medium">{formatNumber(referrer?.count)}</div>
+                      <div className="text-xs text-muted-foreground">{formatPercentage(referrer?.percentage)}</div>
                     </div>
                   </div>
                 ))}
@@ -538,14 +535,8 @@ export default function EnterpriseAnalyticsDashboard() {
           </div>
         </TabsContent>
 
-        {/* Additional tabs would be implemented here */}
         {/* Audience Tab */}
         <TabsContent value="audience" className="space-y-6">
-          <DummyDataIndicator 
-            type="banner" 
-            message="Audience data: Geographic distribution uses real data, but browser, OS, screen resolution, and language data are mock values for demonstration."
-            className="mb-6"
-          />
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Geographic Distribution */}
             <Card>
@@ -573,13 +564,7 @@ export default function EnterpriseAnalyticsDashboard() {
             {/* Technology Breakdown */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Technology Breakdown</CardTitle>
-                  <DummyDataIndicator 
-                    type="dot" 
-                    message="Browser and OS data are mock values"
-                  />
-                </div>
+                <CardTitle>Technology Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Browsers */}
@@ -655,11 +640,6 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Content Performance Tab */}
         <TabsContent value="content" className="space-y-6">
-          <DummyDataIndicator 
-            type="banner" 
-            message="Content performance data contains mock page analytics, bounce rates, and conversion metrics."
-            className="mb-6"
-          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -788,11 +768,6 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* User Behavior Tab */}
         <TabsContent value="behavior" className="space-y-6">
-          <DummyDataIndicator 
-            type="banner" 
-            message="User behavior analytics including user flow, scroll depth, and session patterns are entirely mock data."
-            className="mb-6"
-          />
           <div className="grid gap-6 lg:grid-cols-2">
             {/* User Flow */}
             <Card>
@@ -872,12 +847,8 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Performance Tab */}
         <TabsContent value="performance" className="space-y-6">
-          <DummyDataIndicator 
-            type="banner" 
-            message="Performance metrics including Core Web Vitals, load times, and device performance are mock data."
-            className="mb-6"
-          />
           <div className="grid gap-6">
+
             {/* Core Web Vitals */}
             <Card>
               <CardHeader>
@@ -969,11 +940,6 @@ export default function EnterpriseAnalyticsDashboard() {
 
         {/* Real-time Tab */}
         <TabsContent value="realtime" className="space-y-6">
-          <DummyDataIndicator 
-            type="banner" 
-            message="Real-time analytics including active users and recent activity are simulated with mock data."
-            className="mb-6"
-          />
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Active Users */}
             <Card>

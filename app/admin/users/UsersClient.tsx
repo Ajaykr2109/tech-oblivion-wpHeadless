@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { MoreHorizontal, Search, UserPlus } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -12,20 +13,34 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import SelectableTable from '@/components/admin/SelectableTable'
-import DummyDataIndicator from '@/components/ui/dummy-data-indicator'
 
-const dummyUsers = [
-];
+interface WPUser {
+  id: number
+  name: string
+  email: string
+  avatar_urls?: { '96'?: string }
+  roles: string[]
+}
 
 export default function UsersClient() {
   const [selected, setSelected] = useState<number[]>([])
+  
+  const { data: users, isLoading } = useQuery<WPUser[]>({
+    queryKey: ['admin-users'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/users')
+      if (!response.ok) throw new Error('Failed to fetch users')
+      return response.json()
+    }
+  })
+  
   const header = useMemo(()=>['User','Role','Actions'],[])
-  const rows = useMemo(()=> dummyUsers.map(u => ({
+  const rows = useMemo(()=> (users || []).map(u => ({
     id: u.id,
     cells: [
       <div className="flex items-center gap-3" key="user">
         <Avatar>
-          <AvatarImage src={u.avatar} alt={u.name} />
+          <AvatarImage src={u.avatar_urls?.['96']} alt={u.name} />
           <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div>
@@ -33,7 +48,7 @@ export default function UsersClient() {
           <p className="text-sm text-muted-foreground">{u.email}</p>
         </div>
       </div>,
-      <Badge variant="outline" key="role">{u.role}</Badge>,
+      <Badge variant="outline" key="role">{u.roles[0] || 'subscriber'}</Badge>,
       <div key="actions" className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -51,7 +66,7 @@ export default function UsersClient() {
         </DropdownMenu>
       </div>
     ]
-  })), [])
+  })), [users])
 
   const onAction = async (action: BulkAction) => {
     if (action !== 'delete' || selected.length === 0) return
@@ -63,6 +78,10 @@ export default function UsersClient() {
     if (!res.ok) throw new Error('Bulk delete failed')
   }
 
+  if (isLoading) {
+    return <div className="p-6">Loading users...</div>
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -72,11 +91,7 @@ export default function UsersClient() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>All Users</CardTitle>
-            <DummyDataIndicator 
-              type="badge" 
-              message="User data is using sample/dummy users for demonstration"
-            />
+            <CardTitle>All Users ({users?.length || 0})</CardTitle>
           </div>
           <div className="mt-4 flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">

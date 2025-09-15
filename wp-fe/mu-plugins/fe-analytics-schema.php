@@ -30,6 +30,8 @@ function fe_ensure_analytics_tables() {
             screen_resolution VARCHAR(20) DEFAULT NULL,
             timezone VARCHAR(50) DEFAULT NULL,
             language VARCHAR(10) DEFAULT 'en',
+            performance_data TEXT DEFAULT NULL,
+            scroll_depth DECIMAL(5,2) DEFAULT 0,
             PRIMARY KEY (id),
             KEY device_type (device_type),
             KEY country_code (country_code),
@@ -49,6 +51,8 @@ function fe_ensure_analytics_tables() {
             session_id BIGINT UNSIGNED DEFAULT NULL,
             meta_id BIGINT UNSIGNED DEFAULT NULL,
             page_title VARCHAR(255) DEFAULT NULL,
+            time_on_page INT UNSIGNED DEFAULT 0,
+            is_exit TINYINT(1) DEFAULT 0,
             viewed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY path (path),
@@ -57,7 +61,9 @@ function fe_ensure_analytics_tables() {
             KEY post_id (post_id),
             KEY viewed_at (viewed_at),
             KEY session_id (session_id),
-            KEY meta_id (meta_id)
+            KEY meta_id (meta_id),
+            KEY time_on_page (time_on_page),
+            KEY is_exit (is_exit)
         ) $charset_collate;";
 
         // Sessions
@@ -105,6 +111,8 @@ function fe_ensure_analytics_tables() {
             region_name VARCHAR(100) DEFAULT NULL,
             latitude DECIMAL(10,8) DEFAULT NULL,
             longitude DECIMAL(11,8) DEFAULT NULL,
+            performance_data TEXT DEFAULT NULL,
+            scroll_depth DECIMAL(5,2) DEFAULT 0,
             PRIMARY KEY (id),
             KEY device_type (device_type),
             KEY country_code (country_code),

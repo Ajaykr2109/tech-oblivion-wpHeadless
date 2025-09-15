@@ -271,11 +271,18 @@ export function AuthorProfileView({ author, posts, comments }: AuthorProfileView
         {/* Bookmarks Tab */}
         {showBookmarksPublic && (
           <TabsContent value="bookmarks" className="space-y-4">
+            {/* TODO: Implement bookmarks display - API endpoint already exists */}
             <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-muted-foreground">
-                  Bookmarks feature coming soon...
-                </p>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">Bookmarks</h3>
+                  <p className="text-muted-foreground mb-4">
+                    This feature will display the user's public bookmarks.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Bookmarks API is available at /api/wp/bookmarks
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
