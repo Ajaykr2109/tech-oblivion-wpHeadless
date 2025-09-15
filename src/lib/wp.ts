@@ -250,6 +250,66 @@ export async function getPostBySlug(slug: string) {
   }
 }
 
+export async function getPostsByIds(ids: number[]): Promise<PostSummary[]> {
+  if (!ids.length) return []
+  
+  const WP = process.env.WP_URL ?? ''
+  if (!WP) throw new Error('WP_URL env required')
+  
+  // Fetch posts by ID using 'include' parameter
+  const url = new URL('/wp-json/wp/v2/posts', WP)
+  url.searchParams.set('include', ids.join(','))
+  url.searchParams.set('_embed', '1')
+  url.searchParams.set('per_page', '100') // Allow up to 100 editor picks
+  
+  const res = await fetch(url.toString(), {
+    next: { revalidate: DEFAULT_TTL, tags: [TAGS.posts] },
+    headers: {
+      'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)',
+      'Referer': WP,
+      'Accept': 'application/json'
+    }
+  })
+  
+  if (!res.ok) {
+    const body = await res.text()
+    logWPError('getPostsByIds', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
+    // Return empty array instead of throwing to avoid breaking the homepage
+    console.warn(`Failed to fetch editor picks posts: ${res.status}`)
+    return []
+  }
+  
+  let items = [] as WPPost[]
+  try {
+    items = (await res.json()) as WPPost[]
+  } catch (e: unknown) {
+    logWPError('getPostsByIds-json', { statusText: String(e), body: undefined })
+    return []
+  }
+  
+  const itemsMapped = items.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title.rendered,
+    excerptHtml: p.excerpt.rendered,
+    featuredImage: _rawMediaUrl(p),
+    authorId: p.author ?? null,
+    authorName: p._embedded?.author?.[0]?.name ?? null,
+    authorAvatar: p._embedded?.author?.[0]?.avatar_urls?.['48'] ?? p._embedded?.author?.[0]?.avatar_urls?.['96'] ?? null,
+    authorSlug: p._embedded?.author?.[0]?.slug ?? null,
+    date: p.date,
+  }))
+  
+  // Preserve the order from the input IDs array
+  const orderedItems: PostSummary[] = []
+  for (const id of ids) {
+    const post = itemsMapped.find(p => p.id === id)
+    if (post) orderedItems.push(post)
+  }
+  
+  return orderedItems
+}
+
 export async function getPageContent(slug: string) {
   const WP = process.env.WP_URL ?? ''
   if (!WP) throw new Error('WP_URL env required')

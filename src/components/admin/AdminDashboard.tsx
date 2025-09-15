@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
+import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
+
 import CategoriesManagement from './CategoriesManagement'
 import TagsManagement from './TagsManagement'
 import UsersManagement from './UsersManagement'
-import ExtensiveAnalytics from './ExtensiveAnalytics'
+// import ExtensiveAnalytics from './ExtensiveAnalytics' // Replaced with EnterpriseAnalyticsDashboard
 import PostsManagement from './PostsManagement'
 
 export type SectionKey =
@@ -239,6 +241,7 @@ function DashboardOverview() {
             change={analytics?.views?.change}
             icon={Eye}
             trend="up"
+            onClick={() => {/* Navigate to detailed analytics */}}
           />
           <MetricCard
             title="Unique Visitors"
@@ -322,9 +325,9 @@ function DashboardOverview() {
   )
 }
 
-// Placeholder components - will be implemented in separate files
+// Analytics section with enhanced enterprise dashboard
 function AnalyticsSection() {
-  return <ExtensiveAnalytics />
+  return <EnterpriseAnalyticsDashboard />
 }
 
 function PostsSection() {

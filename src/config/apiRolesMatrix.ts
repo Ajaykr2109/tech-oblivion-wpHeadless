@@ -346,6 +346,16 @@ export const apiRolesMatrix: EndpointAccess[] = [
     roles: allow(['administrator'], ['read']),
   },
   {
+    path: '/api/admin/editor-picks',
+    method: 'GET',
+    roles: allow(['editor', 'seo_editor', 'seo_manager', 'administrator'], ['read']),
+  },
+  {
+    path: '/api/admin/editor-picks',
+    method: 'POST',
+    roles: allow(['editor', 'seo_editor', 'seo_manager', 'administrator'], ['write']),
+  },
+  {
     path: '/api/wp/settings',
     method: 'GET',
     roles: allow(['administrator'], ['read']),
