@@ -47,7 +47,7 @@ add_action('rest_api_init', function () {
       }
       
       // Special handling for WordPress array parameters based on endpoint
-      // Comments endpoint expects 'post' (singular) not 'post[]'
+      // Comments endpoint needs both 'post[]' and 'author[]' for proper filtering
       // Posts endpoint can use 'post[]' for multiple post filtering
       $is_comments_endpoint = strpos($path, '/wp/v2/comments') === 0;
       
@@ -58,21 +58,31 @@ add_action('rest_api_init', function () {
           unset($query_params['post']);
           error_log('[FE Auth Proxy] Converted post parameter to array format: ' . $query_params['post[]']);
         }
-      } else {
-        // For comments endpoint, keep 'post' parameter as singular
-        error_log('[FE Auth Proxy] Comments endpoint detected, keeping post parameter as singular: ' . ($query_params['post'] ?? 'not set'));
-      }
-      
-      // Convert single 'author' parameter to array format for non-comments endpoints  
-      if (!$is_comments_endpoint) {
+        
+        // Convert single 'author' parameter to array format for non-comments endpoints
         if (isset($query_params['author']) && !isset($query_params['author[]'])) {
           $query_params['author[]'] = $query_params['author'];
           unset($query_params['author']);
           error_log('[FE Auth Proxy] Converted author parameter to array format: ' . $query_params['author[]']);
         }
       } else {
-        // For comments endpoint, keep 'author' parameter as singular
-        error_log('[FE Auth Proxy] Comments endpoint detected, keeping author parameter as singular: ' . ($query_params['author'] ?? 'not set'));
+        // For comments endpoint, keep 'post' as singular for filtering by specific post ID
+        // WordPress REST API for comments expects 'post' (not 'post[]') for single post filtering
+        // Only convert to array format if we have multiple post IDs
+        if (isset($query_params['post[]']) && !isset($query_params['post'])) {
+          // If we have post[] but no post, this might be for multiple posts
+          error_log('[FE Auth Proxy] Comments endpoint: Using post[] array format for multiple posts');
+        } else if (isset($query_params['post'])) {
+          // Keep post as singular for single post filtering
+          error_log('[FE Auth Proxy] Comments endpoint: Using singular post parameter: ' . $query_params['post']);
+        }
+        
+        // For comments endpoint, author can be array format for multiple authors
+        if (isset($query_params['author']) && !isset($query_params['author[]'])) {
+          $query_params['author[]'] = $query_params['author'];
+          unset($query_params['author']);
+          error_log('[FE Auth Proxy] Comments endpoint: Converted author parameter to array format: ' . $query_params['author[]']);
+        }
       }
       
       // Add query parameters to URL
@@ -87,6 +97,7 @@ add_action('rest_api_init', function () {
       }
       
       error_log('[FE Auth Proxy] Final URL: ' . $url);
+      error_log('[FE Auth Proxy] Final query params being sent: ' . json_encode($query_params));
 
       $headers = [];
       $auth = $req->get_header('authorization');

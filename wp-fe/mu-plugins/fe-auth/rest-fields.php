@@ -52,7 +52,8 @@ add_filter('rest_prepare_user', function($response, $user, $request) {
 // Allow filtering comments by user_id and enhance post filtering
 add_filter('rest_comment_query', function ($args, $request) {
   // Debug logging
-  error_log('[FE Auth Rest Fields] Comment query filter called with request: ' . json_encode($request->get_params()));
+  $params = $request->get_params();
+  error_log('[FE Auth Rest Fields] Comment query filter called with request: ' . json_encode($params));
   
   if (isset($request['user_id'])) $args['user_id'] = intval($request['user_id']);
   
@@ -68,15 +69,30 @@ add_filter('rest_comment_query', function ($args, $request) {
   }
   
   // Enhanced post parameter filtering - this is the critical part for comment filtering
-  if (isset($request['post'])) {
-    if (is_array($request['post'])) {
-      $post_ids = array_map('intval', $request['post']);
+  // Handle both 'post' and 'post[]' parameters to support different request formats
+  if (isset($params['post']) || isset($params['post[]'])) {
+    $post_value = isset($params['post']) ? $params['post'] : $params['post[]'];
+    
+    if (is_array($post_value)) {
+      $post_ids = array_map('intval', $post_value);
       $args['post__in'] = $post_ids;
       error_log('[FE Auth Rest Fields] Set post__in: ' . json_encode($post_ids));
     } else {
-      $post_id = intval($request['post']);
+      $post_id = intval($post_value);
       $args['post_id'] = $post_id;
       error_log('[FE Auth Rest Fields] Set post_id: ' . $post_id);
+    }
+    
+    // CRITICAL: Clear any existing post filtering that might conflict
+    unset($args['post__not_in']);
+    unset($args['post_parent']);
+    
+    // Force WordPress to ONLY return comments for this specific post
+    if (!is_array($post_value)) {
+      $args['post_id'] = intval($post_value);
+      // Explicitly unset post__in when filtering by single post
+      unset($args['post__in']);
+      error_log('[FE Auth Rest Fields] FORCED post_id filtering: ' . $args['post_id']);
     }
   }
   

@@ -23,17 +23,24 @@ export async function GET(req: NextRequest) {
 
   // Debug: Log the post parameter
   const postParam = search.get('post')
+  const authorParam = search.get('author')
   console.log('Comments API: post parameter received:', postParam)
+  console.log('Comments API: author parameter received:', authorParam)
   console.log('Comments API: full search params:', search.toString())
   
-  // For WordPress REST API, we need to ensure proper post filtering
-  // The 'post' parameter should work as-is, but let's ensure it's properly handled
-  if (postParam) {
-    // Ensure the post parameter is treated as an array in WordPress
-    console.log('Comments API: Post filtering enabled for post ID:', postParam)
+  // For WordPress REST API comments endpoint:
+  // - 'post' parameter should remain singular for filtering by specific post ID
+  // - 'author' parameter can be converted to array format for multiple authors
+  // Only convert post to array if we explicitly need multiple post filtering
+  
+  // WordPress REST API expects 'author' as array parameter for proper filtering, so convert single values
+  if (authorParam && !search.has('author[]')) {
+    search.delete('author')
+    search.append('author[]', authorParam)
+    console.log('Comments API: Converted author param to array format')
   }
 
-  // Try MU proxy first when available (re-enabled after fixing post parameter handling)
+  // Try MU proxy first when available (re-enabled for debugging)
   const secret = process.env.FE_PROXY_SECRET || ''
   const path = 'wp/v2/comments'
   if (secret) {

@@ -10,12 +10,11 @@ interface AuthorPageProps {
 
 async function getAuthorData(slug: string) {
   try {
-    const wpUrl = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
-    if (!wpUrl) throw new Error('WordPress URL not configured')
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
-    // Fetch author data
+    // Fetch author data through Next.js API
     const authorResponse = await fetch(
-      `${wpUrl}/wp-json/wp/v2/users?slug=${encodeURIComponent(slug)}`,
+      `${siteUrl}/api/wp/users?slug=${encodeURIComponent(slug)}`,
       { cache: 'no-store' }
     )
     
@@ -38,7 +37,7 @@ async function getAuthorData(slug: string) {
       author.roles.includes('administrator')
     )) {
       const postsResponse = await fetch(
-        `${wpUrl}/wp-json/wp/v2/posts?author=${author.id}&status=publish&per_page=20`,
+        `${siteUrl}/api/wp/posts?author=${author.id}&status=publish&per_page=20`,
         { cache: 'no-store' }
       )
       
@@ -47,9 +46,9 @@ async function getAuthorData(slug: string) {
       }
     }
 
-    // Fetch comments made by this user
+    // Fetch comments made by this user through Next.js API
     const commentsResponse = await fetch(
-      `${wpUrl}/wp-json/wp/v2/comments?author_email=${encodeURIComponent(author.email)}&per_page=10`,
+      `${siteUrl}/api/wp/comments?author=${author.id}&status=approve&per_page=20`,
       { cache: 'no-store' }
     )
     
