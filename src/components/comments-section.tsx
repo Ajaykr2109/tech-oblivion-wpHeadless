@@ -30,6 +30,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
   const [submitting, setSubmitting] = useState(false)
   const [sort, setSort] = useState<'new' | 'old'>('new')
   const [query, setQuery] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   function mapWpToComment(wpc: unknown): Comment {
     const obj = (wpc && typeof wpc === 'object') ? (wpc as Record<string, unknown>) : {}
@@ -118,6 +119,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!content.trim()) return
+    setError(null)
     setSubmitting(true)
     try {
       const r = await fetch('/api/wp/comments', {
@@ -156,6 +158,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
           const errText = await r.text();
           // eslint-disable-next-line no-console
           console.error('Comment submit failed:', r.status, errText);
+          setError(`Failed to post comment (${r.status}). ${errText.slice(0, 160)}`)
         } catch {/* ignore */}
       }
     } finally {
@@ -188,6 +191,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
           {allowed ? (
             <form className="grid gap-3" onSubmit={onSubmit}>
               <Textarea placeholder="Write a comment..." rows={4} value={content} onChange={e=>setContent(e.target.value)} />
+              {error && <div className="text-xs text-red-500" role="alert">{error}</div>}
               <div className="flex items-center justify-end gap-2">
                 <Button type="submit" disabled={submitting || !content.trim()}>{submitting ? 'Posting…' : 'Post Comment'}</Button>
               </div>

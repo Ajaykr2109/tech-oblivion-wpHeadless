@@ -102,18 +102,46 @@ export async function POST(_request: NextRequest) {
     return new Response('WP_URL env required', { status: 500 })
   }
   try {
-    // This would handle media uploads
-    // For now, return a not implemented response
-    return new Response(
-      JSON.stringify({ 
-        error: 'Media upload not implemented',
-        message: 'Media upload functionality will be implemented soon'
-      }),
-      { 
-        status: 501,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
+    // Accept multipart/form-data for file uploads
+    const form = await _request.formData()
+    const file = form.get('file') as File | null
+    if (!file) {
+      return new Response(JSON.stringify({ error: 'file is required (multipart/form-data)' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    }
+    const altText = (form.get('alt_text') as string) || ''
+    const title = (form.get('title') as string) || file.name
+    const caption = (form.get('caption') as string) || ''
+    const description = (form.get('description') as string) || ''
+
+    // Use fe-auth proxy to forward to core media endpoint with Bearer auth
+    const uploadUrl = new URL('/wp-json/fe-auth/v1/proxy', WP_BASE)
+    uploadUrl.searchParams.set('path', 'wp/v2/media')
+
+    // Build multipart body to send upstream (reconstruct to ensure proper boundary)
+    const upstreamForm = new FormData()
+    upstreamForm.append('file', file, file.name)
+    if (altText) upstreamForm.append('alt_text', altText)
+    if (title) upstreamForm.append('title', title)
+    if (caption) upstreamForm.append('caption', caption)
+    if (description) upstreamForm.append('description', description)
+
+    const res = await fetch(uploadUrl.toString(), {
+      method: 'POST',
+      // Note: When passing FormData, the runtime sets appropriate Content-Type with boundary
+      body: upstreamForm,
+      cache: 'no-store',
+      headers: {
+        // Authorization is handled by fe-auth proxy via Cookie/Authorization from session; this route is public, so rely on upstream auth
+      } as HeadersInit,
+    })
+
+    const text = await res.text()
+    try {
+      const json = text ? JSON.parse(text) : null
+      return new Response(JSON.stringify(json), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+    } catch {
+      return new Response(text, { status: res.status, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json' } })
+    }
   } catch (error) {
     console.error('Media upload error:', error)
     return new Response(

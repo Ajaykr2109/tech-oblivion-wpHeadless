@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { createHmac } from 'crypto'
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
 type LiteUser = {
   id: number
@@ -69,12 +69,6 @@ function chunk<T>(arr: T[], size = 100): T[][] {
 
 // Fallback utilities for general /api/wp/users queries (search, paging, etc.)
 type AnyObj = Record<string, unknown>
-function signProxy(method: string, path: string, body: string, secret: string) {
-  const ts = String(Math.floor(Date.now() / 1000))
-  const base = `${method.toUpperCase()}\n${path}\n${ts}\n${body || ''}`
-  const sig = createHmac('sha256', secret).update(base).digest('base64')
-  return { ts, sign: sig }
-}
 function authHeader() {
   const user = process.env.WP_API_USER
   const appPass = process.env.WP_API_APP_PASSWORD
@@ -83,15 +77,28 @@ function authHeader() {
   return `Basic ${token}`
 }
 function sanitizeUser(u: AnyObj) {
+  // Derive status from profile_fields.status when present (active|inactive), default active
+  const profileFields = (u?.profile_fields && typeof u.profile_fields === 'object')
+    ? (u.profile_fields as Record<string, unknown>)
+    : undefined
+  const statusRaw = (profileFields?.status ?? profileFields?.user_status ?? (u as AnyObj)?.status) as unknown
+  const status = (typeof statusRaw === 'string' && statusRaw) ? (statusRaw === 'inactive' ? 'inactive' : 'active') : 'active'
+  const roles = Array.isArray(u?.roles) ? (u?.roles as unknown[]).filter(r => typeof r === 'string') as string[] : []
+  const post_count = typeof u?.post_count === 'number' ? (u.post_count as number) : undefined
   return {
     id: u?.id,
     slug: u?.slug,
     name: u?.name ?? u?.display_name,
     display_name: u?.display_name,
+    email: u?.email,
     description: u?.description ?? '',
     avatar_urls: u?.avatar_urls ?? {},
     url: u?.url ?? '',
     social: deriveSocial(u),
+    roles,
+    profile_fields: profileFields,
+    status,
+    post_count,
   }
 }
 
@@ -112,21 +119,23 @@ export async function GET(req: Request) {
     const perPage = 100
     const idChunks = chunk(ids, perPage)
 
-  const results: unknown[] = []
+    const results: unknown[] = []
     await Promise.all(idChunks.map(async (group) => {
-      const u = new URL('/wp-json/wp/v2/users', base)
-      group.forEach(id => u.searchParams.append('include[]', String(id)))
-      u.searchParams.set('per_page', String(perPage))
-      u.searchParams.set('context', 'view')
-      u.searchParams.set('_fields', 'id,slug,name,description,avatar_urls,social')
-      const res = await fetch(u.toString(), { cache: 'no-store' })
+      // Build proxy URL to leverage session/Bearer auth and custom fields
+      const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)
+      proxy.searchParams.set('path', 'wp/v2/users')
+      group.forEach(id => proxy.searchParams.append('query[include[]]', String(id)))
+      proxy.searchParams.set('query[per_page]', String(perPage))
+      proxy.searchParams.set('query[context]', 'edit')
+      proxy.searchParams.set('query[_fields]', 'id,slug,name,description,avatar_urls,roles,profile_fields,social,display_name')
+      const res = await fetchWithAuth(null, proxy.toString(), { cache: 'no-store' })
       if (res.ok) {
         const arr = await res.json().then(x => Array.isArray(x) ? x : []).catch(() => [])
         results.push(...arr)
       }
     }))
 
-  const map = new Map<number, unknown>((results as Array<Record<string, unknown>>).map((u) => [Number(u.id), u]))
+    const map = new Map<number, unknown>((results as Array<Record<string, unknown>>).map((u) => [Number(u.id), u]))
     const ordered = ids.map(id => map.get(id)).filter(Boolean)
     const out = ordered.map(sanitize)
     return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -136,13 +145,14 @@ export async function GET(req: Request) {
   const base = WP.replace(/\/$/, '')
   const urlIn = new URL(req.url)
   const allowed = new Set([
-    'context', 'search', 'slug', 'page', 'per_page', 'include', 'exclude', 'orderby', 'order'
+    'context', 'search', 'slug', 'page', 'per_page', 'include', 'exclude', 'orderby', 'order', '_fields'
   ])
   const qEntries: [string, string][] = []
   urlIn.searchParams.forEach((v, k) => {
     if (allowed.has(k)) qEntries.push([k, v])
   })
-  if (!qEntries.find(([k]) => k === 'context')) qEntries.push(['context', 'view'])
+  if (!qEntries.find(([k]) => k === 'context')) qEntries.push(['context', 'edit'])
+  if (!qEntries.find(([k]) => k === '_fields')) qEntries.push(['_fields', 'id,slug,name,display_name,description,avatar_urls,roles,profile_fields,social,email,url,post_count'])
 
   const secret = process.env.FE_PROXY_SECRET || ''
   const path = 'wp/v2/users'
@@ -152,8 +162,8 @@ export async function GET(req: Request) {
       const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)
       proxy.searchParams.set('path', path)
       for (const [k, v] of qEntries) proxy.searchParams.set(`query[${k}]`, v)
-      const { ts, sign } = signProxy('GET', path, '', secret)
-      const pres = await fetch(proxy.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
+      // Use authenticated fetch to ensure 'edit' context and private fields are accessible
+      const pres = await fetchWithAuth(null, proxy.toString(), { cache: 'no-store' })
       upstreamTried = proxy.toString()
       if (pres.ok) {
         const arr = await pres.json().catch(() => null)

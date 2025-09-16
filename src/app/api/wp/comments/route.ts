@@ -117,22 +117,50 @@ export async function POST(req: NextRequest) {
 
   // Parse and validate body
   let body: unknown = {}
-  try { body = await req.json() } catch { 
-    // ignore parse error
-    body = {} 
+  try {
+    body = await req.json()
+  } catch {
+    body = {}
   }
   const content = ((body as Record<string, unknown>)?.content ?? '').toString().trim()
   const postId = Number((body as Record<string, unknown>)?.postId)
   const parent = (body as Record<string, unknown>)?.parent ? Number((body as Record<string, unknown>).parent) : undefined
-  if (!content || !postId) return new Response('content and postId are required', { status: 400 })
+  if (!content || !postId) {
+    return Response.json({ error: 'content and postId are required' }, { status: 400 })
+  }
 
-  // Forward to WP REST API
-  const wpRes = await fetch(new URL('/wp-json/wp/v2/comments', WP), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
-    body: JSON.stringify({ content, post: postId, parent }),
-    cache: 'no-store',
-  } as RequestInit)
-  const text = await wpRes.text()
-  return new Response(text, { status: wpRes.status, headers: { 'Content-Type': wpRes.headers.get('Content-Type') || 'application/json' } })
+  try {
+    const upstreamUrl = new URL('/wp-json/wp/v2/comments', WP)
+    const wpRes = await fetch(upstreamUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${wpToken}` },
+      body: JSON.stringify({ content, post: postId, parent }),
+      cache: 'no-store',
+    } as RequestInit)
+
+    const raw = await wpRes.text()
+
+    // Attempt to parse for consistent error wrapping
+    let parsed: unknown = null
+    try { parsed = JSON.parse(raw) } catch { /* non-JSON upstream response */ }
+
+    if (!wpRes.ok) {
+      // Surface upstream error details while avoiding leaking sensitive tokens
+      const payload = typeof parsed === 'object' && parsed !== null ? parsed : { error: raw.slice(0, 500) }
+      return Response.json({
+        ok: false,
+        upstreamStatus: wpRes.status,
+        upstream: payload,
+      }, { status: wpRes.status })
+    }
+
+    // Success – return upstream as-is (parsed if possible for faster client usage)
+    if (parsed) {
+      return Response.json(parsed, { status: wpRes.status, headers: { 'X-Upstream-Url': upstreamUrl.toString() } })
+    }
+    return new Response(raw, { status: wpRes.status, headers: { 'Content-Type': wpRes.headers.get('Content-Type') || 'application/json', 'X-Upstream-Url': upstreamUrl.toString() } })
+  } catch (e: unknown) {
+    // Network / unexpected failure
+    return Response.json({ error: 'upstream_request_failed', message: e instanceof Error ? e.message : 'Unknown error' }, { status: 502 })
+  }
 }

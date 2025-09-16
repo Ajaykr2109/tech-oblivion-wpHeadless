@@ -17,10 +17,14 @@ import SelectableTable from '@/components/admin/SelectableTable'
 interface WPUser {
   id: number
   name: string
-  email: string
-  avatar_urls?: { '96'?: string }
-  roles: string[]
+  email?: string
+  avatar_urls?: { [k: string]: string }
+  roles?: string[]
+  profile_fields?: { [k: string]: unknown } | null
+  status?: 'active' | 'inactive'
 }
+
+type UserAction = 'delete' | 'activate' | 'deactivate' | 'promote_editor' | 'promote_author' | 'demote_subscriber'
 
 export default function UsersClient() {
   const [selected, setSelected] = useState<number[]>([])
@@ -34,21 +38,34 @@ export default function UsersClient() {
     }
   })
   
-  const header = useMemo(()=>['User','Role','Actions'],[])
+  const header = useMemo(()=>['User','Role','Status','Actions'],[])
   const rows = useMemo(()=> (users || []).map(u => ({
     id: u.id,
     cells: [
       <div className="flex items-center gap-3" key="user">
         <Avatar>
-          <AvatarImage src={u.avatar_urls?.['96']} alt={u.name} />
-          <AvatarFallback>{u.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={u.avatar_urls?.['96'] || u.avatar_urls?.['48']} alt={u.name} />
+          <AvatarFallback>{u.name?.charAt(0)}</AvatarFallback>
         </Avatar>
         <div>
           <p className="font-medium">{u.name}</p>
-          <p className="text-sm text-muted-foreground">{u.email}</p>
+          {u.email && <p className="text-sm text-muted-foreground">{u.email}</p>}
         </div>
       </div>,
-      <Badge variant="outline" key="role">{u.roles[0] || 'subscriber'}</Badge>,
+      <Badge variant="outline" key="role">{u.roles?.[0] || 'subscriber'}</Badge>,
+      (() => {
+        let effective: 'active' | 'inactive' = 'active'
+        if (u.status === 'inactive') effective = 'inactive'
+        else if (u.profile_fields && typeof u.profile_fields === 'object') {
+          const sv = (u.profile_fields as Record<string, unknown>).status
+          if (typeof sv === 'string' && sv === 'inactive') effective = 'inactive'
+        }
+        return (
+          <Badge variant={effective === 'inactive' ? 'secondary' : 'default'} key="status">
+            {effective === 'inactive' ? 'Inactive' : 'Active'}
+          </Badge>
+        )
+      })(),
       <div key="actions" className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -59,23 +76,65 @@ export default function UsersClient() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit User</DropdownMenuItem>
-            <DropdownMenuItem>View Profile</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-500">Delete User</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onActionInternal('activate', [u.id])}>Activate</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onActionInternal('deactivate', [u.id])}>Deactivate</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onActionInternal('promote_editor', [u.id])}>Promote to Editor</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onActionInternal('promote_author', [u.id])}>Promote to Author</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onActionInternal('demote_subscriber', [u.id])}>Demote to Subscriber</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-500" onClick={() => onActionInternal('delete', [u.id])}>Delete User</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     ]
   })), [users])
 
+  const onActionInternal = async (action: UserAction, ids: number[]) => {
+    if (ids.length === 0) return
+    if (action === 'delete') {
+      // Prefer bulk endpoint if available, otherwise fall back to per-user DELETE
+      const res = await fetch('/api/wp/users/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      })
+      if (!res.ok) {
+        // fallback
+        await Promise.all(ids.map(id => fetch(`/api/wp/users/${id}`, { method: 'DELETE' })))
+      }
+      return
+    }
+    // Map role actions to PATCH change_role and status actions to activate/deactivate
+    const mapRole: Record<string, string | undefined> = {
+      promote_editor: 'editor',
+      promote_author: 'author',
+      demote_subscriber: 'subscriber',
+    }
+    await Promise.all(ids.map(async (id) => {
+      if (action === 'activate' || action === 'deactivate') {
+        await fetch(`/api/wp/users/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        })
+      } else if (mapRole[action]) {
+        await fetch(`/api/wp/users/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'change_role', newRole: mapRole[action] })
+        })
+      }
+    }))
+  }
+
   const onAction = async (action: BulkAction) => {
-    if (action !== 'delete' || selected.length === 0) return
-    const res = await fetch('/api/wp/users/bulk-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: selected })
-    })
-    if (!res.ok) throw new Error('Bulk delete failed')
+    if (selected.length === 0) return
+    const mapBulk: Record<BulkAction, UserAction> = {
+      approve: 'activate',
+      disapprove: 'deactivate',
+      spam: 'demote_subscriber',
+      delete: 'delete',
+    }
+    await onActionInternal(mapBulk[action], selected)
   }
 
   if (isLoading) {
