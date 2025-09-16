@@ -114,6 +114,51 @@ export default function UsersManagement() {
     staleTime: 30000
   })
 
+  // Counts for KPI cards using backend count endpoints
+  const { data: totalUsers } = useQuery<number>({
+    queryKey: ['users-count-total'],
+    queryFn: async () => {
+      const res = await fetch('/api/wp/users/count')
+      if (!res.ok) throw new Error('Failed to fetch users count')
+      const j = await res.json().catch(() => ({})) as { count?: number }
+      return typeof j.count === 'number' ? j.count : 0
+    },
+    staleTime: 30000
+  })
+
+  const { data: adminCount } = useQuery<number>({
+    queryKey: ['users-count-admin'],
+    queryFn: async () => {
+      const res = await fetch('/api/wp/users/count?role=administrator')
+      if (!res.ok) throw new Error('Failed to fetch admins count')
+      const j = await res.json().catch(() => ({})) as { count?: number }
+      return typeof j.count === 'number' ? j.count : 0
+    },
+    staleTime: 30000
+  })
+
+  const { data: creatorCount } = useQuery<number>({
+    queryKey: ['users-count-creators'],
+    queryFn: async () => {
+      const res = await fetch('/api/wp/users/count?group=creators')
+      if (!res.ok) throw new Error('Failed to fetch creators count')
+      const j = await res.json().catch(() => ({})) as { count?: number }
+      return typeof j.count === 'number' ? j.count : 0
+    },
+    staleTime: 30000
+  })
+
+  const { data: totalPosts } = useQuery<number>({
+    queryKey: ['posts-count-total'],
+    queryFn: async () => {
+      const res = await fetch('/api/wp/posts/count')
+      if (!res.ok) throw new Error('Failed to fetch posts count')
+      const j = await res.json().catch(() => ({})) as { count?: number }
+      return typeof j.count === 'number' ? j.count : 0
+    },
+    staleTime: 30000
+  })
+
   const handleUserAction = async (userId: number, action: string, newRole?: string) => {
     try {
       const response = await fetch(`/api/wp/users/${userId}`, {
@@ -217,8 +262,6 @@ export default function UsersManagement() {
     return acc
   }, {} as Record<string, number>) || {}
 
-  const totalPosts = users?.reduce((sum, user) => sum + (user.post_count || 0), 0) || 0
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -295,7 +338,7 @@ export default function UsersManagement() {
               <Users className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="text-sm font-medium">Total Users</p>
-                <p className="text-2xl font-bold">{filteredUsers?.length || 0}</p>
+                <p className="text-2xl font-bold">{typeof totalUsers === 'number' ? totalUsers : (filteredUsers?.length || 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -306,7 +349,7 @@ export default function UsersManagement() {
               <Shield className="h-4 w-4 text-red-600" />
               <div>
                 <p className="text-sm font-medium">Administrators</p>
-                <p className="text-2xl font-bold">{usersByRole.administrator || 0}</p>
+                <p className="text-2xl font-bold">{typeof adminCount === 'number' ? adminCount : (usersByRole.administrator || 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -318,7 +361,7 @@ export default function UsersManagement() {
               <div>
                 <p className="text-sm font-medium">Content Creators</p>
                 <p className="text-2xl font-bold">
-                  {(usersByRole.editor || 0) + (usersByRole.author || 0) + (usersByRole.contributor || 0)}
+                  {typeof creatorCount === 'number' ? creatorCount : ((usersByRole.editor || 0) + (usersByRole.author || 0) + (usersByRole.contributor || 0))}
                 </p>
               </div>
             </div>
@@ -330,7 +373,7 @@ export default function UsersManagement() {
               <Edit className="h-4 w-4 text-purple-600" />
               <div>
                 <p className="text-sm font-medium">Total Posts</p>
-                <p className="text-2xl font-bold">{totalPosts}</p>
+                <p className="text-2xl font-bold">{typeof totalPosts === 'number' ? totalPosts : 0}</p>
               </div>
             </div>
           </CardContent>

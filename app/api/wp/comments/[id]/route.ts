@@ -5,12 +5,12 @@ import type { NextRequest } from 'next/server'
  
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const WP = process.env.WP_URL
     if (!WP) return new Response('WP_URL env required', { status: 500 })
 
-    const commentId = params.id
+    const { id: commentId } = await context.params
     const body = await req.json()
     const { action } = body
 
@@ -49,12 +49,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const WP = process.env.WP_URL
     if (!WP) return new Response('WP_URL env required', { status: 500 })
 
-    const commentId = params.id
+    const { id: commentId } = await context.params
 
     const base = WP.replace(/\/$/, '')
     const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)

@@ -10,8 +10,9 @@ function isNumericId(path: string): boolean {
 }
 
 // GET handler for media file proxy (file paths)
-export async function GET(_req: NextRequest, { params }: { params: { path: string[] } }) {
-  const segs = params?.path || []
+export async function GET(_req: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+  const { path } = await context.params
+  const segs = path || []
   if (!Array.isArray(segs) || segs.length === 0) {
     return new Response('Bad path', { status: 400 })
   }
@@ -56,8 +57,9 @@ export async function GET(_req: NextRequest, { params }: { params: { path: strin
 }
 
 // DELETE handler for media management (by ID)
-export async function DELETE(req: Request, { params }: { params: { path: string[] } }) {
-  const segs = params?.path || []
+export async function DELETE(req: Request, context: { params: Promise<{ path: string[] }> }) {
+  const { path } = await context.params
+  const segs = path || []
   
   // DELETE should only work with numeric IDs
   if (segs.length !== 1 || !isNumericId(segs[0])) {
