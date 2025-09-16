@@ -69,20 +69,26 @@ export function Header() {
   const filteredNavLinks = navLinks;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <div className="mr-4 flex items-center">
-          <Link href="/" className="flex items-center gap-2 font-bold">
-            <span className="font-bold">tech.oblivion</span>
+          <Link href="/" className="flex items-center gap-2 font-bold group">
+            <span className="gradient-text text-xl font-bold tracking-tight">
+              tech.oblivion
+            </span>
           </Link>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
+        <nav className="hidden md:flex items-center gap-1 text-sm" aria-label="Main">
           {filteredNavLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                pathname === link.href 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
               aria-current={pathname === link.href ? "page" : undefined}
             >
               {link.label}
@@ -98,18 +104,21 @@ export function Header() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" aria-label="User menu">
+                    <Button 
+                      variant="ghost" 
+                      className="flex items-center gap-2"
+                      aria-label="User menu"
+                    >
                       {(() => {
                         const uname = user.username || "";
                         const dname = user.display_name || "";
-                        if (uname && uname.length <= 10) return `Hi, ${uname}`;
+                        if (uname && uname.length <= 10) return uname;
                         if (dname && dname.trim().includes(" ")) {
                           const parts = dname.trim().split(/\s+/);
                           const first = parts[0];
-                          const last = parts[parts.length - 1];
-                          return `Hi, ${first} ${last?.charAt(0) || ""}.`;
+                          return first;
                         }
-                        return `Hi, ${(uname || dname).slice(0, 2)}`;
+                        return (uname || dname).slice(0, 8);
                       })()}
                     </Button>
                   </DropdownMenuTrigger>
@@ -120,23 +129,28 @@ export function Header() {
                       </DropdownMenuItem>
                     )}
                     {userSlug && (
-                      <DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href={`/profile/${userSlug}`}>Profile</Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem asChild>
                       <Link href="/bookmarks">Bookmarks</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link href="/account">Account Center</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <button onClick={handleLogout}>Logout</button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button variant="ghost" onClick={() => { window.location.href = '/login'; }}>Login</Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => { window.location.href = '/login'; }}
+                >
+                  Login
+                </Button>
               )}
             </>
           )}
