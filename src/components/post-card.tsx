@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { Calendar, Clock, ArrowRight, Eye } from "lucide-react";
 
@@ -31,7 +32,7 @@ export type Post = {
 
 type PostCardProps = {
   post: Post;
-  layout?: 'grid' | 'list';
+  layout?: 'grid' | 'list' | 'simple';
   showFeatured?: boolean;
 };
 
@@ -46,6 +47,32 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
     ? `${post.views.toLocaleString()} views`
     : undefined;
 
+  if (layout === 'simple') {
+    return (
+      <article aria-labelledby={`post-title-${post.id}`} className="group">
+        <Link href={`/blog/${post.slug}`} className="block">
+          <Card className="card-premium cursor-pointer p-3 h-[120px] flex flex-col justify-between transition-all duration-200 hover:shadow-md">
+            <div className="flex-1 min-h-0">
+              <CardTitle id={`post-title-${post.id}`} className="text-sm leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2">
+                {post.title}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                {post.excerpt}
+              </p>
+            </div>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              <p className="text-xs font-medium text-right">{post.author}</p>
+            </div>
+          </Card>
+        </Link>
+      </article>
+    );
+  }
+
   if (layout === 'list') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
@@ -58,8 +85,14 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 640px) 100vw, 128px"
-                loading="lazy"
+                priority={false}
                 data-ai-hint={post.imageHint}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== '/favicon.ico') {
+                    target.src = '/favicon.ico';
+                  }
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
@@ -88,7 +121,16 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-8 w-8 ring-2 ring-primary/20">
-                    <AvatarImage src={post.avatar} alt={post.author} />
+                    <AvatarImage 
+                      src={post.avatar} 
+                      alt={post.author}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (target.src !== '/favicon.ico') {
+                          target.src = '/favicon.ico';
+                        }
+                      }}
+                    />
                     <AvatarFallback className="bg-gradient-primary text-white text-xs">
                       {post.author
                         .split(" ")
@@ -127,8 +169,14 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                loading="lazy"
+                priority={false}
                 data-ai-hint={post.imageHint}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== '/favicon.ico') {
+                    target.src = '/favicon.ico';
+                  }
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               
@@ -178,7 +226,16 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center space-x-3">
                 <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                  <AvatarImage src={post.avatar} alt={post.author} />
+                  <AvatarImage 
+                    src={post.avatar} 
+                    alt={post.author}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== '/favicon.ico') {
+                        target.src = '/favicon.ico';
+                      }
+                    }}
+                  />
                   <AvatarFallback className="bg-gradient-primary text-white text-sm">
                     {post.author
                       .split(" ")

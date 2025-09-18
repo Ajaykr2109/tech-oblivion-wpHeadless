@@ -3,7 +3,6 @@ import Link from "next/link"
 import { BookOpen, PenTool, TrendingUp, Star, Users, MessageCircle, ChevronRight } from "lucide-react"
 
 import Feed from "@/components/feed"
-import AutoScrollFeed from "@/components/AutoScrollFeed"
 import EditorPicksFeed from "@/components/editor-picks-feed"
 import HomeLatestVideoSection from "@/components/HomeLatestVideoSection"
 import { getWebSiteSchema, getFAQSchema } from "@/lib/generateSchema"
@@ -44,61 +43,13 @@ export default function Home() {
         )}
       </Head>
       <main className="min-h-screen" id="main-content">
-        {/* HERO - Blogging style header */}
-        <section className="py-10 md:py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl">
-              <Badge variant="secondary" className="mb-3">Your daily dose of tech</Badge>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 gradient-text">
-                Stories, tutorials, and insights for modern developers
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground mb-6">
-                Deep dives, practical guides, and opinionated takes on web, AI, and engineering. New posts every week.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild>
-                  <Link href="/blog" className="btn-gradient-hover">
-                    Start Reading
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="#latest-video">Watch Latest Video</Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Quick categories */}
-            <div className="mt-8 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-muted-foreground">Popular topics</h3>
-              <Link href="/blog" className="text-sm text-primary inline-flex items-center">
-                Explore all
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            </div>
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-2">
-              {_popularCategories.map((c) => (
-                <Link
-                  key={c.name}
-                  href={`/blog?category=${encodeURIComponent(c.name.toLowerCase())}`}
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm bg-primary/5 text-foreground hover:bg-primary/10 transition-colors"
-                >
-                  <span>{c.name}</span>
-                  <span className="text-muted-foreground">{c.count}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
         {/* TOP SECTION - VIDEO AND BLOGS */}
         <section className="py-8 lg:py-12">
           <div className="container mx-auto px-4">
-            <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+            <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 items-stretch">
               {/* Left Column - Latest Video */}
-              <div id="latest-video" className="bg-card border rounded-xl p-6 flex flex-col h-[600px] overflow-hidden">
-                <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                  <div className="w-6 h-6 bg-muted rounded-md flex items-center justify-center">
-                    <div className="w-3 h-3 bg-foreground/60 rounded-sm" />
-                  </div>
+              <div id="latest-video" className="flex flex-col h-[400px] lg:h-[600px] overflow-hidden">
+                <div className="flex items-center gap-3 mb-4 lg:mb-6 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-semibold">Latest Video</h2>
                     <p className="text-muted-foreground text-sm">Watch our newest content</p>
@@ -109,19 +60,16 @@ export default function Home() {
                 </div>
               </div>
               
-              {/* Right Column - Auto-Scrolling Articles */}
-              <div className="bg-card border rounded-xl p-6 flex flex-col h-[600px] overflow-hidden">
-                <div className="flex items-center gap-3 mb-6 flex-shrink-0">
-                  <div className="w-6 h-6 bg-muted rounded-md flex items-center justify-center">
-                    <div className="w-3 h-3 bg-foreground/60 rounded-sm" />
-                  </div>
+              {/* Right Column - Recent Articles */}
+              <div className="flex flex-col h-[400px] lg:h-[600px] overflow-hidden">
+                <div className="flex items-center gap-3 mb-4 lg:mb-6 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-semibold">Recent Articles</h2>
                     <p className="text-muted-foreground text-sm">Latest posts from our community</p>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0">
-                  <AutoScrollFeed layout="list" postCount={8} autoScrollInterval={4000} />
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <Feed layout="simple" postCount={4} />
                 </div>
               </div>
             </div>
@@ -130,14 +78,14 @@ export default function Home() {
 
         <div className="container mx-auto px-4">
            {/* FEATURED CONTENT */}
-          <section className="py-16 bg-muted/30 rounded-2xl">
+          <section className="py-16 bg-secondary/30 rounded-2xl">
             <div className="px-6 md:px-8">
               <div className="text-center mb-12">
                 <Badge variant="secondary" className="mb-4">
                   <Star className="h-3 w-3 mr-1" />
                   Editor's Choice
                 </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 gradient-text">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">
                   Featured Articles
                 </h2>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -177,7 +125,7 @@ export default function Home() {
 
           {/* COMMUNITY CTA SECTION */}
           <section className="py-16">
-            <div className="bg-gradient-to-r from-primary/10 to-fuchsia-600/10 rounded-2xl p-8 md:p-12 text-center border">
+            <div className="bg-gradient-to-r from-primary/5 to-secondary/20 rounded-2xl p-8 md:p-12 text-center border border-border/50">
               <div className="max-w-3xl mx-auto">
                 <Users className="h-12 w-12 text-primary mx-auto mb-6" />
                 

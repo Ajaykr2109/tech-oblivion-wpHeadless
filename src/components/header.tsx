@@ -106,7 +106,7 @@ export function Header() {
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      className="flex items-center gap-2"
+                      className="hidden md:flex items-center gap-2"
                       aria-label="User menu"
                     >
                       {(() => {
@@ -147,6 +147,7 @@ export function Header() {
               ) : (
                 <Button 
                   variant="ghost" 
+                  className="hidden md:flex"
                   onClick={() => { window.location.href = '/login'; }}
                 >
                   Login

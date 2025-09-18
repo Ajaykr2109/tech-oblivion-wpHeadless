@@ -3,6 +3,10 @@
  */
 
 const WORDS_PER_MINUTE = 225; // Average reading speed
+const MIN_READ_TIME = 1; // Minimum reading time in minutes
+
+// Cache for reading times to avoid recalculation
+const readingTimeCache = new Map<string, number>();
 
 /**
  * Calculate reading time in minutes from HTML content
@@ -11,13 +15,20 @@ const WORDS_PER_MINUTE = 225; // Average reading speed
  */
 export function calculateReadingTime(content: string): number {
   if (!content || typeof content !== 'string') {
-    return 1;
+    return MIN_READ_TIME;
+  }
+  
+  // Check cache first
+  const cacheKey = content.slice(0, 100); // Use first 100 chars as cache key
+  if (readingTimeCache.has(cacheKey)) {
+    return readingTimeCache.get(cacheKey)!;
   }
   
   // Remove HTML tags and decode entities for accurate word count
   const plainText = content
     .replace(/<[^>]+>/g, '') // Remove HTML tags
     .replace(/&[^;]+;/g, ' ') // Replace HTML entities with space
+    .replace(/\s+/g, ' ') // Normalize whitespace
     .trim();
   
   // Split by whitespace and filter out empty strings
@@ -25,7 +36,20 @@ export function calculateReadingTime(content: string): number {
   const wordCount = words.length;
   
   // Calculate reading time (minimum 1 minute)
-  return Math.max(1, Math.ceil(wordCount / WORDS_PER_MINUTE));
+  const readingTime = Math.max(MIN_READ_TIME, Math.ceil(wordCount / WORDS_PER_MINUTE));
+  
+  // Cache the result
+  readingTimeCache.set(cacheKey, readingTime);
+  
+  // Limit cache size to prevent memory issues
+  if (readingTimeCache.size > 1000) {
+    const firstKey = readingTimeCache.keys().next().value;
+    if (firstKey !== undefined) {
+      readingTimeCache.delete(firstKey);
+    }
+  }
+  
+  return readingTime;
 }
 
 /**
