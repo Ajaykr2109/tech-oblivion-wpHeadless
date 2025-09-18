@@ -36,7 +36,7 @@ export default function PostsManagement() {
   const [isEditorPicksMode, setIsEditorPicksMode] = useState(false)
   const queryClient = useQueryClient()
   
-  const { data: posts, isLoading } = useQuery({
+  const { data: posts, isLoading, refetch } = useQuery({
     queryKey: ['admin-posts'],
     queryFn: async (): Promise<WPPost[]> => {
       const response = await fetch('/api/wp/posts?per_page=20')
@@ -45,6 +45,26 @@ export default function PostsManagement() {
     },
     staleTime: 30000
   })
+
+  // Delete post function
+  const handleDeletePost = async (postId: number) => {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/wp/posts?id=${postId}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete post')
+      }
+      refetch()
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete post. Please try again.')
+    }
+  }
 
   // Fetch current editor picks
   const { data: editorPicksData } = useQuery({
@@ -118,7 +138,7 @@ export default function PostsManagement() {
             <Star className="h-4 w-4 mr-2" />
             {isEditorPicksMode ? 'Exit Editor Picks' : 'Manage Editor Picks'}
           </Button>
-          <Button>
+          <Button onClick={() => window.open('/editor/new', '_blank')}>
             <Plus className="h-4 w-4 mr-2" />
             New Post
           </Button>
@@ -250,13 +270,25 @@ export default function PostsManagement() {
                       )}
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(`/editor/${post.id}`, '_blank')}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => window.open(`/blog/${post.slug}`, '_blank')}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeletePost(post.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

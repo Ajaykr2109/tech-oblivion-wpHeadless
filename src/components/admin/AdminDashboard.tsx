@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { 
   Users, FileText, Image, MessageSquare, TrendingUp, Eye, 
   Globe, Clock
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 
 
 import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
@@ -27,6 +28,12 @@ interface MediaItem {
   source_url: string
   alt_text?: string
   title?: { rendered?: string }
+  media_type?: string
+  mime_type?: string
+  media_details?: Record<string, unknown>
+  author?: number
+  date?: string
+  slug?: string
 }
 
 interface CommentItem {
@@ -234,7 +241,8 @@ function DashboardOverview() {
       if (!response.ok) throw new Error('Failed to fetch stats')
       return response.json()
     },
-    staleTime: 30000
+    staleTime: 10000, // Reduced from 30s to 10s for more frequent updates in admin
+    refetchOnWindowFocus: true // Refetch when user switches back to tab
   })
 
   const { data: analyticsResponse, isLoading: analyticsLoading } = useQuery({
@@ -450,14 +458,105 @@ function PostsSection() {
 }
 
 function MediaManagement() {
-  const { data: media, isLoading } = useQuery<MediaItem[]>({
+  const { data: media, isLoading, refetch } = useQuery<MediaItem[]>({
     queryKey: ['admin-media'],
     queryFn: async () => {
-      const response = await fetch('/api/wp/media')
+      const response = await fetch('/api/wp/media?per_page=50&orderby=date&order=desc', {
+        cache: 'no-store'
+      })
       if (!response.ok) throw new Error('Failed to fetch media')
       return response.json()
-    }
+    },
+    staleTime: 0
   })
+
+  const [selectedMedia, setSelectedMedia] = useState<number[]>([])
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterType, setFilterType] = useState<string>('all')
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    for (const file of Array.from(files)) {
+      try {
+        setUploadProgress(0)
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('title', file.name.split('.')[0])
+        formData.append('alt_text', file.name.split('.')[0])
+
+        const response = await fetch('/api/wp/media/upload', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          throw new Error('Upload failed')
+        }
+
+        setUploadProgress(100)
+        setTimeout(() => {
+          setUploadProgress(null)
+          refetch()
+        }, 1000)
+      } catch (error) {
+        console.error('Upload error:', error)
+        setUploadProgress(null)
+      }
+    }
+  }
+
+  const handleDelete = async (mediaId: number) => {
+    try {
+      const response = await fetch(`/api/wp/media/${mediaId}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Delete failed')
+      refetch()
+    } catch (error) {
+      console.error('Delete error:', error)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedMedia.length === 0) return
+    try {
+      await Promise.all(selectedMedia.map(id => 
+        fetch(`/api/wp/media/${id}`, { method: 'DELETE' })
+      ))
+      setSelectedMedia([])
+      refetch()
+    } catch (error) {
+      console.error('Bulk delete error:', error)
+    }
+  }
+
+  const handleSelectAll = () => {
+    if (selectedMedia.length === (filteredMedia?.length || 0)) {
+      setSelectedMedia([])
+    } else {
+      setSelectedMedia(filteredMedia?.map(m => m.id) || [])
+    }
+  }
+
+  const filteredMedia = useMemo(() => {
+    if (!media) return []
+    return media.filter(item => {
+      const matchesSearch = !searchQuery || 
+        (item.title?.rendered || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.alt_text || '').toLowerCase().includes(searchQuery.toLowerCase())
+      
+      const matchesType = filterType === 'all' || 
+        (filterType === 'image' && item.media_type === 'image') ||
+        (filterType === 'video' && item.media_type === 'video') ||
+        (filterType === 'audio' && item.media_type === 'audio') ||
+        (filterType === 'document' && !['image', 'video', 'audio'].includes(item.media_type || ''))
+      
+      return matchesSearch && matchesType
+    })
+  }, [media, searchQuery, filterType])
 
   if (isLoading) {
     return <div className="p-6">Loading media...</div>
@@ -467,35 +566,233 @@ function MediaManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Media Library</h2>
-        <Button>Upload Media</Button>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            multiple
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="media-upload"
+          />
+          <Button asChild>
+            <label htmlFor="media-upload" className="cursor-pointer">
+              <FileText className="h-4 w-4 mr-2" />
+              Upload Media
+            </label>
+          </Button>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {media && media.length > 0 ? (
-          media.map((item: MediaItem) => (
-            <Card key={item.id} className="overflow-hidden">
-              <div className="aspect-square bg-muted">
-                <img 
-                  src={item.source_url} 
-                  alt={item.alt_text || 'Media'}
-                  className="w-full h-full object-cover"
+
+      {/* Upload Progress */}
+      {uploadProgress !== null && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Uploading...</span>
+              <div className="flex-1 bg-muted rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
                 />
               </div>
-              <CardContent className="p-2">
-                <p className="text-sm truncate">{item.title?.rendered || 'Untitled'}</p>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            No media files found
+              <span className="text-sm">{uploadProgress}%</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-64">
+              <Input
+                placeholder="Search media..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="image">Images</SelectItem>
+                <SelectItem value="video">Videos</SelectItem>
+                <SelectItem value="audio">Audio</SelectItem>
+                <SelectItem value="document">Documents</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+        </CardContent>
+      </Card>
+
+      {/* Bulk Actions */}
+      {selectedMedia.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">
+                {selectedMedia.length} item(s) selected
+              </span>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                Delete Selected
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Media Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">Total Files</p>
+                <p className="text-2xl font-bold">{filteredMedia?.length || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-green-600" />
+              <div>
+                <p className="text-sm font-medium">Images</p>
+                <p className="text-2xl font-bold">
+                  {filteredMedia?.filter(m => m.media_type === 'image').length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-orange-600" />
+              <div>
+                <p className="text-sm font-medium">Videos</p>
+                <p className="text-2xl font-bold">
+                  {filteredMedia?.filter(m => m.media_type === 'video').length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium">Documents</p>
+                <p className="text-2xl font-bold">
+                  {filteredMedia?.filter(m => !['image', 'video', 'audio'].includes(m.media_type || '')).length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Media Grid */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selectedMedia.length === (filteredMedia?.length || 0) && filteredMedia.length > 0}
+              onChange={handleSelectAll}
+              className="rounded border-gray-300"
+            />
+            <CardTitle>
+              Media Files ({filteredMedia?.length || 0})
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredMedia && filteredMedia.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+              {filteredMedia.map((item: MediaItem) => (
+                <Card key={item.id} className="overflow-hidden group relative">
+                  <div className="aspect-square bg-muted relative">
+                    {item.media_type === 'image' ? (
+                      <>
+                        <img 
+                          src={`/api/image-proxy?url=${encodeURIComponent(item.source_url)}`}
+                          alt={item.alt_text || 'Media'}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            // Try direct URL as fallback
+                            if (target.src.includes('/api/image-proxy')) {
+                              target.src = item.source_url
+                            } else {
+                              target.style.display = 'none'
+                              const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement
+                              if (fallback) fallback.style.display = 'flex'
+                            }
+                          }}
+                        />
+                        <div className="fallback-icon w-full h-full flex items-center justify-center bg-muted absolute inset-0" style={{ display: 'none' }}>
+                          <FileText className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <FileText className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <CardContent className="p-2">
+                    <p className="text-xs truncate font-medium">{item.title?.rendered || 'Untitled'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.mime_type}</p>
+                    <div className="flex gap-1 mt-2">
+                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                        <FileText className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-12">
+              <Image className="mx-auto h-12 w-12 mb-4" />
+              <p>No media files found</p>
+              <p className="text-sm">Upload some files to get started</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 function CommentsManagement() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  
   const { data: comments, isLoading, refetch } = useQuery<CommentItem[]>({
     queryKey: ['admin-comments'],
     queryFn: async () => {
@@ -508,8 +805,210 @@ function CommentsManagement() {
   const [selectedComments, setSelectedComments] = useState<number[]>([])
   const [bulkAction, setBulkAction] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [requireApproval, setRequireApproval] = useState(true)
+  const [autoApprove, setAutoApprove] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<'all' | 'unapproved'>('all')
+  const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set())
+
+  // Load auto-approve setting
+  const { data: commentSettings } = useQuery({
+    queryKey: ['comment-settings'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/settings/comments')
+      if (!response.ok) return { autoApprove: false }
+      return response.json()
+    },
+    staleTime: 30000
+  })
+
+  // Comment action mutation with optimistic updates
+  const commentActionMutation = useMutation({
+    mutationFn: async ({ commentId, action }: { commentId: number, action: string }) => {
+      const response = await fetch(`/api/wp/comments/${commentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+      if (!response.ok) throw new Error('Comment action failed')
+      return { commentId, action }
+    },
+    onMutate: async ({ commentId, action }) => {
+      // Add to loading state
+      setLoadingComments(prev => new Set([...prev, commentId]))
+      
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['admin-comments'] })
+      
+      // Snapshot the previous value
+      const previousComments = queryClient.getQueryData<CommentItem[]>(['admin-comments'])
+      
+      // Optimistically update to the new value
+      if (previousComments) {
+        const actionMap = {
+          approve: 'approved',
+          unapprove: 'hold',
+          spam: 'spam',
+          unspam: 'approved',
+          trash: 'trash',
+          restore: 'approved',
+        } as const
+        
+        const newStatus = actionMap[action as keyof typeof actionMap]
+        if (newStatus) {
+          const updatedComments = previousComments.map(comment => 
+            comment.id === commentId 
+              ? { ...comment, status: newStatus as CommentItem['status'] }
+              : comment
+          )
+          queryClient.setQueryData(['admin-comments'], updatedComments)
+        }
+      }
+      
+      return { previousComments }
+    },
+    onError: (err, { commentId }, context) => {
+      // Remove from loading state
+      setLoadingComments(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(commentId)
+        return newSet
+      })
+      
+      // Rollback on error
+      if (context?.previousComments) {
+        queryClient.setQueryData(['admin-comments'], context.previousComments)
+      }
+      
+      toast({
+        title: "Error",
+        description: `Failed to update comment: ${err.message}`,
+        variant: "destructive"
+      })
+    },
+    onSuccess: ({ commentId, action }) => {
+      // Remove from loading state
+      setLoadingComments(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(commentId)
+        return newSet
+      })
+      
+      const actionLabels = {
+        approve: 'approved',
+        unapprove: 'unapproved',
+        spam: 'marked as spam',
+        unspam: 'unmarked as spam',
+        trash: 'moved to trash',
+        restore: 'restored'
+      } as const
+      
+      toast({
+        title: "Success",
+        description: `Comment ${actionLabels[action as keyof typeof actionLabels] || 'updated'} successfully`,
+        variant: "default"
+      })
+    },
+    onSettled: () => {
+      // Immediate invalidation for admin stats, delayed for comments list
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      // Always refetch after 500ms to ensure data consistency
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
+      }, 500)
+    }
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      const response = await fetch(`/api/wp/comments/${commentId}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Delete failed')
+      return commentId
+    },
+    onMutate: async (commentId) => {
+      setLoadingComments(prev => new Set([...prev, commentId]))
+      await queryClient.cancelQueries({ queryKey: ['admin-comments'] })
+      
+      const previousComments = queryClient.getQueryData<CommentItem[]>(['admin-comments'])
+      
+      if (previousComments) {
+        const updatedComments = previousComments.filter(comment => comment.id !== commentId)
+        queryClient.setQueryData(['admin-comments'], updatedComments)
+      }
+      
+      return { previousComments }
+    },
+    onError: (err, commentId, context) => {
+      setLoadingComments(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(commentId)
+        return newSet
+      })
+      
+      if (context?.previousComments) {
+        queryClient.setQueryData(['admin-comments'], context.previousComments)
+      }
+      
+      toast({
+        title: "Error",
+        description: `Failed to delete comment: ${err.message}`,
+        variant: "destructive"
+      })
+    },
+    onSuccess: (commentId) => {
+      setLoadingComments(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(commentId)
+        return newSet
+      })
+      
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully",
+        variant: "default"
+      })
+    },
+    onSettled: () => {
+      // Immediate invalidation for admin stats, delayed for comments list
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
+      }, 500)
+    }
+  })
+
+  // Update autoApprove state when settings load
+  React.useEffect(() => {
+    if (commentSettings?.autoApprove !== undefined) {
+      setAutoApprove(commentSettings.autoApprove)
+    }
+  }, [commentSettings])
+
+  // Toggle auto-approve setting
+  const handleAutoApproveToggle = async () => {
+    try {
+      const response = await fetch('/api/wp/settings/comments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoApprove: !autoApprove })
+      })
+      if (response.ok) {
+        setAutoApprove(!autoApprove)
+        toast({
+          title: "Settings Updated",
+          description: `Auto-approve ${!autoApprove ? 'enabled' : 'disabled'}`,
+          variant: "default"
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update auto-approve setting:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update auto-approve setting",
+        variant: "destructive"
+      })
+    }
+  }
 
   const handleBulkAction = async () => {
     if (!bulkAction || selectedComments.length === 0) return
@@ -524,32 +1023,31 @@ function CommentsManagement() {
       ))
       setSelectedComments([])
       setBulkAction('')
+      // Immediate invalidation for dashboard stats
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
       refetch()
+      
+      toast({
+        title: "Success",
+        description: `Bulk action applied to ${selectedComments.length} comments`,
+        variant: "default"
+      })
     } catch (error) {
       console.error('Bulk action failed:', error)
-    }
-  }
-
-  const handleCommentAction = async (commentId: number, action: string) => {
-    try {
-      await fetch(`/api/wp/comments/${commentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+      toast({
+        title: "Error",
+        description: "Bulk action failed",
+        variant: "destructive"
       })
-      refetch()
-    } catch (error) {
-      console.error('Comment action failed:', error)
     }
   }
 
-  const handleDelete = async (commentId: number) => {
-    try {
-      await fetch(`/api/wp/comments/${commentId}`, { method: 'DELETE' })
-      refetch()
-    } catch (error) {
-      console.error('Delete failed:', error)
-    }
+  const handleCommentAction = (commentId: number, action: string) => {
+    commentActionMutation.mutate({ commentId, action })
+  }
+
+  const handleDelete = (commentId: number) => {
+    deleteMutation.mutate(commentId)
   }
 
   const handleSelectAll = () => {
@@ -575,11 +1073,22 @@ function CommentsManagement() {
         (filterStatus === 'spam' && comment.status === 'spam') ||
         (filterStatus === 'trash' && comment.status === 'trash')
       
-      return matchesSearch && matchesStatus
+      const matchesTab = activeTab === 'all' || 
+        (activeTab === 'unapproved' && (comment.status === 'hold' || comment.status === 'spam'))
+      
+      return matchesSearch && matchesStatus && matchesTab
     })
     
     return filtered
-  }, [comments, searchQuery, filterStatus])
+  }, [comments, searchQuery, filterStatus, activeTab])
+
+  const unapprovedComments = useMemo(() => {
+    return comments?.filter(comment => comment.status === 'hold' || comment.status === 'spam') || []
+  }, [comments])
+
+  const approvedComments = useMemo(() => {
+    return comments?.filter(comment => comment.status === 'approved') || []
+  }, [comments])
 
   if (isLoading) {
     return <div className="p-6">Loading comments...</div>
@@ -591,12 +1100,94 @@ function CommentsManagement() {
         <h2 className="text-2xl font-semibold">Comments Management</h2>
         <div className="flex gap-2">
           <Button 
-            variant="outline" 
-            onClick={() => setRequireApproval(!requireApproval)}
+            variant={autoApprove ? "default" : "outline"}
+            onClick={handleAutoApproveToggle}
           >
-            {requireApproval ? 'Auto-Approve New Comments' : 'Require Approval'}
+            {autoApprove ? 'Auto-Approve: ON' : 'Auto-Approve: OFF'}
           </Button>
         </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium">Total Comments</p>
+                <p className="text-2xl font-bold">{comments?.length || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-green-600" />
+              <div>
+                <p className="text-sm font-medium">Approved</p>
+                <p className="text-2xl font-bold">{approvedComments.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-orange-600" />
+              <div>
+                <p className="text-sm font-medium">Pending</p>
+                <p className="text-2xl font-bold">
+                  {comments?.filter(c => c.status === 'hold').length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-red-600" />
+              <div>
+                <p className="text-sm font-medium">Spam</p>
+                <p className="text-2xl font-bold">
+                  {comments?.filter(c => c.status === 'spam').length || 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Auto-Approve Notice */}
+      {autoApprove && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+              <p className="text-sm text-green-800">
+                Auto-approve is enabled. New comments will be automatically approved unless marked as spam.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2">
+        <Button 
+          variant={activeTab === 'all' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('all')}
+        >
+          All Comments ({comments?.length || 0})
+        </Button>
+        <Button 
+          variant={activeTab === 'unapproved' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('unapproved')}
+        >
+          Unapproved ({unapprovedComments.length})
+        </Button>
       </div>
 
       {/* Filters and Search */}
@@ -666,115 +1257,155 @@ function CommentsManagement() {
               className="rounded border-gray-300"
             />
             <CardTitle>
-              Comments ({filteredComments?.length || 0})
+              {activeTab === 'all' ? 'All Comments' : 'Unapproved Comments'} ({filteredComments?.length || 0})
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="space-y-4 p-6">
             {filteredComments && filteredComments.length > 0 ? (
-              filteredComments.map((comment: CommentItem) => (
-                <div key={comment.id} className="border-b pb-4 last:border-b-0">
-                  <div className="flex items-start gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedComments.includes(comment.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedComments(prev => [...prev, comment.id])
-                        } else {
-                          setSelectedComments(prev => prev.filter(id => id !== comment.id))
-                        }
-                      }}
-                      className="mt-1 rounded border-gray-300"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium">{comment.author_name}</span>
-                        <span className="text-sm text-muted-foreground">{comment.author_email}</span>
-                        <Badge variant={
-                          comment.status === 'approved' ? 'default' :
-                          comment.status === 'hold' ? 'secondary' :
-                          comment.status === 'spam' ? 'destructive' :
-                          'outline'
-                        }>
-                          {comment.status === 'hold' ? 'pending' : comment.status}
-                        </Badge>
+              filteredComments.map((comment: CommentItem) => {
+                const isLoading = loadingComments.has(comment.id)
+                return (
+                  <div 
+                    key={comment.id} 
+                    className={`border-b pb-4 last:border-b-0 transition-all duration-300 ${
+                      isLoading ? 'opacity-60 pointer-events-none' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedComments.includes(comment.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedComments(prev => [...prev, comment.id])
+                          } else {
+                            setSelectedComments(prev => prev.filter(id => id !== comment.id))
+                          }
+                        }}
+                        className="mt-1 rounded border-gray-300"
+                        disabled={isLoading}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium">{comment.author_name}</span>
+                          <span className="text-sm text-muted-foreground">{comment.author_email}</span>
+                          <Badge 
+                            variant={
+                              comment.status === 'approved' ? 'default' :
+                              comment.status === 'hold' ? 'secondary' :
+                              comment.status === 'spam' ? 'destructive' :
+                              'outline'
+                            }
+                            className={`transition-all duration-300 ${
+                              isLoading ? 'animate-pulse' : ''
+                            }`}
+                          >
+                            {comment.status === 'hold' ? 'pending' : comment.status}
+                          </Badge>
+                          {isLoading && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <div className="animate-spin h-3 w-3 border border-gray-300 border-t-transparent rounded-full"></div>
+                              Updating...
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-sm mb-2" dangerouslySetInnerHTML={{ __html: comment.content?.rendered || '' }} />
+                        <div className="text-xs text-muted-foreground">
+                          On: {comment.post?.title} • {new Date(comment.date).toLocaleDateString()}
+                        </div>
                       </div>
-                      <div className="text-sm mb-2" dangerouslySetInnerHTML={{ __html: comment.content?.rendered || '' }} />
-                      <div className="text-xs text-muted-foreground">
-                        On: {comment.post?.title} • {new Date(comment.date).toLocaleDateString()}
+                      <div className="flex gap-2 flex-wrap">
+                        {comment.status !== 'approved' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'approve')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Approve
+                          </Button>
+                        )}
+                        {comment.status === 'approved' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'unapprove')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Unapprove
+                          </Button>
+                        )}
+                        {comment.status !== 'spam' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'spam')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Spam
+                          </Button>
+                        )}
+                        {comment.status === 'spam' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'unspam')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Not Spam
+                          </Button>
+                        )}
+                        {comment.status !== 'trash' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'trash')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Trash
+                          </Button>
+                        )}
+                        {comment.status === 'trash' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleCommentAction(comment.id, 'restore')}
+                            disabled={isLoading}
+                            className="transition-all duration-300"
+                          >
+                            Restore
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDelete(comment.id)}
+                          disabled={isLoading}
+                          className="transition-all duration-300"
+                        >
+                          Delete
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {comment.status !== 'approved' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'approve')}
-                        >
-                          Approve
-                        </Button>
-                      )}
-                      {comment.status === 'approved' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'unapprove')}
-                        >
-                          Unapprove
-                        </Button>
-                      )}
-                      {comment.status !== 'spam' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'spam')}
-                        >
-                          Spam
-                        </Button>
-                      )}
-                      {comment.status === 'spam' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'unspam')}
-                        >
-                          Not Spam
-                        </Button>
-                      )}
-                      {comment.status !== 'trash' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'trash')}
-                        >
-                          Trash
-                        </Button>
-                      )}
-                      {comment.status === 'trash' && (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCommentAction(comment.id, 'restore')}
-                        >
-                          Restore
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => handleDelete(comment.id)}
-                      >
-                        Delete
-                      </Button>
                     </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                No comments found
+                <MessageSquare className="mx-auto h-12 w-12 mb-4" />
+                <p>
+                  {activeTab === 'unapproved' ? 'No unapproved comments found' : 'No comments found'}
+                </p>
+                {activeTab === 'unapproved' && (
+                  <p className="text-sm">All comments are approved or in trash</p>
+                )}
               </div>
             )}
           </div>

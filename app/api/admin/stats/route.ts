@@ -231,7 +231,7 @@ export async function GET(req: NextRequest) {
       status: 200, 
       headers: { 
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=300' // 5 minutes cache
+        'Cache-Control': 'public, max-age=30' // Reduced to 30 seconds for admin dashboard responsiveness
       }
     })
     
