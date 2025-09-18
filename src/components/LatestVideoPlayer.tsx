@@ -79,8 +79,15 @@ export default function LatestVideoPlayer() {
           />
         )}
       </div>
-      <div className="mt-3 text-lg font-semibold text-center text-foreground">
-        {video.title}
+      <div className="mt-3">
+        <a 
+          href={`https://www.youtube.com/watch?v=${video.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-lg font-semibold text-center text-foreground hover:text-primary transition-colors cursor-pointer block"
+        >
+          {video.title}
+        </a>
       </div>
     </div>
   );

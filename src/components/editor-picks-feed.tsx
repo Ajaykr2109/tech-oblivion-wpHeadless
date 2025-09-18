@@ -2,6 +2,7 @@ import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { htmlToText } from "@/lib/text";
+import { calculatePostReadingTime, formatReadingTime } from "@/lib/reading-time";
 import { getPostsByIds, getPosts } from "@/lib/wp";
 import { getSettings } from "@/lib/settings";
 
@@ -67,23 +68,35 @@ export default async function EditorPicksFeed({ layout = 'grid', fallbackCount =
           <p>Posts will appear once admin sets editor picks. Showing latest posts as fallback.</p>
         </div>
       ) : (
-        editorPicksPosts.map((p) => (
-          <PostCard
-            key={p.id}
-            layout={layout}
-            post={{
-              id: String(p.id),
-              title: p.title,
-              author: p.authorName || 'Unknown',
-              avatar: p.authorAvatar || '/favicon.ico',
-              imageUrl: p.featuredImage || '/favicon.ico',
-              imageHint: 'featured image',
-              excerpt: htmlToText(p.excerptHtml || '').slice(0, 180),
-              slug: p.slug,
-              date: p.date,
-            }}
-          />
-        ))
+        editorPicksPosts.map((p) => {
+          // Calculate reading time
+          const contentForReading = p.excerptHtml || '';
+          const readingTime = calculatePostReadingTime(
+            p.title,
+            contentForReading
+          );
+          
+          return (
+            <PostCard
+              key={p.id}
+              layout={layout}
+              showFeatured={true}
+              post={{
+                id: String(p.id),
+                title: p.title,
+                author: p.authorName || 'Unknown',
+                avatar: p.authorAvatar || '/favicon.ico',
+                imageUrl: p.featuredImage || '/favicon.ico',
+                imageHint: 'featured image',
+                excerpt: htmlToText(p.excerptHtml || '').slice(0, 180),
+                slug: p.slug,
+                date: p.date,
+                content: contentForReading,
+                readingTime: formatReadingTime(readingTime),
+              }}
+            />
+          );
+        })
       )}
     </div>
   );

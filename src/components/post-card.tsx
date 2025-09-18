@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { calculateReadingTime, formatReadingTime } from "@/lib/reading-time";
 
 export type Post = {
   id: string;
@@ -23,14 +24,27 @@ export type Post = {
   excerpt: string;
   slug: string;
   date: string;
+  content?: string; // For reading time calculation
+  views?: number; // View count
+  readingTime?: string; // Pre-calculated reading time
 };
 
 type PostCardProps = {
   post: Post;
   layout?: 'grid' | 'list';
+  showFeatured?: boolean;
 };
 
-export function PostCard({ post, layout = 'grid' }: PostCardProps) {
+export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCardProps) {
+  // Calculate reading time if not provided
+  const readingTimeText = post.readingTime || formatReadingTime(
+    calculateReadingTime(post.content || post.excerpt || post.title)
+  );
+  
+  // Format view count
+  const viewsText = post.views !== undefined 
+    ? `${post.views.toLocaleString()} views`
+    : undefined;
 
   if (layout === 'list') {
     return (
@@ -51,15 +65,19 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
             </div>
             <div className="flex flex-col justify-between p-4 flex-grow">
               <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                    Featured
-                  </Badge>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Eye className="h-3 w-3" />
-                    <span>2.4k views</span>
+                {showFeatured && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                      Featured
+                    </Badge>
+                    {viewsText && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Eye className="h-3 w-3" />
+                        <span>{viewsText}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
                 <CardTitle id={`post-title-${post.id}`} className="text-lg leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2">
                   {post.title}
                 </CardTitle>
@@ -115,27 +133,33 @@ export function PostCard({ post, layout = 'grid' }: PostCardProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               
               {/* Floating badges */}
-              <div className="absolute top-4 left-4 flex items-center gap-2">
-                <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm">
-                  Featured
-                </Badge>
-              </div>
+              {showFeatured && (
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm">
+                    Featured
+                  </Badge>
+                </div>
+              )}
               
               {/* Reading time estimate */}
               <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/20 backdrop-blur-sm rounded-full px-2 py-1">
                 <Clock className="h-3 w-3 text-white" />
-                <span className="text-xs text-white">5 min read</span>
+                <span className="text-xs text-white">{readingTimeText}</span>
               </div>
             </div>
           </CardHeader>
           
           <CardContent className="flex-grow p-6">
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Eye className="h-3 w-3" />
-                <span>2.4k views</span>
-              </div>
-              <span className="text-xs text-muted-foreground">•</span>
+              {viewsText && (
+                <>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Eye className="h-3 w-3" />
+                    <span>{viewsText}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">•</span>
+                </>
+              )}
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
