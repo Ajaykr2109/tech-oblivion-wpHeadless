@@ -40,6 +40,7 @@ export default async function EditorPicksFeed({ layout = 'grid', fallbackCount =
         slug: p.slug,
         title: p.title,
         excerptHtml: p.excerptHtml,
+        contentHtml: p.contentHtml,  // Include full content
         featuredImage: p.featuredImage,
         authorId: p.authorId,
         authorName: p.authorName,
@@ -69,8 +70,8 @@ export default async function EditorPicksFeed({ layout = 'grid', fallbackCount =
         </div>
       ) : (
         editorPicksPosts.map((p) => {
-          // Calculate reading time
-          const contentForReading = p.excerptHtml || '';
+          // Calculate reading time from full content, fallback to excerpt
+          const contentForReading = p.contentHtml || p.excerptHtml || '';
           const readingTime = calculatePostReadingTime(
             p.title,
             contentForReading
@@ -85,6 +86,7 @@ export default async function EditorPicksFeed({ layout = 'grid', fallbackCount =
                 id: String(p.id),
                 title: p.title,
                 author: p.authorName || 'Unknown',
+                authorSlug: p.authorSlug || undefined,
                 avatar: p.authorAvatar || '/favicon.ico',
                 imageUrl: p.featuredImage || '/favicon.ico',
                 imageHint: 'featured image',

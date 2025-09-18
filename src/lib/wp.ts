@@ -75,6 +75,7 @@ export type PostSummary = {
   slug: string
   title: string
   excerptHtml?: string
+  contentHtml?: string  // Full content for reading time calculation
   featuredImage?: string | null
   authorId?: number | null
   authorName?: string | null
@@ -154,6 +155,7 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
       slug: p.slug,
       title: p.title.rendered,
       excerptHtml: p.excerpt.rendered,
+      contentHtml: p.content.rendered,  // Include full content for reading time
       // Direct WP media URL for stability
       featuredImage: _rawMediaUrl(p),
       authorId: p.author ?? null,
@@ -292,6 +294,7 @@ export async function getPostsByIds(ids: number[]): Promise<PostSummary[]> {
     slug: p.slug,
     title: p.title.rendered,
     excerptHtml: p.excerpt.rendered,
+    contentHtml: p.content.rendered,  // Include full content for reading time
     featuredImage: _rawMediaUrl(p),
     authorId: p.author ?? null,
     authorName: p._embedded?.author?.[0]?.name ?? null,

@@ -35,8 +35,8 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
         </div>
       ) : (
         items.map((p) => {
-          // Calculate reading time from available content
-          const contentForReading = p.excerptHtml || '';
+          // Calculate reading time from full content, fallback to excerpt
+          const contentForReading = p.contentHtml || p.excerptHtml || '';
           const readingTime = calculatePostReadingTime(
             p.title,
             contentForReading
@@ -51,6 +51,7 @@ export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps
                 id: String(p.id),
                 title: p.title,
                 author: p.authorName || 'Unknown',
+                authorSlug: p.authorSlug || undefined,
                 avatar: p.authorAvatar || '/favicon.ico',
                 imageUrl: p.featuredImage || '/favicon.ico',
                 imageHint: 'featured image',

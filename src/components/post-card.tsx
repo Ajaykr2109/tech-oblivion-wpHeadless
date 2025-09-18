@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Calendar, Clock, ArrowRight, Eye } from "lucide-react";
+import { Calendar, Clock, Eye } from "lucide-react";
 
 import ClientImage from "@/components/ui/client-image";
 import {
@@ -11,7 +11,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// Removed unused Avatar imports since we no longer show avatars
 import { Badge } from "@/components/ui/badge";
 import { calculateReadingTime, formatReadingTime } from "@/lib/reading-time";
 
@@ -19,6 +19,7 @@ export type Post = {
   id: string;
   title: string;
   author: string;
+  authorSlug?: string; // For linking to author profiles
   avatar: string;
   imageUrl: string;
   imageHint: string;
@@ -65,7 +66,13 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 <Calendar className="h-3 w-3" />
                 <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
-              <p className="text-xs font-medium text-right">{post.author}</p>
+              {post.authorSlug ? (
+                <Link href={`/profile/${post.authorSlug}`} className="text-xs font-medium text-right hover:text-primary transition-colors">
+                  {post.author}
+                </Link>
+              ) : (
+                <p className="text-xs font-medium text-right">{post.author}</p>
+              )}
             </div>
           </Card>
         </Link>
@@ -119,36 +126,17 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 </p>
               </div>
               <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8 ring-2 ring-primary/20">
-                    <AvatarImage 
-                      src={post.avatar} 
-                      alt={post.author}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (target.src !== '/favicon.ico') {
-                          target.src = '/favicon.ico';
-                        }
-                      }}
-                    />
-                    <AvatarFallback className="bg-gradient-primary text-white text-xs">
-                      {post.author
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium leading-none">{post.author}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
+                {post.authorSlug ? (
+                  <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
+                    {post.author}
+                  </Link>
+                ) : (
+                  <p className="text-sm font-medium">{post.author}</p>
+                )}
               </div>
             </div>
           </Card>
@@ -224,33 +212,17 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
           
           <CardFooter className="p-6 pt-0">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center space-x-3">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                  <AvatarImage 
-                    src={post.avatar} 
-                    alt={post.author}
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (target.src !== '/favicon.ico') {
-                        target.src = '/favicon.ico';
-                      }
-                    }}
-                  />
-                  <AvatarFallback className="bg-gradient-primary text-white text-sm">
-                    {post.author
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium leading-none">{post.author}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </p>
-                </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
+              {post.authorSlug ? (
+                <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
+                  {post.author}
+                </Link>
+              ) : (
+                <p className="text-sm font-medium">{post.author}</p>
+              )}
             </div>
           </CardFooter>
         </Card>

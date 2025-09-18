@@ -23,6 +23,9 @@ interface Post {
   excerpt?: {
     rendered: string;
   } | string;
+  content?: {
+    rendered: string;
+  } | string;
   featured_media?: number;
   _embedded?: {
     'wp:featuredmedia'?: Array<{
@@ -31,6 +34,7 @@ interface Post {
     author?: Array<{
       id: number;
       name: string;
+      slug?: string;
       avatar_urls?: {
         '48': string;
         '96': string;
@@ -135,8 +139,8 @@ export default function AutoScrollFeed({
           const authorData = p._embedded?.author?.[0];
           const featuredImageData = p._embedded?.['wp:featuredmedia']?.[0];
 
-          // Calculate reading time
-          const contentForReading = getRenderedText(p.excerpt) || '';
+          // Calculate reading time from full content if available, fallback to excerpt
+          const contentForReading = getRenderedText(p.content) || getRenderedText(p.excerpt) || '';
           const readingTime = calculatePostReadingTime(
             getRenderedText(p.title),
             contentForReading
@@ -151,6 +155,7 @@ export default function AutoScrollFeed({
                   id: String(p.id),
                   title: getRenderedText(p.title),
                   author: authorData?.name || 'Unknown',
+                  authorSlug: authorData?.slug || undefined,
                   avatar: authorData?.avatar_urls?.['96'] || authorData?.avatar_urls?.['48'] || '/favicon.ico',
                   imageUrl: featuredImageData?.source_url || '/favicon.ico',
                   imageHint: 'featured image',
