@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { getCurrentUserSlug } from "@/lib/user-slug";
 import { useAuth } from "@/hooks/useAuth";
 import { UserMenuSkeleton, AuthButtonSkeleton, AdminMenuSkeleton } from "@/components/ui/auth-skeletons";
 
@@ -30,21 +29,14 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const { user, isLoading, can } = useAuth();
-  const [userSlug, setUserSlug] = useState<string | null>(null);
+  const userSlug = useMemo(() => {
+    if (!user) return null
+    return (user.slug || user.user_nicename || user.username || null) as string | null
+  }, [user])
 
   const isUserAdmin = can('admin');
 
-  useEffect(() => {
-    const getUserSlug = async () => {
-      if (user) {
-        const slug = await getCurrentUserSlug();
-        setUserSlug(slug);
-      } else {
-        setUserSlug(null);
-      }
-    };
-    getUserSlug();
-  }, [user]);
+  // No extra requests: slug comes from auth context
 
   const handleLogout = async () => {
     try {

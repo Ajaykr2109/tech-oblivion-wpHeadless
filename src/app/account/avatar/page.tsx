@@ -5,29 +5,22 @@ import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 type Me = { avatar_urls?: Record<string, string> }
 
 export default function AccountAvatarPage() {
   const { toast } = useToast()
+  const { user, checkAuth, isLoading: authLoading } = useAuth()
   const [me, setMe] = useState<Me | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
-    ;(async () => {
-      try {
-        const r = await fetch('/api/auth/me', { cache: 'no-store' })
-        if (r.ok) {
-          const data = await r.json()
-          if (data?.user) setMe(data.user)
-        }
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
+    if (user) setMe(user as unknown as Me)
+    setLoading(false)
+  }, [user])
 
   const upload = async () => {
     if (!file) return
@@ -38,10 +31,9 @@ export default function AccountAvatarPage() {
       const r = await fetch('/api/wp/users/avatar', { method: 'POST', body: fd })
       if (!r.ok) throw new Error(await r.text())
       toast({ title: 'Avatar updated' })
-      // refresh local me
-      const r2 = await fetch('/api/auth/me', { cache: 'no-store' })
-      const d2 = await r2.json().catch(() => ({}))
-      if (d2?.user) setMe(d2.user)
+  // refresh auth state and local me
+  await checkAuth()
+  if (user) setMe(user as unknown as Me)
     } catch (e: unknown) {
       toast({ title: 'Upload failed', description: e instanceof Error ? e.message : String(e), variant: 'destructive' })
     } finally {
@@ -49,7 +41,7 @@ export default function AccountAvatarPage() {
     }
   }
 
-  if (loading) return <div className="p-6">Loading…</div>
+  if ((loading || authLoading) && !me) return <div className="p-6">Loading…</div>
   if (!me) return <div className="p-6">Please log in.</div>
 
   const preview = me.avatar_urls?.['128'] || me.avatar_urls?.['96'] || me.avatar_urls?.['48']

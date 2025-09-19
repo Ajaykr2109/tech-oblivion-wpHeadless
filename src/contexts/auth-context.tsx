@@ -12,6 +12,15 @@ interface User {
   displayName: string
   url?: string
   website?: string
+  // Public profile slug identifiers
+  slug?: string
+  user_nicename?: string
+  // Additional core profile fields from WP
+  name?: string
+  nickname?: string
+  locale?: string
+  description?: string
+  avatar_urls?: Record<string, string>
   roles?: string[]
   // Canonical container coming from WP via FE Auth Bridge
   profile_fields?: Record<string, string>

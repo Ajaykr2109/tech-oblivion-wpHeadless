@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/useAuth"
 
 type Me = {
   id: number | string
@@ -23,6 +24,7 @@ type Me = {
 
 export default function AccountProfilePage() {
   const { toast } = useToast()
+  const { user, isLoading: authLoading } = useAuth()
   const [me, setMe] = useState<Me | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -30,30 +32,18 @@ export default function AccountProfilePage() {
   const [fields, setFields] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    ;(async () => {
-      try {
-        const r = await fetch("/api/auth/me", { cache: "no-store" })
-        if (r.ok) {
-          const data = await r.json()
-          if (data?.user) {
-            setMe(data.user)
-            const profile =
-              data.user.profile_fields && typeof data.user.profile_fields === "object"
-                ? (data.user.profile_fields as Record<string, unknown>)
-                : {}
-            const init: Record<string, string> = {}
-            allowedKeys.forEach((k) => {
-              const v = profile[k]
-              init[k] = typeof v === "string" ? v : ""
-            })
-            setFields(init)
-          }
-        }
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [allowedKeys])
+    if (user) {
+      setMe(user as unknown as Me)
+      const profile = user.profile_fields && typeof user.profile_fields === 'object' ? (user.profile_fields as Record<string, unknown>) : {}
+      const init: Record<string, string> = {}
+      allowedKeys.forEach((k) => {
+        const v = profile[k]
+        init[k] = typeof v === 'string' ? v : ''
+      })
+      setFields(init)
+    }
+    setLoading(false)
+  }, [user, allowedKeys])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -100,7 +90,7 @@ export default function AccountProfilePage() {
     }
   }
 
-  if (loading) return <div className="p-6">Loading…</div>
+  if ((loading || authLoading) && !me) return <div className="p-6">Loading…</div>
   if (!me) return <div className="p-6">Please log in.</div>
 
   return (

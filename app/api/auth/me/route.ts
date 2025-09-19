@@ -37,13 +37,16 @@ export async function GET(req: Request) {
     const wpToken = claims.wpToken
     if (WP && wpToken) {
       try {
-        const url = new URL('/wp-json/wp/v2/users/me', WP)
+    const url = new URL('/wp-json/wp/v2/users/me', WP)
         url.searchParams.set('context', 'edit')
   // Ask WP for profile_fields (plugin) along with core profile fields
-  url.searchParams.set('_fields', 'id,slug,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta')
+  url.searchParams.set('_fields', 'id,slug,user_nicename,name,email,roles,avatar_urls,description,url,locale,nickname,profile_fields,meta')
         const res = await fetch(url, { headers: { Authorization: `Bearer ${wpToken}` }, cache: 'no-store' })
         if (res.ok) {
           const wp = await res.json()
+      // Propagate core identity fields from WP
+      if (wp?.slug) (user as { slug?: string }).slug = wp.slug
+      if (wp?.user_nicename) (user as { user_nicename?: string }).user_nicename = wp.user_nicename
           if (wp?.roles) user.roles = wp.roles
           if (wp?.email) user.email = wp.email
           if (wp?.name) user.displayName = wp.name

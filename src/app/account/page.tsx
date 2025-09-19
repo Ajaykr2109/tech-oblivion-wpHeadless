@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/useAuth"
 
 type Me = {
   id: number | string
@@ -24,27 +25,18 @@ type Me = {
 
 export default function AccountCenter() {
   const { toast } = useToast()
+  const { user, isLoading, checkAuth } = useAuth()
   const [me, setMe] = useState<Me | null>(null)
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // Initialize from auth context
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await fetch("/api/auth/me", { cache: "no-store" })
-        if (r.ok) {
-          const data = await r.json()
-          if (data?.user) setMe(data.user)
-        }
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
+    if (user) setMe(user as unknown as Me)
+  }, [user])
 
   const isAdmin = !!me?.roles?.includes("administrator")
 
-  if (loading) return <div className="p-6">Loading…</div>
+  if (isLoading && !me) return <div className="p-6">Loading…</div>
   if (!me) return <div className="p-6">Please log in.</div>
 
   // --- sections ---
@@ -74,16 +66,9 @@ export default function AccountCenter() {
             throw new Error(t || 'Update failed')
           }
           toast({ title: 'Profile updated' })
-          // refresh local user state
-          try {
-            const r2 = await fetch('/api/auth/me', { cache: 'no-store' })
-            if (r2.ok) {
-              const d2 = await r2.json().catch(() => ({} as { user?: unknown }))
-              if (d2?.user) setMe(d2.user)
-            }
-          } catch {
-            // ignore refresh error
-          }
+          // refresh auth context
+          await checkAuth()
+          if (user) setMe(user as unknown as Me)
         } catch (err: unknown) {
           toast({ title: 'Update failed', description: err instanceof Error ? err.message : String(err), variant: 'destructive' })
         } finally {
