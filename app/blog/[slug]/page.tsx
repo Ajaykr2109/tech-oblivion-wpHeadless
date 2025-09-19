@@ -124,8 +124,19 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     if (authorId) {
         latestByAuthor = await getLatestByAuthor(Number(authorId), Number(post.id), 3)
         
-        // If no posts from author, fallback to editor picks
-        if (latestByAuthor.length === 0) {
+        // Filter to ensure we only have posts from the exact author (defense against API issues)
+        // WordPress sometimes returns inconsistent data, so we double-check here
+        const authorFilteredPosts = latestByAuthor.filter((p: unknown) => {
+            const postItem = p as Record<string, unknown>
+            const postAuthorId = Number(postItem.author)
+            const currentAuthorId = Number(authorId)
+            return postAuthorId === currentAuthorId && Number(postItem.id) !== Number(post.id)
+        })
+        
+        // If we have posts from this author, use them; otherwise fallback to editor picks
+        if (authorFilteredPosts.length > 0) {
+            latestByAuthor = authorFilteredPosts
+        } else {
             latestByAuthor = await getEditorPicks()
         }
         
@@ -456,15 +467,15 @@ export default async function PostPage({ params, searchParams }: PageProps) {
 
                                                 {/* Recent Posts - REMOVED */}
 
-                                                {/* Author's latest posts or editor picks */}
+                                                {/* Author's latest posts or editor picks fallback */}
                                                 {Array.isArray(latestByAuthor) && latestByAuthor.length > 0 && (
                                                         <div className="mt-6 bg-card p-6 rounded-lg shadow-lg">
                                                                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                                                                     {(() => {
                                                                         // Check if we have actual author posts by checking if any post matches the current author
-                                                                        const hasAuthorPosts = latestByAuthor.some((p: unknown) => {
+                                                                        const hasAuthorPosts = authorId && latestByAuthor.some((p: unknown) => {
                                                                             const post = p as Record<string, unknown>
-                                                                            return post.author === authorId
+                                                                            return Number(post.author) === Number(authorId)
                                                                         })
                                                                         return hasAuthorPosts ? "More from the author" : "Editor's Picks"
                                                                     })()} 

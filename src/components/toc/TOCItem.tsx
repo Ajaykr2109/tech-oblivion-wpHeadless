@@ -4,13 +4,13 @@ import Link from 'next/link'
 
 import { decodeEntities } from '@/lib/entities'
 
-export default function TOCItem({ id, value, depth, state, onClick, minutes }: {
+export default function TOCItem({ id, value, depth, state, onClick, _minutes }: {
   id: string
   value: string
   depth: number
   state: 'active'|'nearby'|'adjacent'|'idle'
   onClick?: () => void
-  minutes?: number
+  _minutes?: number
 }) {
   const padding = Math.max(0, (depth - 1)) * 12
   const classes = {
@@ -25,15 +25,7 @@ export default function TOCItem({ id, value, depth, state, onClick, minutes }: {
         <span className={`inline-block transition-transform duration-150 ease-out group-hover:translate-x-[2px] group-hover:scale-[1.015]`}>
           {decodeEntities(value)}
         </span>
-        {typeof minutes === 'number' && minutes > 0 && (
-          <span className="float-right ml-2 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-            {minutes}m
-          </span>
-        )}
+        {/* Reading time display removed from TOC as requested */}
       </Link>
     </motion.div>
   )

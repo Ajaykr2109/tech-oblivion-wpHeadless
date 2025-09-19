@@ -146,7 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth()
-  }, [checkAuth])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount - checkAuth is stable due to useCallback with empty deps
 
   // Listen for auth events with throttling to prevent spam
   useEffect(() => {

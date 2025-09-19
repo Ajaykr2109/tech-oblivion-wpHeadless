@@ -507,3 +507,16 @@ main#main-content.article {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* Hide scrollbar in TOC while maintaining scroll functionality */
+.toc-scroll {
+  /* Hide scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+  -webkit-scrollbar: none;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ensure scrolling still works */
+.toc-scroll::-webkit-scrollbar {
+  display: none;
+}

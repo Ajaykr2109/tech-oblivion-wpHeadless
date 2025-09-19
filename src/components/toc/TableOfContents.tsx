@@ -152,7 +152,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
                 depth={i.depth}
                 state={st as ItemState}
                 onClick={() => setFocusedIndex(idx)}
-                minutes={sectionTimes[i.id]}
+                _minutes={sectionTimes[i.id]}
               />
             )
           })}
