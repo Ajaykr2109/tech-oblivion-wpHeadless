@@ -40,6 +40,9 @@ interface AnalyticsEvent {
   data: Record<string, unknown>
 }
 
+// Simple in-memory debounce map for this tab
+const lastSendMap: Map<string, number> = new Map()
+
 class EnhancedAnalytics {
   private sessionId: string
   private startTime: number
@@ -220,6 +223,29 @@ class EnhancedAnalytics {
     })
   }
 
+  private shouldDebounce(path: string, sessionId: string, minMs = 4000): boolean {
+    try {
+      const key = `pv:${sessionId}:${path}`
+      const now = Date.now()
+      // sessionStorage guard (per-tab session)
+      const last = Number(sessionStorage.getItem(key) || '0')
+      const memLast = lastSendMap.get(key) || 0
+      const lastTs = Math.max(last, memLast)
+      if (now - lastTs < minMs) return true
+      sessionStorage.setItem(key, String(now))
+      lastSendMap.set(key, now)
+      return false
+    } catch {
+      // If storage fails, fall back to in-memory map only
+      const key = `pv:${sessionId}:${path}`
+      const now = Date.now()
+      const memLast = lastSendMap.get(key) || 0
+      if (now - memLast < minMs) return true
+      lastSendMap.set(key, now)
+      return false
+    }
+  }
+
   public trackPageView(data: Partial<PageView> = {}) {
     const pageView: PageView = {
       path: window.location.pathname,
@@ -235,7 +261,14 @@ class EnhancedAnalytics {
       ...data
     }
 
-    // Reset page timer if this is a new page view
+    // Debounce duplicate sends for the same path/session in quick succession
+    const safePath = pageView.path || window.location.pathname || '/'
+    const safeSession = pageView.sessionId || this.sessionId || 'anon'
+    if (!data.pageExit && this.shouldDebounce(safePath, safeSession)) {
+      return
+    }
+
+    // Reset page timer if this is a valid new page view
     if (!data.pageExit) {
       this.pageStartTime = Date.now()
       this.lastScrollDepth = 0
@@ -296,11 +329,11 @@ class EnhancedAnalytics {
 // Global analytics instance
 let analyticsInstance: EnhancedAnalytics | null = null
 
-export function initializeAnalytics() {
+export function initializeAnalytics(options?: { autoTrack?: boolean }) {
   if (typeof window !== 'undefined' && !analyticsInstance) {
     analyticsInstance = new EnhancedAnalytics()
-    // Track initial page view
-    analyticsInstance.trackPageView()
+    // Optionally track initial page view (disabled by default to avoid duplicates)
+    if (options?.autoTrack) analyticsInstance.trackPageView()
   }
   return analyticsInstance
 }

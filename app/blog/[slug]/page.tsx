@@ -29,6 +29,7 @@ import ReaderToolbarPortal from '@/components/reader-toolbar-portal'
 import ViewsCounter from '@/components/views-counter'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
+import FloatingActions from '@/components/floating-actions'
 import type { TocItem as HtmlTocItem } from '@/lib/toc'
 import type { TocItem as MdTocItem } from '@/lib/toc-md'
 
@@ -47,7 +48,7 @@ type EnhancedRecommendation = {
 }
 
 type PageParams = { params: Promise<{ slug: string }> }
-type PageProps = { params: Promise<{ slug: string }>, searchParams?: Record<string, string | string[] | undefined> }
+type PageProps = { params: Promise<{ slug: string }>, searchParams?: Promise<Record<string, string | string[] | undefined>> }
 
 export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
     const { slug } = await params
@@ -173,7 +174,6 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         const url = `${origin || ''}/api/wp/related?${qs.toString()}`
         const r = await fetch(url, { 
             headers: { Accept: 'application/json' }, 
-            cache: 'no-store',
             next: { revalidate: 300 } // Cache for 5 minutes
         })
         if (r.ok) {
@@ -228,8 +228,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     // Recent posts (chronological) - REMOVED
     // Note: removed recent posts from sidebar as per user request
 
-    const floatImage = typeof searchParams?.floatImage === 'string' 
-        ? ['1','true','yes','on'].includes(String(searchParams?.floatImage).toLowerCase())
+    const sp = searchParams ? await searchParams : undefined
+    const floatImage = typeof sp?.floatImage === 'string' 
+        ? ['1','true','yes','on'].includes(String(sp?.floatImage).toLowerCase())
         : false
 
     return (
@@ -298,10 +299,10 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                             {post.categories?.length ? <span className="hidden sm:inline">•</span> : null}
                             <div className="flex items-center gap-2">
                                 <Avatar className="h-7 w-7">
-                                    <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                                    <AvatarFallback>{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                                    <AvatarImage src={post.authorAvatar || ''} alt={decodeEntities(post.authorName || 'Author')} />
+                                    <AvatarFallback>{(decodeEntities(post.authorName || 'A')).charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <span className="truncate">{post.authorName || 'Unknown'}</span>
+                                <span className="truncate">{decodeEntities(post.authorName || 'Unknown')}</span>
                             </div>
                             <span className="hidden sm:inline">•</span>
                             <span>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -499,13 +500,13 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                 <div className="max-w-4xl mx-auto">
                     <div className="bg-card/50 p-6 rounded-lg border flex flex-col sm:flex-row items-start gap-6">
                         <Avatar className="h-24 w-24 ring-2 ring-primary/20">
-                            <AvatarImage src={post.authorAvatar || ''} alt={post.authorName || 'Author'} />
-                            <AvatarFallback className="text-2xl font-bold">{(post.authorName || 'A').charAt(0)}</AvatarFallback>
+                            <AvatarImage src={post.authorAvatar || ''} alt={decodeEntities(post.authorName || 'Author')} />
+                            <AvatarFallback className="text-2xl font-bold">{(decodeEntities(post.authorName || 'A')).charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <h3 className="text-sm font-semibold text-muted-foreground mb-1">WRITTEN BY</h3>
                             <Link href={`/profile/${post.authorSlug || 'unknown'}`} className="hover:text-primary transition-colors">
-                                <h2 className="text-2xl font-bold mb-2">{post.authorName || 'Unknown'}</h2>
+                                <h2 className="text-2xl font-bold mb-2">{decodeEntities(post.authorName || 'Unknown')}</h2>
                             </Link>
                                                         {authorDescription && authorDescription.trim().length > 0 && (
                                                             <p className="text-muted-foreground mb-4">
@@ -550,6 +551,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                                             <CommentsSection postId={Number(post.id)} />
                                         </Suspense>
                 </div>
+
+                {/* Floating action buttons for bookmark, share, and print */}
+                <FloatingActions title={post.title} postId={Number(post.id)} />
 
                 {/* Bottom explore sections moved to right sidebar per layout spec */}
             </div>

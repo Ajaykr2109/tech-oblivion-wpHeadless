@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RoleGate } from '@/hooks/useAuth'
 
 import CommentItem from './CommentItem'
 import { useComments } from './CommentsProvider'
@@ -46,15 +47,18 @@ export default function CommentList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Tabs value={status} onValueChange={(v)=>setStatus(v as typeof status)}>
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="spam">Spam</TabsTrigger>
-            <TabsTrigger value="trash">Trash</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Hide moderation selector for public users */}
+        <RoleGate action="moderateComments">
+          <Tabs value={status} onValueChange={(v)=>setStatus(v as typeof status)}>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="spam">Spam</TabsTrigger>
+              <TabsTrigger value="trash">Trash</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </RoleGate>
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">

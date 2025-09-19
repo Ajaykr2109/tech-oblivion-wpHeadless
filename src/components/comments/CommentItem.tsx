@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { MessageSquare, Flag, Edit3, Trash2, MoreHorizontal, CornerDownRight, ChevronDown, ChevronRight, ThumbsUp } from 'lucide-react'
+import { MessageSquare, Flag, Edit3, Trash2, MoreHorizontal, CornerDownRight, ChevronDown, ChevronRight } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import CommentEditor from './CommentEditor'
 type Props = { comment: CommentModel, depth?: number }
 
 export default function CommentItem({ comment, depth = 0 }: Props) {
-  const { toggleExpand, prefetchReplies, editComment, deleteOwnComment, markSpam, vote, expanded, moderate, selected, toggleSelect } = useComments()
+  const { toggleExpand, prefetchReplies, editComment, deleteOwnComment, markSpam, expanded, moderate, selected, toggleSelect } = useComments()
   const { user, can } = useAuth()
   const [replying, setReplying] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -102,9 +102,6 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
           >
             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setReplying(v => !v)} aria-label="Reply">
               <MessageSquare className="h-3.5 w-3.5 mr-1" /> Reply
-            </Button>
-            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => vote(comment.id, !(comment.likedByMe))} aria-pressed={comment.likedByMe} aria-label="Like">
-              <ThumbsUp className={`h-3.5 w-3.5 mr-1 ${comment.likedByMe ? 'text-primary' : ''}`} /> {comment.likes || 0}
             </Button>
           </RoleGate>
 

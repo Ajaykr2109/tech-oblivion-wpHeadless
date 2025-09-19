@@ -27,6 +27,17 @@ function flatIds(items: FlatItem[]): string[] {
 }
 
 export default function TableOfContents({ items }: { items: FlatItem[] }) {
+  // Client-side fallback: if no items provided, try to derive from DOM
+  const [derivedItems, setDerivedItems] = useState<FlatItem[] | null>(null)
+  useEffect(() => {
+    if (items && items.length > 0) { setDerivedItems(null); return }
+    // derive from document headings h2/h3
+    const nodes = Array.from(document.querySelectorAll('.wp-content h2[id], .wp-content h3[id]')) as HTMLElement[]
+    if (!nodes.length) return
+    const arr: FlatItem[] = nodes.map((el) => ({ id: el.id, depth: el.tagName === 'H2' ? 2 : 3, value: el.textContent || '' }))
+    setDerivedItems(arr)
+  }, [items])
+  const _items = (derivedItems && derivedItems.length > 0) ? derivedItems : items
   const [zoom, setZoom] = useState<number>(100)
   const [focusedIndex, setFocusedIndex] = useState<number>(0)
   const [_open, _setOpen] = useState<boolean>(false) // floating disabled
@@ -46,7 +57,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   }, [zoom])
   // Floating mode removed on post page
 
-  const ids = useMemo(() => flatIds(items), [items])
+  const ids = useMemo(() => flatIds(_items), [_items])
   // Compute rootMargin to account for sticky header height
   const rootMargin = useMemo(() => {
     if (typeof window === 'undefined') return '-25% 0px -60% 0px'
@@ -57,7 +68,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   }, [])
   // Keep nearby range small so only the truly in-view section remains highlighted
   const state = useScrollSpy(ids, { rootMargin, nearbyRange: 0, adjacentRange: 1 })
-  const _hierarchy = useMemo(() => toHierarchy(items), [items])
+  const _hierarchy = useMemo(() => toHierarchy(_items), [_items])
   // Sync a class on the active heading in the document to avoid flicker
   // Sync content heading highlight strictly to the single activeId
   useEffect(() => {
@@ -94,9 +105,9 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   // Compute per-section reading time badges by measuring text between headings
   const [sectionTimes, setSectionTimes] = useState<SectionTimeMap>({})
   useEffect(() => {
-    if (!items.length) return
+    if (!_items.length) return
     const compute = () => {
-      const idsOnPage = items.map(i => i.id).filter(id => document.getElementById(id))
+      const idsOnPage = _items.map(i => i.id).filter(id => document.getElementById(id))
       if (!idsOnPage.length) { setSectionTimes({}); return }
       const speedWpm = 200
       const getSectionRange = (startId: string, endId?: string) => {
@@ -132,13 +143,13 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
     // compute after paint
     const id = requestAnimationFrame(() => setTimeout(compute, 0))
     return () => cancelAnimationFrame(id)
-  }, [items])
+  }, [_items])
 
   const content = (
     <div className={`overflow-hidden print:hidden`}>
       <div className="toc-scroll max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
         <div className="py-2">
-          {items.map((i, idx) => {
+          {_items.map((i, idx) => {
             const st = i.id === state.activeId
               ? 'active'
               : state.nearbyIds.has(i.id) ? 'nearby'

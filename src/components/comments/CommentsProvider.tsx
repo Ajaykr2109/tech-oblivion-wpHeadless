@@ -92,10 +92,14 @@ export function CommentsProvider({ children, postId, pageSize = 10, status = 'al
     const mappedStatus = statusMap[status]
     if (mappedStatus && mappedStatus !== 'all') qs.set('status', mappedStatus)
     const endpoint = '/api/wp/comments'
+    console.log(`Fetching comments for post ${postId} with params:`, qs.toString())
     const r = await fetch(`${endpoint}?${qs.toString()}`, { cache: 'no-store' })
     if (!r.ok) throw new Error(`Failed to load comments: ${r.status}`)
     const data = await r.json().catch(() => [])
-    const mapped: CommentModel[] = Array.isArray(data) ? data.map(mapWp).filter(c => !c.parentId) : []
+    console.log(`Comments API returned ${Array.isArray(data) ? data.length : 0} comments for post ${postId}`)
+    // Filter to only comments for this specific post and exclude replies (they'll be loaded separately)
+    const mapped: CommentModel[] = Array.isArray(data) ? data.map(mapWp).filter(c => !c.parentId && c.postId === postId) : []
+    console.log(`Filtered to ${mapped.length} top-level comments for post ${postId}`)
     return mapped
   }, [postId, state.pageSize, status])
 
@@ -130,7 +134,7 @@ export function CommentsProvider({ children, postId, pageSize = 10, status = 'al
     const r = await fetch(`/api/wp/comments?${qs.toString()}`, { cache: 'no-store' })
     if (!r.ok) return [] as CommentModel[]
     const data = await r.json().catch(() => [])
-    const mapped: CommentModel[] = Array.isArray(data) ? data.map(mapWp) : []
+    const mapped: CommentModel[] = Array.isArray(data) ? data.map(mapWp).filter(c => c.postId === postId && c.parentId === Number(id)) : []
     return mapped
   }, [postId])
 

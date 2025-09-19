@@ -97,10 +97,10 @@ export default function SiteTracking() {
   const lastPathRef = useRef<string>('')
   const analyticsInitialized = useRef(false)
 
-  // Initialize enhanced analytics once
+  // Initialize enhanced analytics once (without auto tracking)
   useEffect(() => {
     if (!analyticsInitialized.current) {
-      initializeAnalytics()
+      initializeAnalytics({ autoTrack: false })
       analyticsInitialized.current = true
     }
   }, [])
@@ -110,10 +110,13 @@ export default function SiteTracking() {
     if (!pathname || lastPathRef.current === pathname) return
     lastPathRef.current = pathname
 
-    // Generate a unique key for this specific page view
-    const viewKey = `${pathname}-${Date.now()}`
-    if (trackingRef.current.has(viewKey)) return
-    trackingRef.current.add(viewKey)
+  // Use stable per-path key and debounce using storage to avoid bursts on hydration
+  const viewKey = `pv:${pathname}`
+  const now = Date.now()
+  const last = Number(sessionStorage.getItem(viewKey) || '0')
+  if (now - last < 4000) return
+  sessionStorage.setItem(viewKey, String(now))
+  trackingRef.current.add(viewKey)
 
     // Capture the current ref value for use in cleanup
     const currentTrackingSet = trackingRef.current
@@ -121,17 +124,15 @@ export default function SiteTracking() {
     // Small delay to ensure the page is fully loaded and title is set
     const timeoutId = setTimeout(async () => {
       const trackingData = getTrackingData(pathname)
-      
-      // Track with both legacy and enhanced analytics
-      const [legacyResult] = await Promise.all([
-        trackPageView(trackingData),
-        trackEnhancedPageView({ 
-          path: pathname, 
-          title: document.title,
-          referrer: document.referrer,
-          sessionId: trackingData.session_id
-        })
-      ])
+
+      // Track with both legacy and enhanced analytics (enhanced first)
+      await trackEnhancedPageView({ 
+        path: pathname, 
+        title: document.title,
+        referrer: document.referrer,
+        sessionId: trackingData.session_id
+      })
+      const legacyResult = await trackPageView(trackingData)
       
       if (legacyResult?.success) {
         // Store successful tracking in localStorage for offline analysis
