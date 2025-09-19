@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { getSettings } from '@/lib/settings'
 import Footer from '@/components/Footer';
 import { ReactQueryProvider } from '@/components/providers/react-query'
+import SiteTracking from '@/components/site-tracking';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -23,6 +24,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-body antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <SiteTracking />
           <div className="flex min-h-screen flex-col">
             {/* Skip link for keyboard users */}
             <a href="#main-content" className="skip-link">Skip to content</a>

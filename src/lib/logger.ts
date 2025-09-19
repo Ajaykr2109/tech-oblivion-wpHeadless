@@ -1,12 +1,31 @@
-import fs from 'fs'
-import path from 'path'
+// Client/Server compatible logger - only use Node.js fs on server side
+let fs: typeof import('fs') | null = null
+let path: typeof import('path') | null = null
+let LOG_DIR: string | null = null
+let DEBUG_FILE: string | null = null
+let INFO_FILE: string | null = null
+let ERROR_FILE: string | null = null
 
-const LOG_DIR = path.join(process.cwd(), 'logs')
-const DEBUG_FILE = path.join(LOG_DIR, 'debug.log')
-const INFO_FILE = path.join(LOG_DIR, 'app.log')
-const ERROR_FILE = path.join(LOG_DIR, 'error.log')
+// Initialize server-side modules only when available
+if (typeof window === 'undefined' && typeof process !== 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    fs = require('fs')
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    path = require('path')
+    if (path) {
+      LOG_DIR = path.join(process.cwd(), 'logs')
+      DEBUG_FILE = path.join(LOG_DIR, 'debug.log')
+      INFO_FILE = path.join(LOG_DIR, 'app.log')
+      ERROR_FILE = path.join(LOG_DIR, 'error.log')
+    }
+  } catch {
+    // Server modules not available - running in browser
+  }
+}
 
 function ensureDir() {
+  if (!fs || !LOG_DIR) return
   try {
     if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true })
   } catch {
@@ -14,7 +33,8 @@ function ensureDir() {
   }
 }
 
-function write(file: string, entry: unknown) {
+function write(file: string | null, entry: unknown) {
+  if (!fs || !file) return // Skip file writing in browser or when paths unavailable
   try {
     ensureDir()
     fs.appendFileSync(file, JSON.stringify(entry) + '\n')

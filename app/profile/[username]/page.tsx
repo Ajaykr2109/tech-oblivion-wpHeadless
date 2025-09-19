@@ -54,14 +54,15 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   // Determine if we should show authored posts. Hide for plain subscribers/readers
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userHasRecentPosts = Array.isArray((user as any)?.recent_posts) && (user as any).recent_posts.length > 0
-  const showPostsTab = userHasRecentPosts
-  const defaultTab = showPostsTab ? 'posts' : 'comments'
+  const showArticlesTab = userHasRecentPosts
+  const showCommentsTab = true // Always allow comments tab (even if empty) unless both empty and we show a unified empty state
+  const defaultTab = showArticlesTab ? 'articles' : 'comments'
 
   // Server-side fetch of posts and comments authored by this user
   type WPPost = { id: number; slug: string; title?: { rendered?: string }; excerpt?: { rendered?: string }; date?: string }
   type WPComment = { id: number; post: number; content?: { rendered?: string }; date?: string }
   const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const postsJson: WPPost[] = showPostsTab ? await (async () => {
+  const postsJson: WPPost[] = showArticlesTab ? await (async () => {
     const postsRes = await fetch(new URL(`/api/wp/posts?author=${encodeURIComponent(String(user.id))}&per_page=9`, SITE).toString(), { cache: 'no-store' })
     return postsRes.ok ? await postsRes.json() : []
   })() : []
@@ -70,13 +71,21 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   const stripTags = (html?: string) => decodeEntities(String(html || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim())
 
-  const posts = postsJson.map(p => ({
-    id: p.id,
-    slug: p.slug,
-    title: decodeEntities(String(p.title?.rendered || 'Untitled')),
-    excerpt: stripTags(p.excerpt?.rendered),
-    date: p.date,
-  }))
+  // Defensive filter: Some upstream responses (especially with caching/proxy layers) may ignore the author filter.
+  // Re-filter locally if any post author metadata sneaks in via recent_posts or if structure includes author field.
+  // (postsJson from /api/wp/posts currently returns raw WP posts; they SHOULD be author-filtered server-side.)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface PossiblyAuthoredPost { id: number; slug: string; title?: { rendered?: string }; excerpt?: { rendered?: string }; date?: string; author?: unknown }
+  const posts = (postsJson as PossiblyAuthoredPost[])
+    // If API mistakenly returned other authors, drop them (when author field is present)
+    .filter(p => p.author == null || String(p.author) === String(user.id))
+    .map(p => ({
+      id: p.id,
+      slug: p.slug,
+      title: decodeEntities(String(p.title?.rendered || 'Untitled')),
+      excerpt: stripTags(p.excerpt?.rendered),
+      date: p.date,
+    }))
 
   // Resolve comment post titles/slugs in one fetch
   const postIds = Array.from(new Set(commentsJson.map(c => c.post).filter(Boolean)))
@@ -91,13 +100,19 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       }
     }
   }
-  const comments = commentsJson.map(c => ({
-    id: c.id,
-    postSlug: postMap.get(c.post)?.slug || String(c.post),
-    postTitle: postMap.get(c.post)?.title || 'View post',
-    content: stripTags(c.content?.rendered),
-    date: c.date,
-  }))
+  // Defensive filter for comments: ensure each comment includes implicit author by virtue of having come from author filter.
+  // If upstream returns broader set, re-filter where possible (some payloads include an 'author' field).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  interface PossiblyAuthoredComment { id: number; post: number; content?: { rendered?: string }; date?: string; author?: unknown }
+  const comments = (commentsJson as PossiblyAuthoredComment[])
+    .filter(c => c.author == null || String(c.author) === String(user.id))
+    .map(c => ({
+      id: c.id,
+      postSlug: postMap.get(c.post)?.slug || String(c.post),
+      postTitle: postMap.get(c.post)?.title || 'View post',
+      content: stripTags(c.content?.rendered),
+      date: c.date,
+    }))
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">
@@ -133,114 +148,72 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Tabs defaultValue={defaultTab}>
-        <TabsList>
-          {showPostsTab && <TabsTrigger value="posts">Posts</TabsTrigger>}
-          <TabsTrigger value="comments">Comments</TabsTrigger>
-        </TabsList>
+      {/* Tabs / Conditional layout */}
+      {posts.length === 0 && comments.length === 0 ? (
+        <div className="mt-12 rounded-lg border border-dashed p-16 text-center text-muted-foreground">
+          This user hasn’t published any articles or comments yet.
+        </div>
+      ) : (
+        <Tabs defaultValue={defaultTab}>
+          <TabsList>
+            {showArticlesTab && <TabsTrigger value="articles">Articles</TabsTrigger>}
+            {showCommentsTab && <TabsTrigger value="comments">Comments</TabsTrigger>}
+          </TabsList>
 
-        {/* Posts Tab */}
-  {showPostsTab && (
-  <TabsContent value="posts" className="mt-6">
-          {posts.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">No posts yet.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {posts.map(p => (
-                <Card key={p.id} className="transition hover:shadow-md">
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2 text-lg">{p.title}</CardTitle>
-                    {p.date && <CardDescription>{new Date(p.date).toLocaleDateString()}</CardDescription>}
-                  </CardHeader>
-                  <CardContent>
-                    {p.excerpt ? (
-                      <p className="line-clamp-3 text-sm text-muted-foreground">{p.excerpt}</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No summary available.</p>
-                    )}
-                    <div className="mt-4">
-                      <Link className="text-primary hover:underline" href={`/blog/${p.slug}`}>Read more →</Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          {showArticlesTab && (
+            <TabsContent value="articles" className="mt-6">
+              {posts.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">No articles yet.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {posts.map(p => (
+                    <Card key={p.id} className="transition hover:shadow-md">
+                      <CardHeader>
+                        <CardTitle className="line-clamp-2 text-lg">{p.title}</CardTitle>
+                        {p.date && <CardDescription>{new Date(p.date).toLocaleDateString()}</CardDescription>}
+                      </CardHeader>
+                      <CardContent>
+                        {p.excerpt ? (
+                          <p className="line-clamp-3 text-sm text-muted-foreground">{p.excerpt}</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No summary available.</p>
+                        )}
+                        <div className="mt-4">
+                          <Link className="text-primary hover:underline" href={`/blog/${p.slug}`}>Read more →</Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
           )}
-  </TabsContent>
-  )}
 
-        {/* Comments Tab */}
-        <TabsContent value="comments" className="mt-6">
-          <Card>
-            <CardContent className="p-0">
-              <div className="max-h-96 overflow-y-auto divide-y">
-                {comments.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground">No comments yet.</div>
-                ) : comments.map(c => (
-                  <div key={c.id} className="p-6">
-                    <p className="text-sm">{c.content}</p>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      On <Link href={`/blog/${c.postSlug}`} className="underline">{c.postTitle}</Link>
-                      {c.date ? <> • {new Date(c.date).toLocaleDateString()}</> : null}
-                    </div>
+          {showCommentsTab && (
+            <TabsContent value="comments" className="mt-6">
+              <Card>
+                <CardContent className="p-0">
+                  <div className="max-h-96 overflow-y-auto divide-y">
+                    {comments.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground">No comments yet.</div>
+                    ) : comments.map(c => (
+                      <div key={c.id} className="p-6">
+                        <p className="text-sm">{c.content}</p>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          On <Link href={`/blog/${c.postSlug}`} className="underline">{c.postTitle}</Link>
+                          {c.date ? <> • {new Date(c.date).toLocaleDateString()}</> : null}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
 
-        {/* About Tab */}
-        <TabsContent value="about" className="mt-6">
-          <Card>
-            <CardContent className="p-6">
-              {(() => {
-                const entries = Object.entries(user.profile_fields ?? {}).filter(([_, v]) => {
-                  if (v === null || v === undefined) return false
-                  if (typeof v === 'string') return v.trim().length > 0
-                  if (Array.isArray(v)) return v.length > 0
-                  if (typeof v === 'object') return Object.keys(v as Record<string, unknown>).length > 0
-                  return true
-                })
-                return (
-                  <div className="space-y-6">
-                    {bio && (
-                      <div>
-                        <h3 className="font-semibold mb-1">Bio</h3>
-                        <p className="text-muted-foreground">{bio}</p>
-                      </div>
-                    )}
-                    {entries.length > 0 ? (
-                      <div>
-                        <h3 className="font-semibold mb-2">Profile</h3>
-                        <dl className="grid grid-cols-1 gap-2">
-                          {entries.map(([k, v]) => (
-                            <div key={k} className="flex gap-2 text-sm">
-                              <dt className="min-w-24 text-muted-foreground capitalize">{k}</dt>
-                              <dd className="flex-1 break-words">
-                                {typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean'
-                                  ? String(v)
-                                  : Array.isArray(v)
-                                  ? v.join(', ')
-                                  : v === null
-                                  ? '—'
-                                  : JSON.stringify(v)}
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
-                      </div>
-                    ) : (
-                      !bio ? <div className="text-muted-foreground">This user hasn’t filled out their profile yet.</div> : null
-                    )}
-                  </div>
-                )
-              })()}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Removed legacy About tab block – can be reintroduced if needed */}
     </div>
   )
 }

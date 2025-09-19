@@ -5,12 +5,13 @@ import { notFound } from 'next/navigation'
 import { getPostBySlug, PostDetail } from '@/lib/wp'
 import { logWPError } from '@/lib/log'
 
-type Props = { params: { slug: string } }
+type Props = { params: Promise<{ slug: string }> }
 
 export default async function PostPage({ params }: Props) {
+  const { slug } = await params
   let post: PostDetail | null = null
   try {
-    post = await getPostBySlug(params.slug)
+    post = await getPostBySlug(slug)
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     const status = err && typeof err === 'object' && 'status' in err ? (err as { status?: number }).status : undefined

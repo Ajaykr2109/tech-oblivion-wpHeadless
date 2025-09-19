@@ -78,6 +78,7 @@ export const apiMap = {
     views: `${WP_BASE}/wp-json/fe-analytics/v1/views`,
     devices: `${WP_BASE}/wp-json/fe-analytics/v1/devices`,
     countries: `${WP_BASE}/wp-json/fe-analytics/v1/countries`,
+    cities: `${WP_BASE}/wp-json/fe-analytics/v1/cities`,
     referers: `${WP_BASE}/wp-json/fe-analytics/v1/referers`,
     topPosts: `${WP_BASE}/wp-json/fe-analytics/v1/top-posts`,
   summary: `${WP_BASE}/wp-json/fe-analytics/v1/summary`,

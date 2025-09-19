@@ -3,5 +3,10 @@
   "siteUrl": "http://localhost:3000",
   "defaultOgImage": "https://techoblivion.in/wp-content/uploads/og-default.jpg",
   "robotsCustom": null,
-  "sitemapEnabled": true
+  "sitemapEnabled": true,
+  "editorPicks": [
+    4798,
+    4715,
+    179
+  ]
 }

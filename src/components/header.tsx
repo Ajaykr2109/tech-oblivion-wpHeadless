@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -8,19 +7,24 @@ import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { RoleGate } from "@/hooks/useRoleGate";
 import { getCurrentUserSlug } from "@/lib/user-slug";
 import { isAdmin } from "@/lib/permissions";
 import type { User } from "@/lib/auth";
 
 import { ThemeToggle } from "./theme-toggle";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "./ui/dropdown-menu";
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/blog", label: "Articles" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  // Profile & Bookmarks intentionally excluded from main nav; moved into user dropdown per requirements
 ];
 
 export function Header() {
@@ -32,19 +36,18 @@ export function Header() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
-          
-          // Get user slug for profile link
+
           if (data.user) {
             const slug = await getCurrentUserSlug();
             setUserSlug(slug);
           }
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error("Auth check failed:", error);
       } finally {
         setIsLoading(false);
       }
@@ -56,209 +59,155 @@ export function Header() {
   const handleLogout = async () => {
     try {
       // Use GET redirect so the server clears cookie and navigates in one step
-      window.location.href = '/api/auth/logout?redirect=/';
+      window.location.href = "/api/auth/logout?redirect=/";
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
-  const isPostDetail = (() => {
-    const p = pathname || '/'
-    const parts = p.split('/').filter(Boolean)
-    return parts.length === 2 && parts[0] === 'blog'
-  })()
-
-  // Filter nav links to exclude Profile when user is not logged in
-  const filteredNavLinks = navLinks.filter(link => {
-    if (link.label === "Profile") return false; // Always exclude old Profile link
-    return true;
-  });
+  // Profile & Bookmarks removed from main navigation (desktop & mobile)
+  const filteredNavLinks = navLinks;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4 flex items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <div className="mr-4 flex items-center">
-          <Link href="/" className="flex items-center gap-2 font-bold">
-            <span className="font-bold">
+          <Link href="/" className="flex items-center gap-2 font-bold group">
+            <span className="gradient-text text-xl font-bold tracking-tight">
               tech.oblivion
             </span>
           </Link>
         </div>
 
-  <nav className="hidden md:flex items-center gap-6 text-sm" aria-label="Main">
-      {filteredNavLinks.map((link) => (
-        <Link
-          key={link.label}
-          href={link.href}
-          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-          aria-current={pathname === link.href ? 'page' : undefined}
-        >
-          {link.label}
-        </Link>
-      ))}
+        <nav className="hidden md:flex items-center gap-1 text-sm" aria-label="Main">
+          {filteredNavLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                pathname === link.href 
+                  ? "bg-primary/10 text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-current={pathname === link.href ? "page" : undefined}
+            >
+              {link.label}
+            </Link>
+          ))}
 
-      {/* Show Profile only if user is logged in, route to public profile */}
-      {!isLoading && user && userSlug && (
-        <Link
-          href={`/author/${userSlug}`}
-          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-          aria-current={pathname === `/author/${userSlug}` ? 'page' : undefined}
-        >
-          Profile
-        </Link>
-      )}
-
-      {!isLoading && user && (
-        <Link
-          href="/bookmarks"
-          className="text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-        >
-          Bookmarks
-        </Link>
-      )}
-
-      {/* "More" button removed as per requirements */}
+          {/* Profile & Bookmarks moved into user dropdown */}
         </nav>
 
         <div className="flex items-center gap-4">
-          <ThemeToggle />
           {!isLoading && (
             <>
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" aria-label="User menu">
+                    <Button 
+                      variant="ghost" 
+                      className="hidden md:flex items-center gap-2"
+                      aria-label="User menu"
+                    >
                       {(() => {
-                        const uname = user.username || ''
-                        const dname = user.display_name || ''
-                        // If short username (<=10), show full
-                        if (uname && uname.length <= 10) return `Hi, ${uname}`
-                        // If displayName is long, use first + last initial
-                        if (dname && dname.trim().includes(' ')) {
-                          const parts = dname.trim().split(/\s+/)
-                          const first = parts[0]
-                          const last = parts[parts.length - 1]
-                          return `Hi, ${first} ${last?.charAt(0) || ''}.`
+                        const uname = user.username || "";
+                        const dname = user.display_name || "";
+                        if (uname && uname.length <= 10) return uname;
+                        if (dname && dname.trim().includes(" ")) {
+                          const parts = dname.trim().split(/\s+/);
+                          const first = parts[0];
+                          return first;
                         }
-                        // Else show first two chars of username
-                        return `Hi, ${(uname || dname).slice(0, 2)}`
+                        return (uname || dname).slice(0, 8);
                       })()}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {/* Show Admin Dash only if user is admin */}
                     {isAdmin(user) && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin/dashboard">Admin Dash</Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem>
-                      <Link href="/account">Account</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link href="/account">Account Center</Link>
-                    </DropdownMenuItem>
                     {userSlug && (
-                      <DropdownMenuItem>
-                        <Link href={`/author/${userSlug}`}>Public Profile</Link>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/profile/${userSlug}`}>Profile</Link>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookmarks">Bookmarks</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account">Account Center</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <button onClick={handleLogout}>Logout</button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">Login</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href="/login">Login</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/register">Register</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button 
+                  variant="ghost" 
+                  className="hidden md:flex"
+                  onClick={() => { window.location.href = '/login'; }}
+                >
+                  Login
+                </Button>
               )}
             </>
           )}
 
-          {!isPostDetail && <ThemeToggle />}
-           <Sheet>
+          {/* Single ThemeToggle */}
+          <ThemeToggle />
+
+          <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
                 aria-label="Toggle navigation"
->
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
+                <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
                   <span>tech.oblivion</span>
                 </Link>
+
                 {filteredNavLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    href={link.href}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
+                  <Link key={link.label} href={link.href} className="text-muted-foreground hover:text-foreground">
                     {link.label}
                   </Link>
                 ))}
 
-                {/* Show Profile only if user is logged in, route to public profile */}
-                {!isLoading && user && userSlug && (
-                  <Link href={`/author/${userSlug}`} className="text-muted-foreground hover:text-foreground">
-                    Profile
+                {/* Profile & Bookmarks removed from mobile sheet main list to consolidate in dropdown */}
+
+                {!isLoading && isAdmin(user) && (
+                  <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">
+                    Admin Dash
                   </Link>
                 )}
 
-                {!isLoading && user && (
-                  <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
-                )}
-
-                {/* Show Admin Dash only if user is admin */}
-                {!isLoading && isAdmin(user) && (
-                  <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">Admin Dash</Link>
-                )}
-
-                <RoleGate action="draft" as="div">
-                   <Link href="/account" className="text-muted-foreground hover:text-foreground">Account</Link>
-                </RoleGate>
+                {/* Account link removed from main nav per requirements (Account option removed). */}
 
                 {!isLoading && (
                   <>
                     {user ? (
                       <>
-                        <div className="text-muted-foreground">
-                          Welcome, {user.username}
-                        </div>
-                        <RoleGate action="draft" as="div">
-                          <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                            Dashboard
-                          </Link>
-                        </RoleGate>
-                        <Link href="/account" className="text-muted-foreground hover:text-foreground">
-                          Account Center
-                        </Link>
+                        <div className="text-muted-foreground">Welcome, {user.username}</div>
+                        <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
+                        <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
+                        {userSlug && (
+                          <Link href={`/profile/${userSlug}`} className="text-muted-foreground hover:text-foreground">Profile</Link>
+                        )}
                         <a href="/api/auth/logout?redirect=/" className="text-left text-muted-foreground hover:text-foreground">
                           Logout
                         </a>
                       </>
                     ) : (
-                      <Link href="/login" className="text-muted-foreground hover:text-foreground">
-                        Login
-                      </Link>
+                      <Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
                     )}
                   </>
                 )}

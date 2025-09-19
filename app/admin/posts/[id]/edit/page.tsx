@@ -11,8 +11,8 @@ async function fetchPost(id: string) {
   return p
 }
 
-export default async function EditPostPage({ params }: { params: { id: string } }) {
-  const { id } = params
+export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   if (!id) notFound()
   // Role gate via Roles Matrix API (single source of truth)
   const rmRes = await fetch('/api/roles/matrix', { cache: 'no-store' })

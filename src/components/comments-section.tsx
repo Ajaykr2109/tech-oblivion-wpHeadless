@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { RoleGate, useRoleGate } from '@/hooks/useRoleGate'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { decodeEntities } from '@/lib/html-entities'
 // Removed likes UI per requirements
 
 type Comment = {
@@ -16,6 +17,8 @@ type Comment = {
   author: { name: string; avatar?: string; id?: number; slug?: string }
   content: string
   createdAt: string
+  // Upstream WP post ID for safety filtering— some environments were returning all comments
+  postId?: number
   replies?: Comment[]
 }
 
@@ -27,6 +30,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
   const [submitting, setSubmitting] = useState(false)
   const [sort, setSort] = useState<'new' | 'old'>('new')
   const [query, setQuery] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   function mapWpToComment(wpc: unknown): Comment {
     const obj = (wpc && typeof wpc === 'object') ? (wpc as Record<string, unknown>) : {}
@@ -35,13 +39,16 @@ export default function CommentsSection({ postId }: { postId: number }) {
     const avatar = String(avatars['48'] || avatars[48] || avatars['96'] || avatars[96] || avatars['24'] || avatars[24] || '')
     const contentField = (obj.content && typeof obj.content === 'object' ? (obj.content as Record<string, unknown>).rendered : obj.content)
     const contentHtml = typeof contentField === 'string' ? contentField : ''
-    const contentText = typeof contentHtml === 'string' ? contentHtml.replace(/<[^>]*>/g, '').trim() : ''
+  // Strip tags and decode entities that may appear double-escaped (&amp;) in some responses
+  const contentText = typeof contentHtml === 'string' ? decodeEntities(contentHtml.replace(/<[^>]*>/g, '')).trim() : ''
     const createdAt = String(obj.date || obj.date_gmt || new Date().toISOString())
+    const postId = Number((obj.post as number | string | undefined) ?? (obj.post_id as number | string | undefined) ?? 0) || undefined
     return {
       id: (obj.id as string | number | undefined) ?? (obj.comment_ID as string | number | undefined) ?? String(Math.random()),
       author: { name, avatar, id: typeof obj.author === 'number' ? (obj.author as number) : undefined },
       content: contentText,
       createdAt,
+      postId,
     }
   }
 
@@ -55,8 +62,12 @@ export default function CommentsSection({ postId }: { postId: number }) {
         if (!cancelled && r.ok) {
           const data = await r.json().catch(() => [])
           const arr = Array.isArray(data) ? data : []
+          // Map early so we can filter by post id server-side safety net
+          let mapped = arr.map(mapWpToComment)
+          // Safety filter: some upstream responses ignored the ?post= filter returning global comments
+          mapped = mapped.filter(c => !c.postId || c.postId === postId)
+          
           // Enrich with author slugs in a single batch
-          const mapped = arr.map(mapWpToComment)
           const ids = Array.from(new Set(mapped.map(c => c.author?.id).filter(Boolean))) as number[]
           if (ids.length) {
             try {
@@ -108,6 +119,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!content.trim()) return
+    setError(null)
     setSubmitting(true)
     try {
       const r = await fetch('/api/wp/comments', {
@@ -121,18 +133,33 @@ export default function CommentsSection({ postId }: { postId: number }) {
         const j = await r.json().catch(() => null)
         // Optimistic: prepend new comment if returned, else refetch
         if (j && j.id) {
-          setComments(prev => [{ id: j.id, author: { name: j.author_name || 'You', avatar: j.author_avatar_urls?.['48'] || '' }, content: (j.content?.rendered || '').replace(/<[^>]*>/g, '').trim(), createdAt: j.date || new Date().toISOString() }, ...prev])
+          setComments(prev => [{ 
+            id: j.id, 
+            author: { name: j.author_name || 'You', avatar: j.author_avatar_urls?.['48'] || '' }, 
+            content: decodeEntities((j.content?.rendered || '').replace(/<[^>]*>/g, '')).trim(), 
+            createdAt: j.date || new Date().toISOString(),
+            postId
+          }, ...prev])
         } else {
           // best-effort refetch
           try {
             const rr = await fetch(`/api/wp/comments?post=${postId}`, { cache: 'no-store' })
             const data = await rr.json().catch(() => [])
             const arr = Array.isArray(data) ? data : []
-            setComments(arr.map((d: unknown) => mapWpToComment(d)))
+            const mapped = arr.map((d: unknown) => mapWpToComment(d)).filter(c => !c.postId || c.postId === postId)
+            setComments(mapped)
           } catch {
             // TODO: implement fetch error handling
           }
         }
+      } else {
+        // Non-OK response: optionally we could surface an error toast; for now log.
+        try {
+          const errText = await r.text();
+          // eslint-disable-next-line no-console
+          console.error('Comment submit failed:', r.status, errText);
+          setError(`Failed to post comment (${r.status}). ${errText.slice(0, 160)}`)
+        } catch {/* ignore */}
       }
     } finally {
       setSubmitting(false)
@@ -164,6 +191,7 @@ export default function CommentsSection({ postId }: { postId: number }) {
           {allowed ? (
             <form className="grid gap-3" onSubmit={onSubmit}>
               <Textarea placeholder="Write a comment..." rows={4} value={content} onChange={e=>setContent(e.target.value)} />
+              {error && <div className="text-xs text-red-500" role="alert">{error}</div>}
               <div className="flex items-center justify-end gap-2">
                 <Button type="submit" disabled={submitting || !content.trim()}>{submitting ? 'Posting…' : 'Post Comment'}</Button>
               </div>

@@ -1,6 +1,10 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+import type { NextRequest } from 'next/server'
+ 
+import { fetchWithAuth } from '@/lib/fetchWithAuth'
+
 type PublicUser = {
   id: number
   name?: string
@@ -86,13 +90,27 @@ function sanitize(u: Record<string, unknown>): PublicUser {
   }
 }
 
-export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
-  const { slug } = await context.params
+function isNumericId(identifier: string): boolean {
+  return /^\d+$/.test(identifier)
+}
+
+// GET handler for public user profiles (by slug)
+export async function GET(request: Request, context: { params: Promise<{ identifier: string }> }) {
+  const { identifier } = await context.params
+  
+  // Only handle slug-based requests for GET
+  if (isNumericId(identifier)) {
+    return new Response(JSON.stringify({ error: 'GET requests should use slug, not numeric ID' }), { 
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
   const WP = process.env.WP_URL || process.env.NEXT_PUBLIC_WP_URL
   if (!WP) return new Response(JSON.stringify({ error: 'WP_URL env required' }), { status: 500 })
 
   const base = WP.replace(/\/$/, '')
-  const url = new URL(`/wp-json/fe-auth/v1/public-user/${encodeURIComponent(slug)}`, base)
+  const url = new URL(`/wp-json/fe-auth/v1/public-user/${encodeURIComponent(identifier)}`, base)
   // forward optional compact flag
   const inUrl = new URL(request.url)
   const compact = inUrl.searchParams.get('compact')
@@ -123,5 +141,116 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
     return new Response(JSON.stringify(out), { status: 200, headers: { 'Content-Type': 'application/json' } })
   } catch {
     return new Response('null', { status: 404, headers: { 'Content-Type': 'application/json' } })
+  }
+}
+
+// PATCH handler for user management (by ID)
+export async function PATCH(req: NextRequest, { params }: { params: { identifier: string } }) {
+  try {
+    const WP = process.env.WP_URL
+    if (!WP) return new Response('WP_URL env required', { status: 500 })
+
+    const identifier = params.identifier
+
+    // Only handle numeric ID requests for PATCH
+    if (!isNumericId(identifier)) {
+      return new Response(JSON.stringify({ error: 'PATCH requests require numeric ID, not slug' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    const userId = identifier
+    const body = await req.json().catch(() => ({} as Record<string, unknown>))
+    const action = String((body as Record<string, unknown>).action || '')
+
+    // Build upstream request(s)
+    const base = WP.replace(/\/$/, '')
+
+    // Prefer fe-auth proxy so WP accepts Bearer/session auth and supports array params
+    const proxyBase = new URL('/wp-json/fe-auth/v1/proxy', base)
+    const path = `wp/v2/users/${encodeURIComponent(userId)}`
+
+    const doProxy = async (payload: unknown) => {
+      const u = new URL(proxyBase)
+      u.searchParams.set('path', path)
+      // WordPress expects JSON body for user updates
+      return fetchWithAuth(req, u.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload ?? {}),
+      })
+    }
+
+    // Supported actions
+    if (action === 'change_role') {
+      const newRole = String((body as Record<string, unknown>).newRole || '')
+      if (!newRole) {
+        return new Response(JSON.stringify({ error: 'newRole is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+      }
+      return doProxy({ roles: [newRole] })
+    }
+    if (action === 'edit') {
+      // Pass-through editable fields (name, email, description, profile_fields, social)
+      const allowed: string[] = ['name', 'first_name', 'last_name', 'email', 'url', 'description', 'profile_fields', 'social']
+      const payload: Record<string, unknown> = {}
+      for (const k of allowed) {
+        if (k in (body as Record<string, unknown>)) payload[k] = (body as Record<string, unknown>)[k]
+      }
+      return doProxy(payload)
+    }
+    if (action === 'activate' || action === 'deactivate') {
+      // Use custom profile_fields.status as activation flag (MU plugin exposes this field)
+      // We do NOT remove roles to avoid locking out accounts; roles remain intact.
+      // UI should read status from user.profile_fields.status
+      const status = action === 'activate' ? 'active' : 'inactive'
+      return doProxy({ profile_fields: { status } })
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid action' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  } catch (error) {
+    console.error('User management error:', error)
+    return new Response(JSON.stringify({ error: 'Failed to update user' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+}
+
+// DELETE handler for user deletion (by ID)
+export async function DELETE(req: NextRequest, { params }: { params: { identifier: string } }) {
+  try {
+    const WP = process.env.WP_URL
+    if (!WP) return new Response('WP_URL env required', { status: 500 })
+
+    const identifier = params.identifier
+
+    // Only handle numeric ID requests for DELETE
+    if (!isNumericId(identifier)) {
+      return new Response(JSON.stringify({ error: 'DELETE requests require numeric ID, not slug' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    const base = WP.replace(/\/$/, '')
+    const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)
+    proxy.searchParams.set('path', `wp/v2/users/${encodeURIComponent(identifier)}`)
+    // Forward any reassign param if present (required by WP when deleting users with content)
+    const inUrl = new URL(req.url)
+    const reassign = inUrl.searchParams.get('reassign')
+    if (reassign) proxy.searchParams.set('query[reassign]', reassign)
+    proxy.searchParams.set('query[force]', 'true')
+
+    return fetchWithAuth(req, proxy.toString(), { method: 'DELETE' })
+  } catch (error) {
+    console.error('User deletion error:', error)
+    return new Response(JSON.stringify({ error: 'Failed to delete user' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }

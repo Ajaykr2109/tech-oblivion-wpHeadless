@@ -2,42 +2,64 @@
 
 import { useMemo, useState } from 'react'
 import { Reply, Trash2 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 
 import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 
-const dummyComments = [
-  { id: 1, author: "Alex Johnson", avatar: "https://i.pravatar.cc/150?u=a04258114e29026702d", text: "This was an incredibly insightful article. The section on server components really cleared things up for me. Thanks!", post: "A Deep Dive into React Server Components", date: "2024-07-29" },
-  { id: 2, author: "Maria Garcia", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026703d", text: "I'm not sure I agree with point number 3. Have you considered the performance implications on larger-scale applications?", post: "The Future of AI in Web Development", date: "2024-07-28" },
-  { id: 3, author: "Sam Lee", avatar: "https://i.pravatar.cc/150?u=a042581f4e29026704d", text: "Great post! Do you have a GitHub repository with the code examples?", post: "Mastering Tailwind CSS for Modern UIs", date: "2024-07-28" },
-]
+interface WPComment {
+  id: number
+  author_name: string
+  author_email: string
+  author_avatar_urls?: { '48'?: string }
+  content: { rendered: string }
+  post: number
+  date: string
+  status: string
+}
 
 export default function CommentsClient() {
   const [selected, setSelected] = useState<number[]>([])
+  
+  const { data: comments, isLoading } = useQuery<WPComment[]>({
+    queryKey: ['admin-comments'],
+    queryFn: async () => {
+      const response = await fetch('/api/wp/comments')
+      if (!response.ok) throw new Error('Failed to fetch comments')
+      return response.json()
+    }
+  })
+  
   const header = useMemo(()=>[
     'Author', 'Comment', 'Post', 'Date', 'Actions'
   ], [])
-  const rows = useMemo(()=> dummyComments.map(c => ({
+  
+  const rows = useMemo(()=> (comments || []).map(c => ({
     id: c.id,
     cells: [
       <div className="flex items-center gap-3" key="author">
         <Avatar>
-          <AvatarImage src={c.avatar} alt={c.author} />
-          <AvatarFallback>{c.author.charAt(0)}</AvatarFallback>
+          <AvatarImage src={c.author_avatar_urls?.['48']} alt={c.author_name} />
+          <AvatarFallback>{c.author_name.charAt(0)}</AvatarFallback>
         </Avatar>
-        <span className="font-medium">{c.author}</span>
+        <div>
+          <span className="font-medium">{c.author_name}</span>
+          <div className="text-sm text-muted-foreground">{c.author_email}</div>
+        </div>
       </div>,
-      <span className="text-muted-foreground" key="text">{c.text}</span>,
-      <span key="post">{c.post}</span>,
-      <span key="date">{c.date}</span>,
+      <div className="text-muted-foreground max-w-xs" key="text">
+        <div dangerouslySetInnerHTML={{ __html: c.content.rendered.substring(0, 100) + '...' }} />
+      </div>,
+      <span key="post">Post #{c.post}</span>,
+      <span key="date">{new Date(c.date).toLocaleDateString()}</span>,
       <div className="flex justify-end gap-2" key="actions">
         <Button variant="outline" size="sm"><Reply className="mr-2 h-4 w-4" /> Reply</Button>
         <Button variant="destructive" size="sm"><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>
       </div>
     ]
-  })), [])
+  })), [comments])
 
   const onAction = async (action: BulkAction) => {
     if (selected.length === 0) return
@@ -49,8 +71,16 @@ export default function CommentsClient() {
     if (!res.ok) throw new Error('Bulk action failed')
   }
 
+  if (isLoading) {
+    return <div className="p-6">Loading comments...</div>
+  }
+
   return (
     <div>
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold mb-2">Comments Management</h2>
+        <p className="text-muted-foreground">Manage and moderate user comments across your site.</p>
+      </div>
       <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
       <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
     </div>

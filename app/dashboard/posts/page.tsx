@@ -1,13 +1,39 @@
-import Link from "next/link";
-import { Edit, Trash2, PlusCircle } from "lucide-react";
+import Link from 'next/link'
+import { PlusCircle } from 'lucide-react'
+import { redirect } from 'next/navigation'
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { getSessionUser } from '@/lib/auth'
 
+interface UserPost {
+  id: number
+  title: { rendered: string }
+  date: string
+  excerpt: { rendered: string }
+  status: string
+  slug: string
+}
 
-export default function DashboardPostsPage() {
-  // Dummy data removed; default to no posts. Hook up to real data source when ready.
-  const userPosts: { id: number; title: string; date: string; excerpt: string }[] = [];
+export default async function DashboardPostsPage() {
+  const user = await getSessionUser()
+  
+  if (!user) {
+    redirect('/login')
+  }
+  
+  // Fetch user's posts
+  let userPosts: UserPost[] = []
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/wp/posts?author=${user.id}`, {
+      cache: 'no-store'
+    })
+    if (response.ok) {
+      userPosts = await response.json()
+    }
+  } catch (error) {
+    console.error('Failed to fetch user posts:', error)
+  }
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -29,38 +55,44 @@ export default function DashboardPostsPage() {
           userPosts.map((post) => (
             <Card key={post.id} className="bg-card/50">
               <CardHeader>
-                <CardTitle>{post.title}</CardTitle>
+                <CardTitle>{post.title.rendered}</CardTitle>
                 <CardDescription>
-                  Published on {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {post.status === 'published' ? 'Published' : 'Draft'} on {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
+                <div 
+                  className="text-muted-foreground" 
+                  dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+                />
               </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/editor/${post.id}`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Link>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" asChild>
+                  <Link href={`/blog/${post.slug}`}>View</Link>
                 </Button>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                <Button asChild>
+                  <Link href={`/editor/${post.id}`}>Edit</Link>
                 </Button>
               </CardFooter>
             </Card>
           ))
         ) : (
-          <div className="text-center py-12 border-2 border-dashed rounded-lg">
-            <h2 className="text-xl font-semibold">No posts yet!</h2>
-            <p className="text-muted-foreground mt-2">Start creating your first article.</p>
-            <Button asChild className="mt-4">
-              <Link href="/editor/new">Create a Post</Link>
-            </Button>
-          </div>
+          <Card className="bg-card/50">
+            <CardContent className="pt-6 text-center">
+              <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+              <p className="text-muted-foreground mb-4">
+                You haven't created any posts yet. Start writing your first article!
+              </p>
+              <Button asChild>
+                <Link href="/editor/new">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create Your First Post
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
-  );
+  )
 }

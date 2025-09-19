@@ -3,8 +3,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 // Fix lucide-react imports: use correct icon names (no *Icon suffixes)
-import { LayoutDashboard, FileText, Users, MessageSquare, Settings, Image, Tags, FolderCog, Plug, Palette, Activity, FlaskConical } from 'lucide-react'
+import { LayoutDashboard, FileText, Users, MessageSquare, Settings, Image, Tags, FolderCog, Plug, Palette, Activity, FlaskConical, Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ import { useMe } from '@/hooks/useRoleGate'
 import { mapToApiRole } from '@/lib/rbac'
 import checkAccess from '@/lib/checkAccess'
 import ErrorBoundary from '@/components/error-boundary'
+import { Button } from '@/components/ui/button'
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
 type Item = { href: string; label: string; icon: IconType; key: string }
@@ -110,6 +112,7 @@ export default function AdminLayout({
   const pathname = usePathname()
   const { me } = useMe()
   const apiRole = mapToApiRole(me?.roles)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Build groups filtered by RBAC matrix; also dedupe by key
   const filtered: Group[] = RAW_GROUPS.map((g) => {
@@ -123,58 +126,114 @@ export default function AdminLayout({
     return { label: g.label, items: Array.from(uniq.values()) }
   }).filter((g) => g.items.length > 0)
 
-  return (
-    <div className="flex min-h-screen">
-      <aside className="w-64 flex-shrink-0 border-r bg-card/50 p-4">
-        <div className="flex h-full flex-col">
-          <div className="mb-8 flex items-center gap-2 px-2 font-bold">
-            <Link href="/" className="font-bold">
-              tech.oblivion
-            </Link>
-            <div className="ml-auto"><ThemeToggle /></div>
+  const SidebarContent = () => (
+    <>
+      <div className="mb-8 flex items-center gap-2 px-2 font-bold">
+        <Link href="/" className="font-bold text-lg">
+          tech.oblivion
+        </Link>
+        <div className="ml-auto"><ThemeToggle /></div>
+      </div>
+      <nav className="flex flex-col gap-4 flex-1 overflow-y-auto">
+        {filtered.map((group) => (
+          <div key={group.label}>
+            <div className="px-3 pb-2 text-xs font-medium uppercase text-muted-foreground tracking-wider">
+              {group.label}
+            </div>
+            <div className="flex flex-col gap-1">
+              <AnimatePresence initial={false}>
+                {group.items.map((link) => {
+                  const isActive = pathname === link.href
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-[1.02]',
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        )}
+                      >
+                        <link.icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{link.label}</span>
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+            </div>
           </div>
-          <nav className="flex flex-col gap-4">
-            {filtered.map((group) => (
-              <div key={group.label}>
-                <div className="px-3 pb-1 text-xs font-medium uppercase text-muted-foreground">{group.label}</div>
-                <div className="flex flex-col gap-1">
-                  <AnimatePresence initial={false}>
-                    {group.items.map((link) => {
-                      const isActive = pathname === link.href
-                      return (
-                        <motion.div
-                          key={link.href}
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.15 }}
-                        >
-                          <Link
-                            href={link.href}
-                            className={cn(
-                              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                              isActive
-                                ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                            )}
-                          >
-                            <link.icon className="h-4 w-4" />
-                            <span>{link.label}</span>
-                          </Link>
-                        </motion.div>
-                      )
-                    })}
-                  </AnimatePresence>
-                </div>
-              </div>
-            ))}
-          </nav>
-        </div>
+        ))}
+      </nav>
+    </>
+  )
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 flex-shrink-0 border-r bg-card/50 p-4 flex-col">
+        <SidebarContent />
       </aside>
-      <main className="flex-1 overflow-auto bg-background">
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b">
+        <div className="flex items-center justify-between p-4">
+          <Link href="/" className="font-bold text-lg">
+            tech.oblivion
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 z-40 bg-black/50"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="lg:hidden fixed left-0 top-0 z-50 h-full w-64 bg-card border-r p-4 flex flex-col pt-20"
+            >
+              <SidebarContent />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto lg:ml-0 pt-16 lg:pt-0">
+        <div className="p-4 lg:p-8 max-w-7xl mx-auto">
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </div>
       </main>
     </div>
   )
