@@ -2,7 +2,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { decodeEntities } from '@/lib/html-entities'
-import { useRoleGate } from '@/hooks/useRoleGate'
+import { useAuth } from '@/hooks/useAuth'
 
 import type { CommentsContextValue, CommentsState, CommentModel, SortMode } from './types'
 
@@ -43,7 +43,7 @@ type ProviderProps = React.PropsWithChildren<{ postId: number, pageSize?: number
 const Ctx = createContext<CommentsContextValue | null>(null)
 
 export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderProps) {
-  const { me } = useRoleGate('comment')
+  const { user } = useAuth()
   const [state, setState] = useState<CommentsState>({
     postId,
     items: [],
@@ -167,7 +167,7 @@ export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderPr
       id: tempId,
       postId,
       parentId: parentId ?? undefined,
-      author: { name: me ? 'You' : 'Anonymous', slug: undefined, avatar: '' },
+      author: { name: user ? 'You' : 'Anonymous', slug: undefined, avatar: '' },
       content,
       createdAt: new Date().toISOString(),
       status: 'approved',
@@ -197,7 +197,7 @@ export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderPr
       }))
       throw e
     }
-  }, [postId, me])
+  }, [postId, user])
 
   const editComment = useCallback(async (id: string | number, content: string) => {
     try {

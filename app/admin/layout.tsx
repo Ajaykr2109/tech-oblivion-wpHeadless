@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { useMe } from '@/hooks/useRoleGate'
+import { useAuth } from '@/hooks/useAuth'
 import { mapToApiRole } from '@/lib/rbac'
 import checkAccess from '@/lib/checkAccess'
 import ErrorBoundary from '@/components/error-boundary'
@@ -110,8 +110,8 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { me } = useMe()
-  const apiRole = mapToApiRole(me?.roles)
+  const { user } = useAuth()
+  const apiRole = mapToApiRole(user?.roles)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Build groups filtered by RBAC matrix; also dedupe by key

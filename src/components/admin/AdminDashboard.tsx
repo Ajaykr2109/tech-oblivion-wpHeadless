@@ -13,7 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-
+import { useAuth } from '@/hooks/useAuth'
+import { AuthLoadingPage } from '@/components/ui/auth-skeletons'
 
 import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
 
@@ -149,7 +150,28 @@ function LoadingSkeleton() {
 }
 
 export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey }) {
+  const { user, isLoading, can } = useAuth()
   const validSectionKey = sectionKey || 'dashboard'
+
+  // Auth check - only admins can access admin dashboard
+  if (isLoading) {
+    return <AuthLoadingPage />
+  }
+
+  if (!user || !can('admin')) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
+        <h1 className="text-4xl font-bold text-red-600 mb-4">403</h1>
+        <h2 className="text-2xl font-semibold mb-4">Access Denied</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          You don't have permission to access the admin dashboard. Administrator access is required.
+        </p>
+        <Button onClick={() => window.history.back()}>
+          Go Back
+        </Button>
+      </div>
+    )
+  }
 
   const renderContent = () => {
     switch (validSectionKey) {

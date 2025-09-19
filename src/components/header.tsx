@@ -8,8 +8,8 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getCurrentUserSlug } from "@/lib/user-slug";
-import { isAdmin } from "@/lib/permissions";
-import type { User } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
+import { UserMenuSkeleton, AuthButtonSkeleton, AdminMenuSkeleton } from "@/components/ui/auth-skeletons";
 
 import { ThemeToggle } from "./theme-toggle";
 import {
@@ -29,32 +29,22 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading, can } = useAuth();
   const [userSlug, setUserSlug] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const isUserAdmin = can('admin');
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-
-          if (data.user) {
-            const slug = await getCurrentUserSlug();
-            setUserSlug(slug);
-          }
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-      } finally {
-        setIsLoading(false);
+    const getUserSlug = async () => {
+      if (user) {
+        const slug = await getCurrentUserSlug();
+        setUserSlug(slug);
+      } else {
+        setUserSlug(null);
       }
     };
-
-    checkAuth();
-  }, []);
+    getUserSlug();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -99,61 +89,59 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
-          {!isLoading && (
-            <>
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      className="hidden md:flex items-center gap-2"
-                      aria-label="User menu"
-                    >
-                      {(() => {
-                        const uname = user.username || "";
-                        const dname = user.display_name || "";
-                        if (uname && uname.length <= 10) return uname;
-                        if (dname && dname.trim().includes(" ")) {
-                          const parts = dname.trim().split(/\s+/);
-                          const first = parts[0];
-                          return first;
-                        }
-                        return (uname || dname).slice(0, 8);
-                      })()}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isAdmin(user) && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin/dashboard">Admin Dash</Link>
-                      </DropdownMenuItem>
-                    )}
-                    {userSlug && (
-                      <DropdownMenuItem asChild>
-                        <Link href={`/profile/${userSlug}`}>Profile</Link>
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href="/bookmarks">Bookmarks</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/account">Account Center</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <button onClick={handleLogout}>Logout</button>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
+          {isLoading ? (
+            <UserMenuSkeleton />
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="hidden md:flex"
-                  onClick={() => { window.location.href = '/login'; }}
+                  className="hidden md:flex items-center gap-2"
+                  aria-label="User menu"
                 >
-                  Login
+                  {(() => {
+                    const uname = user.username || "";
+                    const dname = user.displayName || "";
+                    if (uname && uname.length <= 10) return uname;
+                    if (dname && dname.trim().includes(" ")) {
+                      const parts = dname.trim().split(/\s+/);
+                      const first = parts[0];
+                      return first;
+                    }
+                    return (uname || dname).slice(0, 8);
+                  })()}
                 </Button>
-              )}
-            </>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isUserAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin/dashboard">Admin Dash</Link>
+                  </DropdownMenuItem>
+                )}
+                {userSlug && (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/profile/${userSlug}`}>Profile</Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem asChild>
+                  <Link href="/bookmarks">Bookmarks</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account">Account Center</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <button onClick={handleLogout}>Logout</button>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              variant="ghost" 
+              className="hidden md:flex"
+              onClick={() => { window.location.href = '/login'; }}
+            >
+              Login
+            </Button>
           )}
 
           {/* Single ThemeToggle */}
@@ -184,7 +172,9 @@ export function Header() {
 
                 {/* Profile & Bookmarks removed from mobile sheet main list to consolidate in dropdown */}
 
-                {!isLoading && isAdmin(user) && (
+                {isLoading ? (
+                  <AdminMenuSkeleton />
+                ) : isUserAdmin && (
                   <Link href="/admin/dashboard" className="text-muted-foreground hover:text-foreground">
                     Admin Dash
                   </Link>
@@ -192,24 +182,22 @@ export function Header() {
 
                 {/* Account link removed from main nav per requirements (Account option removed). */}
 
-                {!isLoading && (
+                {isLoading ? (
+                  <AuthButtonSkeleton />
+                ) : user ? (
                   <>
-                    {user ? (
-                      <>
-                        <div className="text-muted-foreground">Welcome, {user.username}</div>
-                        <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
-                        <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
-                        {userSlug && (
-                          <Link href={`/profile/${userSlug}`} className="text-muted-foreground hover:text-foreground">Profile</Link>
-                        )}
-                        <a href="/api/auth/logout?redirect=/" className="text-left text-muted-foreground hover:text-foreground">
-                          Logout
-                        </a>
-                      </>
-                    ) : (
-                      <Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
+                    <div className="text-muted-foreground">Welcome, {user.username}</div>
+                    <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
+                    <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
+                    {userSlug && (
+                      <Link href={`/profile/${userSlug}`} className="text-muted-foreground hover:text-foreground">Profile</Link>
                     )}
+                    <a href="/api/auth/logout?redirect=/" className="text-left text-muted-foreground hover:text-foreground">
+                      Logout
+                    </a>
                   </>
+                ) : (
+                  <Link href="/login" className="text-muted-foreground hover:text-foreground">Login</Link>
                 )}
               </nav>
             </SheetContent>

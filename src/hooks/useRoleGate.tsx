@@ -1,48 +1,12 @@
 "use client"
-import { useEffect, useState } from 'react'
 
+import { useAuth as useAuthContext } from '@/contexts/auth-context'
 import { can as canAction, messageFor, normalizeRole, type Action } from '@/lib/roles'
 
-type Me = { roles?: string[] } | null
-
 export function useMe() {
-  const [me, setMe] = useState<Me>(null)
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      setLoading(true)
-      try {
-        const r = await fetch('/api/auth/me', { cache: 'no-store' })
-        if (!cancelled) {
-          if (r.ok) {
-            try {
-              const j = await r.json()
-              // API returns { user } wrapper
-              setMe((j && typeof j === 'object' && 'user' in j) ? (j as { user: Me }).user : (j as Me))
-            } catch { setMe(null) }
-          } else setMe(null)
-        }
-      } catch {
-        if (!cancelled) setMe(null)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    run()
-    const onFocus = () => run()
-  const onLogin = () => run()
-    window.addEventListener('focus', onFocus)
-    window.addEventListener('visibilitychange', onFocus)
-  window.addEventListener('auth:login', onLogin as unknown as EventListener)
-    return () => {
-      cancelled = true
-      window.removeEventListener('focus', onFocus)
-      window.removeEventListener('visibilitychange', onFocus)
-  window.removeEventListener('auth:login', onLogin as unknown as EventListener)
-    }
-  }, [])
-  return { me, loading }
+  const { user, isLoading } = useAuthContext()
+  const me = user ? { roles: user.roles } : null
+  return { me, loading: isLoading }
 }
 
 export function useRoleGate(action: Action) {

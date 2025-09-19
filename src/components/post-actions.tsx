@@ -4,7 +4,7 @@ import { Edit, Share2, MoreVertical, Clipboard } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { RoleGate } from '@/hooks/useRoleGate'
+import { RoleGate } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
 type Props = {

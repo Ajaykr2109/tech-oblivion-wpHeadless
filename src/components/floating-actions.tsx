@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import { Share2, Bookmark, BookmarkCheck, Printer } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { RoleGate, useRoleGate } from '@/hooks/useRoleGate'
+import { useAuth, RoleGate } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
 export default function FloatingActions({ title, postId }: { title: string; postId?: number }) {
   const url = typeof window !== 'undefined' ? window.location.href : ''
-  const { allowed } = useRoleGate('bookmark')
+  const { can } = useAuth()
   const { toast } = useToast()
   const [bookmarkState, setBookmarkState] = useState<{ bookmarked: boolean; count: number } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -43,7 +43,7 @@ export default function FloatingActions({ title, postId }: { title: string; post
   }, [postId])
 
   async function bookmark() {
-    if (!allowed || !postId || busy) return
+    if (!can('bookmark') || !postId || busy) return
     setBusy(true)
     try {
       const r = await fetch('/api/wp/bookmarks', {
@@ -71,7 +71,7 @@ export default function FloatingActions({ title, postId }: { title: string; post
       <Button size="icon" variant="secondary" className="shadow" onClick={share} aria-label="Share">
         <Share2 className="h-4 w-4" />
       </Button>
-      <RoleGate action="bookmark" disabledClassName="opacity-50">
+      <RoleGate action="bookmark" hideWhenUnauthorized={true}>
         <Button size="icon" variant="secondary" className="shadow" aria-label="Bookmark" onClick={bookmark} disabled={busy}>
           {bookmarkState?.bookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
         </Button>

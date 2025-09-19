@@ -8,7 +8,8 @@ import { MessageSquare, Flag, Edit3, Trash2, MoreHorizontal, CornerDownRight, Ch
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { RoleGate, useRoleGate } from '@/hooks/useRoleGate'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth, RoleGate } from '@/hooks/useAuth'
 
 import type { CommentModel } from './types'
 import { useComments } from './CommentsProvider'
@@ -18,18 +19,28 @@ type Props = { comment: CommentModel, depth?: number }
 
 export default function CommentItem({ comment, depth = 0 }: Props) {
   const { toggleExpand, prefetchReplies, editComment, deleteOwnComment, markSpam, vote, expanded, moderate, selected, toggleSelect } = useComments()
-  const { me } = useRoleGate('comment')
-  const { allowed: isAdmin } = useRoleGate('moderateComments')
+  const { user, can, isLoading } = useAuth()
   const [replying, setReplying] = useState(false)
   const [editing, setEditing] = useState(false)
   const isExpanded = useMemo(() => expanded.has(comment.id), [expanded, comment.id])
 
+  const canComment = can('comment')
+  const isAdmin = can('moderateComments')
+
+  // Show loading skeleton for auth-dependent content while loading
+  const AuthLoadingSkeleton = () => (
+    <div className="flex gap-2">
+      <Skeleton className="h-7 w-16" />
+      <Skeleton className="h-7 w-16" />
+    </div>
+  )
+
   const canEditOrDeleteBase = useMemo(() => {
-    // Assuming me has an id field via upstream; fallback to name match
+    // Assuming user has an id field via upstream; fallback to name match
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const myName = (me as any)?.name || ''
+    const myName = (user as any)?.name || ''
     return myName && myName === comment.author.name
-  }, [me, comment.author.name])
+  }, [user, comment.author.name])
   const withinEditWindow = useMemo(() => {
     const created = new Date(comment.createdAt).getTime()
     const now = Date.now()
@@ -84,7 +95,11 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
         </div>
 
         <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-          <RoleGate action="comment">
+          <RoleGate 
+            action="comment" 
+            hideWhenUnauthorized={false}
+            loadingFallback={<AuthLoadingSkeleton />}
+          >
             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setReplying(v => !v)} aria-label="Reply">
               <MessageSquare className="h-3.5 w-3.5 mr-1" /> Reply
             </Button>
@@ -93,7 +108,11 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
             </Button>
           </RoleGate>
 
-          <RoleGate action="comment">
+          <RoleGate 
+            action="comment" 
+            hideWhenUnauthorized={false}
+            loadingFallback={<Skeleton className="h-7 w-16" />}
+          >
             <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => markSpam(comment.id)} aria-label="Mark spam">
               <Flag className="h-3.5 w-3.5 mr-1" /> Spam
             </Button>
@@ -110,7 +129,11 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
             </>
           )}
 
-          <RoleGate action="moderateComments">
+          <RoleGate 
+            action="moderateComments" 
+            hideWhenUnauthorized={true}
+            loadingFallback={<Skeleton className="h-7 w-8" />}
+          >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 px-2">

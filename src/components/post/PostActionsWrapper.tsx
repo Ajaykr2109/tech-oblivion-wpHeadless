@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-
-import type { User } from '@/lib/auth'
+import { useAuth } from '@/hooks/useAuth'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import PostActionsMenu from './PostActionsMenu'
 
@@ -14,35 +13,10 @@ interface PostActionsWrapperProps {
 }
 
 export default function PostActionsWrapper({ postId, slug, title, authorId }: PostActionsWrapperProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoading } = useAuth()
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me', { 
-          cache: 'no-store',
-          credentials: 'include' 
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUser()
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="w-8 h-8 bg-muted animate-pulse rounded" />
-    )
+  if (isLoading) {
+    return <Skeleton className="w-8 h-8 rounded" />
   }
 
   const post = {
@@ -52,10 +26,20 @@ export default function PostActionsWrapper({ postId, slug, title, authorId }: Po
     slug
   }
 
+  const legacyUser = user ? {
+    id: parseInt(user.id) || 0, // Convert string id to number for legacy compatibility
+    username: user.username,
+    email: user.email,
+    displayName: user.displayName,
+    url: user.url,
+    website: user.website,
+    roles: user.roles || [],
+  } : null
+
   return (
     <PostActionsMenu 
       post={post}
-      user={user}
+      user={legacyUser}
       className="border-0"
     />
   )
