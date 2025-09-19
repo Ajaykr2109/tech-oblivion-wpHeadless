@@ -40,11 +40,11 @@ function mapWp(c: unknown): CommentModel {
   }
 }
 
-type ProviderProps = React.PropsWithChildren<{ postId: number, pageSize?: number }>
+type ProviderProps = React.PropsWithChildren<{ postId: number, pageSize?: number, status?: 'approved'|'pending'|'spam'|'trash'|'all' }>
 
 const Ctx = createContext<CommentsContextValue | null>(null)
 
-export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderProps) {
+export function CommentsProvider({ children, postId, pageSize = 10, status = 'all' }: ProviderProps) {
   const { user } = useAuth()
   const [state, setState] = useState<CommentsState>({
     postId,
@@ -87,12 +87,17 @@ export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderPr
 
   const fetchPage = useCallback(async (page: number) => {
     const qs = new URLSearchParams({ post: String(postId), per_page: String(state.pageSize), page: String(page), order: 'desc', orderby: 'date' })
-    const r = await fetch(`/api/wp/comments?${qs.toString()}`, { cache: 'no-store' })
+    // Map friendly status to WP REST values
+    const statusMap: Record<string, string> = { approved: 'approve', pending: 'hold', spam: 'spam', trash: 'trash', all: 'all' }
+    const mappedStatus = statusMap[status]
+    if (mappedStatus && mappedStatus !== 'all') qs.set('status', mappedStatus)
+    const endpoint = '/api/wp/comments'
+    const r = await fetch(`${endpoint}?${qs.toString()}`, { cache: 'no-store' })
     if (!r.ok) throw new Error(`Failed to load comments: ${r.status}`)
     const data = await r.json().catch(() => [])
     const mapped: CommentModel[] = Array.isArray(data) ? data.map(mapWp).filter(c => !c.parentId) : []
     return mapped
-  }, [postId, state.pageSize])
+  }, [postId, state.pageSize, status])
 
   const loadInitial = useCallback(async () => {
     setState(s => ({ ...s, loading: true, error: null }))

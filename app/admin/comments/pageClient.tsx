@@ -8,7 +8,6 @@ import BulkActionsBar, { BulkAction } from '@/components/admin/BulkActionsBar'
 import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface WPComment {
@@ -33,47 +32,71 @@ const statusConfig = {
 export default function CommentsClient() {
   const [selected, setSelected] = useState<number[]>([])
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [page, setPage] = useState<number>(1)
+  const [perPage, setPerPage] = useState<number>(20)
   const queryClient = useQueryClient()
   
-  const { data: comments, isLoading } = useQuery<WPComment[]>({
-    queryKey: ['admin-comments', statusFilter],
+  type QueryResult = { items: WPComment[]; total: number; totalPages: number }
+  const { data, isLoading } = useQuery<QueryResult>({
+    queryKey: ['admin-comments', statusFilter, page, perPage],
     queryFn: async () => {
-      const url = new URL('/api/wp/comments', window.location.origin)
+      const url = new URL('/api/comments', window.location.origin)
       if (statusFilter !== 'all') {
-        url.searchParams.set('status', statusFilter)
+        // Map UI to WP REST status values
+        const map: Record<string, string> = { approved: 'approve', unapproved: 'hold', hold: 'hold', spam: 'spam', trash: 'trash' }
+        url.searchParams.set('status', map[statusFilter] || statusFilter)
       }
-      url.searchParams.set('per_page', '50') // Show more comments for admin
+      url.searchParams.set('page', String(page))
+      url.searchParams.set('per_page', String(perPage))
       url.searchParams.set('orderby', 'date')
       url.searchParams.set('order', 'desc')
-      
-      const response = await fetch(url.toString())
+
+      const response = await fetch(url.toString(), { cache: 'no-store' })
       if (!response.ok) throw new Error('Failed to fetch comments')
-      return response.json()
+      const total = parseInt(response.headers.get('X-WP-Total') || '0', 10)
+      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10)
+      const items = await response.json() as WPComment[]
+      return { items, total, totalPages }
     }
   })
 
-  const moderateComment = useCallback(async (commentId: number, action: string) => {
+  const comments = useMemo<WPComment[]>(() => data?.items || [], [data])
+  const totalPages = data?.totalPages || 1
+
+  const moderateComment = useCallback(async (commentId: number, action: 'approve'|'unapprove'|'spam'|'trash') => {
     try {
-      const response = await fetch(`/api/wp/comments/${commentId}`, {
-        method: 'PATCH',
+      // Optimistic UI update
+      const nextStatus: Record<typeof action, WPComment['status']> = {
+        approve: 'approved',
+        unapprove: 'hold',
+        spam: 'spam',
+        trash: 'trash'
+      }
+      queryClient.setQueryData<QueryResult>(['admin-comments', statusFilter, page, perPage], (old) => {
+        if (!old) return undefined as unknown as QueryResult
+        return { ...old, items: old.items.map(c => c.id === commentId ? { ...c, status: nextStatus[action] } : c) }
+      })
+      const statusMap: Record<typeof action, string> = { approve: 'approve', unapprove: 'hold', spam: 'spam', trash: 'trash' }
+      const response = await fetch(`/api/comments/${commentId}/moderate`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
+        body: JSON.stringify({ status: statusMap[action] })
       })
       if (!response.ok) throw new Error('Failed to moderate comment')
-      // Refresh the comments list
+      // Optionally refetch to sync counts/pages
       queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
     } catch (error) {
       console.error('Error moderating comment:', error)
     }
-  }, [queryClient])
+  }, [queryClient, statusFilter, page, perPage])
   
   const header = useMemo(()=>[
     'Author', 'Comment', 'Post', 'Status', 'Date', 'Actions'
   ], [])
   
   const rows = useMemo(()=> (comments || []).map(c => {
-    const statusInfo = statusConfig[c.status] || statusConfig.unapproved
-    const StatusIcon = statusInfo.icon
+  const statusInfo = statusConfig[c.status] || statusConfig.unapproved
+  const StatusIcon = statusInfo.icon
     
     return {
       id: c.id,
@@ -92,19 +115,32 @@ export default function CommentsClient() {
           <div dangerouslySetInnerHTML={{ __html: c.content.rendered.substring(0, 100) + '...' }} />
         </div>,
         <span key="post">Post #{c.post}</span>,
-        <Badge key="status" variant={statusInfo.variant} className="flex items-center gap-1 w-fit">
-          <StatusIcon className="h-3 w-3" />
-          {statusInfo.label}
-        </Badge>,
+        <span key="status" className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium w-fit
+          ${c.status === 'approved' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : ''}
+          ${c.status === 'hold' || c.status === 'unapproved' ? 'bg-amber-100 text-amber-800 border border-amber-200' : ''}
+          ${c.status === 'spam' ? 'bg-red-100 text-red-800 border border-red-200' : ''}
+          ${c.status === 'trash' ? 'bg-gray-100 text-gray-700 border border-gray-200' : ''}
+        `}>
+          <StatusIcon className="h-3 w-3" /> {statusInfo.label}
+        </span>,
         <span key="date">{new Date(c.date).toLocaleDateString()}</span>,
         <div className="flex justify-end gap-2" key="actions">
-          {c.status !== 'approved' && (
+          {c.status !== 'approved' && c.status !== 'spam' && c.status !== 'trash' && (
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => moderateComment(c.id, 'approve')}
             >
               <Check className="mr-2 h-4 w-4" /> Approve
+            </Button>
+          )}
+          {c.status === 'approved' && (
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => moderateComment(c.id, 'unapprove')}
+            >
+              <X className="mr-2 h-4 w-4" /> Unapprove
             </Button>
           )}
           {c.status !== 'spam' && (
@@ -146,6 +182,7 @@ export default function CommentsClient() {
   }
 
   const commentCounts = useMemo(() => {
+    // counts per tab are best fetched server-side; as a quick approximation, count from current page
     if (!comments) return { all: 0, approved: 0, unapproved: 0, spam: 0, trash: 0 }
     return comments.reduce((acc, comment) => {
       acc.all++
@@ -168,7 +205,7 @@ export default function CommentsClient() {
         <p className="text-muted-foreground">Manage and moderate user comments across your site.</p>
       </div>
 
-      <Tabs value={statusFilter} onValueChange={setStatusFilter} className="mb-6">
+      <Tabs value={statusFilter} onValueChange={(v)=>{ setStatusFilter(v); setPage(1) }} className="mb-6">
         <TabsList>
           <TabsTrigger value="all">All ({commentCounts.all})</TabsTrigger>
           <TabsTrigger value="approved">Approved ({commentCounts.approved})</TabsTrigger>
@@ -180,6 +217,26 @@ export default function CommentsClient() {
 
       <BulkActionsBar onAction={onAction} disabled={selected.length===0} actions={['approve', 'unapprove', 'spam', 'trash']} />
       <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
+
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Per page</span>
+          <select
+            className="h-8 rounded border bg-background px-2 text-sm"
+            value={perPage}
+            onChange={(e)=>{ setPerPage(parseInt(e.target.value, 10)); setPage(1) }}
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="h-8 rounded border px-3 text-sm disabled:opacity-50" disabled={page<=1} onClick={()=>setPage(p=>Math.max(1, p-1))}>Previous</button>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+          <button className="h-8 rounded border px-3 text-sm disabled:opacity-50" disabled={page>=totalPages} onClick={()=>setPage(p=>Math.min(totalPages, p+1))}>Next</button>
+        </div>
+      </div>
     </div>
   )
 }

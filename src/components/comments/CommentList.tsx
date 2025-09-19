@@ -1,15 +1,18 @@
 "use client"
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import CommentItem from './CommentItem'
 import { useComments } from './CommentsProvider'
 
 export default function CommentList() {
-  const { items, loading, error, hasMore, loadMoreTop, sort, setSort, query, setQuery } = useComments()
+  const { items, loading, error, hasMore, loadMoreTop, sort, setSort, query, setQuery, pageSize } = useComments()
+  const [status, setStatus] = useState<'approved'|'pending'|'spam'|'trash'|'all'>('all')
+  const [perPage, setPerPage] = useState<number>(pageSize)
 
   useEffect(() => {
     const onSubmit = (e: Event) => {
@@ -42,6 +45,17 @@ export default function CommentList() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Tabs value={status} onValueChange={(v)=>setStatus(v as typeof status)}>
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="spam">Spam</TabsTrigger>
+            <TabsTrigger value="trash">Trash</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search comments" className="w-40 md:w-64" aria-label="Search comments" />
@@ -90,6 +104,18 @@ export default function CommentList() {
           <Button onClick={loadMoreTop} variant="secondary">Load more</Button>
         </div>
       )}
+
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <span className="text-xs text-muted-foreground">Per page</span>
+        <Select value={String(perPage)} onValueChange={(v)=>setPerPage(parseInt(v,10))}>
+          <SelectTrigger className="w-[100px]"><SelectValue placeholder="Per page" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10</SelectItem>
+            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="50">50</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   )
 }

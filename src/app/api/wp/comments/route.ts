@@ -12,20 +12,41 @@ export async function GET(req: NextRequest) {
   const WP = process.env.WP_URL
   if (!WP) return new Response('WP_URL env required', { status: 500 })
 
+  // === DEBUG: Environment Variables ===
+  console.log('=== COMMENTS API DEBUG START ===')
+  console.log('WP_USER value:', JSON.stringify(process.env.WP_USER))
+  console.log('WP_USER split test:', process.env.WP_USER?.split(' '))
+  console.log('WP_APP_PASSWORD length:', process.env.WP_APP_PASSWORD?.length || 0)
+  console.log('WP_USER exists:', !!process.env.WP_USER)
+  console.log('WP_APP_PASSWORD exists:', !!process.env.WP_APP_PASSWORD)
+
   const incoming = new URL(req.url)
+  console.log('Request URL:', incoming.toString())
+  
+  // Check for force Basic Auth override
+  const forceBasicAuth = incoming.searchParams.get('auth') === 'basic'
+  console.log('Force Basic Auth requested:', forceBasicAuth)
   const id = incoming.searchParams.get('id')
   
   // If the user has a WP token in session, forward it so authorized statuses (e.g., hold/spam) can be fetched for admins
   let wpToken: string | undefined
-  try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
-    if (sessionCookie?.value) {
-      const claims = await verifySession(sessionCookie.value) as { wpToken?: string }
-      wpToken = claims?.wpToken
+  if (!forceBasicAuth) {
+    try {
+      const cookieStore = await cookies()
+      const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+      if (sessionCookie?.value) {
+        const claims = await verifySession(sessionCookie.value) as { wpToken?: string }
+        wpToken = claims?.wpToken
+        console.log('Session wpToken found:', !!wpToken)
+      } else {
+        console.log('No session cookie found')
+      }
+    } catch (e) {
+      console.log('Session verification failed:', e instanceof Error ? e.message : 'Unknown error')
+      // no session / not authenticated; proceed without Authorization
     }
-  } catch {
-    // no session / not authenticated; proceed without Authorization
+  } else {
+    console.log('Skipping session token extraction due to forceBasicAuth')
   }
   
   // Build query with sensible defaults
@@ -49,6 +70,7 @@ export async function GET(req: NextRequest) {
       approved: 'approve',
       unapproved: 'hold',
       pending: 'hold',
+      hold: 'hold',  // Preserve 'hold' as-is
       spam: 'spam',
       trash: 'trash',
       all: 'all',
@@ -82,13 +104,19 @@ export async function GET(req: NextRequest) {
     console.log('Comments API: Converted author param to array format')
   }
 
-  // Try MU proxy first when available (re-enabled for debugging)
+  // Try MU proxy first when available (re-enabled for debugging) - skip if forcing Basic Auth
   const secret = process.env.FE_PROXY_SECRET || ''
   const path = 'wp/v2/comments'
-  if (secret) {
+  if (secret && !forceBasicAuth) {
+    console.log('=== TRYING MU PROXY ===')
     const proxy = new URL('/wp-json/fe-auth/v1/proxy', WP)
     proxy.searchParams.set('path', path)
-    search.forEach((v, k) => proxy.searchParams.set(`query[${k}]`, v))
+    search.forEach((v, k) => {
+      // Skip internal Next.js API parameters
+      if (k !== 'auth') {
+        proxy.searchParams.set(`query[${k}]`, v)
+      }
+    })
     const ts = String(Math.floor(Date.now() / 1000))
     const base = `GET\n${path}\n${ts}\n`
     const sign = createHmac('sha256', secret).update(base).digest('base64')
@@ -109,43 +137,158 @@ export async function GET(req: NextRequest) {
       } catch {
         console.log('Comments API: Failed to parse proxy response for debugging')
       }
-      return new Response(text, { status: 200, headers: { 'Content-Type': res.headers.get('Content-Type') || 'application/json', 'Cache-Control': 'public, max-age=60', 'X-Upstream': 'proxy', 'X-Upstream-Url': proxy.toString() } })
+      // Forward pagination headers when present
+      const headers: Record<string, string> = {
+        'Content-Type': res.headers.get('Content-Type') || 'application/json',
+        'Cache-Control': 'public, max-age=60',
+        'X-Upstream': 'proxy',
+        'X-Upstream-Url': proxy.toString(),
+      }
+      const total = res.headers.get('X-WP-Total')
+      const totalPages = res.headers.get('X-WP-TotalPages')
+      if (total) headers['X-WP-Total'] = total
+      if (totalPages) headers['X-WP-TotalPages'] = totalPages
+      return new Response(text, { status: 200, headers })
     } else {
       console.log('Comments API: Proxy failed with status:', res.status, res.statusText)
     }
+  } else if (forceBasicAuth) {
+    console.log('=== SKIPPING MU PROXY (force Basic Auth requested) ===')
+  } else {
+    console.log('=== SKIPPING MU PROXY (no secret) ===')
   }
 
   const out = id ? new URL(`/wp-json/wp/v2/comments/${id}`, WP) : new URL('/wp-json/wp/v2/comments', WP)
-  if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
+  if (!id) {
+    // Filter out internal parameters before sending to WordPress
+    search.forEach((v, k) => {
+      // Skip internal Next.js API parameters
+      if (k !== 'auth') {
+        out.searchParams.set(k, v)
+      }
+    })
+  }
   console.log('Comments API: Final WordPress URL:', out.toString())
+
   // Prefer session-derived token; fall back to any inbound Authorization header if present
-  const authHeader = wpToken ? `Bearer ${wpToken}` : (req.headers.get('authorization') || '')
-  const headers: Record<string, string> = {}
-  if (authHeader) headers['Authorization'] = authHeader
-  const res = await fetch(out.toString(), { cache: 'no-store', headers })
-  if (!res.ok) {
-    console.log('Comments API: WordPress response not OK:', res.status, res.statusText)
-    if (res.status === 404 || res.status === 400) {
-      return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
+  const bearer = wpToken ? `Bearer ${wpToken}` : (req.headers.get('authorization') || '')
+  const tryHeaders = (auth?: string): HeadersInit | undefined => auth ? { Authorization: auth } : undefined
+
+  // Helper to build response with pagination headers
+  const forward = async (res: Response, upstreamUrl: string) => {
+    const text = await res.text()
+    console.log('=== FORWARD RESPONSE DEBUG ===')
+    console.log('WordPress response length:', text.length)
+    console.log('WordPress response status:', res.status)
+    try {
+      const data = JSON.parse(text)
+      if (Array.isArray(data)) {
+        console.log('Number of comments received:', data.length)
+        console.log('Comment statuses:', [...new Set(data.map(c => c.status))])
+        console.log('Post IDs in comments:', [...new Set(data.map(c => c.post))].slice(0, 5))
+        // Show sample comments with status for debugging
+        console.log('Sample comments with status:', data.slice(0, 3).map(c => ({
+          id: c.id,
+          status: c.status,
+          post: c.post,
+          content: c.content?.rendered?.substring(0, 50) + '...'
+        })))
+      } else {
+        console.log('Response is not an array:', typeof data)
+      }
+    } catch {
+      console.log('Failed to parse response for debugging, first 200 chars:', text.substring(0, 200))
     }
-    return new Response('Upstream error', { status: res.status })
+    const headers: Record<string, string> = {
+      'Content-Type': res.headers.get('Content-Type') || 'application/json',
+      'Cache-Control': 'public, max-age=60',
+      'X-Upstream-Url': upstreamUrl,
+    }
+    const total = res.headers.get('X-WP-Total')
+    const totalPages = res.headers.get('X-WP-TotalPages')
+    if (total) headers['X-WP-Total'] = total
+    if (totalPages) headers['X-WP-TotalPages'] = totalPages
+    console.log('Response headers being sent:', headers)
+    return new Response(text, { status: 200, headers })
   }
 
-  const text = await res.text()
-  console.log('Comments API: WordPress response length:', text.length)
-  
-  // Parse response to check filtering
-  try {
-    const data = JSON.parse(text)
-    if (Array.isArray(data)) {
-      console.log('Comments API: Number of comments received:', data.length)
-      console.log('Comments API: Post IDs in comments:', data.map(c => c.post).slice(0, 5))
+  // 1) Try bearer/session auth if available (skip if forcing Basic Auth)
+  let res: Response | undefined
+  if (!forceBasicAuth) {
+    res = await fetch(out.toString(), { cache: 'no-store', headers: tryHeaders(bearer) })
+    console.log('=== BEARER AUTH ATTEMPT ===')
+    console.log('Bearer token available:', !!bearer)
+    console.log('Bearer response status:', res.status)
+    if (res.ok) {
+      console.log('=== Bearer Auth SUCCESS ===')
+      return forward(res, out.toString())
     }
-  } catch {
-    console.log('Comments API: Failed to parse response for debugging')
+    console.log('Comments API: Bearer fetch failed:', res.status)
+  } else {
+    console.log('=== SKIPPING BEARER AUTH (force Basic Auth requested) ===')
   }
-  
-  return new Response(text, { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60', 'X-Upstream-Url': out.toString() } })
+
+  // 2) Try Basic Auth (Application Password) if configured
+  const basicUser = process.env.WP_USER || process.env.WP_API_USER
+  const basicPass = process.env.WP_APP_PASSWORD || process.env.WP_API_APP_PASSWORD
+  if (basicUser && basicPass) {
+    const token = Buffer.from(`${basicUser}:${basicPass}`).toString('base64')
+    const basicAuthHeader = `Basic ${token}`
+    
+    // === DEBUG: Basic Auth Header ===
+    console.log('=== BASIC AUTH DEBUG ===')
+    console.log('Basic Auth username being sent:', JSON.stringify(basicUser))
+    console.log('Basic Auth password length:', basicPass.length)
+    // Decode the first part to show the username part (for debugging)
+    const decodedForDebug = Buffer.from(token, 'base64').toString('utf-8')
+    const [usernameDebug] = decodedForDebug.split(':')
+    console.log('Decoded username from Basic Auth:', JSON.stringify(usernameDebug))
+    console.log('Basic Auth header (masked):', `Basic ${token.substring(0, 20)}...`)
+    
+    console.log('Making Basic Auth request to:', out.toString())
+    res = await fetch(out.toString(), { 
+      cache: 'no-store', 
+      headers: { Authorization: basicAuthHeader } 
+    })
+    console.log('Basic Auth response status:', res.status)
+    console.log('Basic Auth response headers:', Object.fromEntries(res.headers.entries()))
+    
+    if (res.ok) {
+      console.log('=== Basic Auth SUCCESS ===')
+      return forward(res, out.toString())
+    } else {
+      console.log('=== Basic Auth FAILED ===')
+      const errorText = await res.text()
+      console.log('Basic Auth error response:', errorText.substring(0, 500))
+      // Re-fetch for the fallback logic since we consumed the response
+      res = await fetch(out.toString(), { 
+        cache: 'no-store', 
+        headers: { Authorization: basicAuthHeader } 
+      })
+    }
+    console.log('Comments API: Basic auth fetch failed:', res.status)
+  } else {
+    console.log('=== Basic Auth SKIPPED - Missing credentials ===')
+    console.log('basicUser available:', !!basicUser)
+    console.log('basicPass available:', !!basicPass)
+  }
+
+  // If no res yet, make an unauthenticated request for the final error handling
+  if (!res) {
+    res = await fetch(out.toString(), { cache: 'no-store' })
+    console.log('Fallback unauthenticated request status:', res.status)
+  }
+
+  // 3) Handle expected upstream errors gracefully
+  console.log('=== FINAL ERROR HANDLING ===')
+  console.log('Final response status:', res.status)
+  if ([400, 404].includes(res.status)) {
+    console.log('Returning empty array for expected error status:', res.status)
+    return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
+  }
+  console.log('Returning upstream error with status:', res.status)
+  console.log('=== COMMENTS API DEBUG END ===')
+  return new Response('Upstream error', { status: res.status })
 }
 
 // Create a comment (requires authenticated user)
