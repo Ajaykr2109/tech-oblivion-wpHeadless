@@ -1,0 +1,816 @@
+[
+    {
+        "id": 1,
+        "username": "Dr. Ajay Chaturvedi",
+        "name": "Ajay Chaturvedi",
+        "first_name": "Ajay",
+        "last_name": "Chaturvedi",
+        "email": "work4techprism@gmail.com",
+        "url": "https://techoblivion.in",
+        "description": "Tinkerer &amp; Engineer at heart, explorer at mind, blending code, cloud, and curiosity. I break and rebuild to push limits. Living on the edge where tech meets oblivion.",
+        "link": "https://techoblivion.in/author/ajay/",
+        "locale": "en_US",
+        "nickname": "ajay",
+        "slug": "ajay",
+        "roles": [
+            "administrator"
+        ],
+        "registered_date": "2025-08-19T14:00:36+00:00",
+        "capabilities": {
+            "switch_themes": true,
+            "edit_themes": true,
+            "activate_plugins": true,
+            "edit_plugins": true,
+            "edit_users": true,
+            "edit_files": true,
+            "manage_options": true,
+            "moderate_comments": true,
+            "manage_categories": true,
+            "manage_links": true,
+            "upload_files": true,
+            "import": true,
+            "unfiltered_html": true,
+            "edit_posts": true,
+            "edit_others_posts": true,
+            "edit_published_posts": true,
+            "publish_posts": true,
+            "edit_pages": true,
+            "read": true,
+            "level_10": true,
+            "level_9": true,
+            "level_8": true,
+            "level_7": true,
+            "level_6": true,
+            "level_5": true,
+            "level_4": true,
+            "level_3": true,
+            "level_2": true,
+            "level_1": true,
+            "level_0": true,
+            "edit_others_pages": true,
+            "edit_published_pages": true,
+            "publish_pages": true,
+            "delete_pages": true,
+            "delete_others_pages": true,
+            "delete_published_pages": true,
+            "delete_posts": true,
+            "delete_others_posts": true,
+            "delete_published_posts": true,
+            "delete_private_posts": true,
+            "edit_private_posts": true,
+            "read_private_posts": true,
+            "delete_private_pages": true,
+            "edit_private_pages": true,
+            "read_private_pages": true,
+            "delete_users": true,
+            "create_users": true,
+            "unfiltered_upload": true,
+            "edit_dashboard": true,
+            "update_plugins": true,
+            "delete_plugins": true,
+            "install_plugins": true,
+            "update_themes": true,
+            "install_themes": true,
+            "update_core": true,
+            "list_users": true,
+            "remove_users": true,
+            "promote_users": true,
+            "edit_theme_options": true,
+            "delete_themes": true,
+            "export": true,
+            "manage_zip_ai_assistant": true,
+            "manage_ast_block_templates": true,
+            "create_posts": true,
+            "install_languages": true,
+            "resume_plugins": true,
+            "resume_themes": true,
+            "cartflows_manage_settings": true,
+            "cartflows_manage_flows_steps": true,
+            "wpcode_edit_snippets": true,
+            "wpcode_activate_snippets": true,
+            "rank_math_edit_htaccess": true,
+            "rank_math_titles": true,
+            "rank_math_general": true,
+            "rank_math_sitemap": true,
+            "rank_math_404_monitor": true,
+            "rank_math_link_builder": true,
+            "rank_math_redirections": true,
+            "rank_math_role_manager": true,
+            "rank_math_analytics": true,
+            "rank_math_site_analysis": true,
+            "rank_math_onpage_analysis": true,
+            "rank_math_onpage_general": true,
+            "rank_math_onpage_advanced": true,
+            "rank_math_onpage_snippet": true,
+            "rank_math_onpage_social": true,
+            "rank_math_content_ai": true,
+            "rank_math_admin_bar": true,
+            "view_site_health_checks": true,
+            "ure_edit_roles": true,
+            "ure_create_roles": true,
+            "ure_delete_roles": true,
+            "ure_create_capabilities": true,
+            "ure_delete_capabilities": true,
+            "ure_manage_options": true,
+            "ure_reset_roles": true,
+            "wpseo_manage_options": true,
+            "wpseo_bulk_edit": true,
+            "wpseo_edit_advanced_metadata": true,
+            "administrator": true
+        },
+        "extra_capabilities": {
+            "administrator": true
+        },
+        "meta": {
+            "persisted_preferences": {
+                "core": {
+                    "isComplementaryAreaVisible": true,
+                    "focusMode": false,
+                    "openPanels": [
+                        "post-status",
+                        "taxonomy-panel-post_tag",
+                        "taxonomy-panel-category",
+                        "yoast-seo/document-panel"
+                    ],
+                    "renderingModes": {
+                        "saas-child": {
+                            "page": "template-locked"
+                        }
+                    },
+                    "distractionFree": false,
+                    "fixedToolbar": false,
+                    "editorMode": "visual"
+                },
+                "core/edit-post": {
+                    "welcomeGuide": false,
+                    "welcomeGuideTemplate": false
+                },
+                "_modified": "2025-08-26T15:09:12.703Z",
+                "core/edit-site": {
+                    "welcomeGuide": false,
+                    "welcomeGuideStyles": false,
+                    "welcomeGuidePage": false,
+                    "welcomeGuideTemplate": false
+                },
+                "core/edit-widgets": {
+                    "isComplementaryAreaVisible": false,
+                    "welcomeGuide": false
+                },
+                "core/block-editor": {
+                    "linkControlSettingsDrawer": true
+                }
+            }
+        },
+        "profile_fields": {
+            "fb": "https://www.linkedin.com/in/ajaykrchaturvedi/"
+        },
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v25.9 - https://yoast.com/wordpress/plugins/seo/ -->\n<title>Ajay Chaturvedi, Author at tech.oblivion</title>\n<!-- Admin only notice: this page does not show a meta description because it does not have one, either write it for this page specifically or go into the [Yoast SEO - Settings] menu and set up a template. -->\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"https://techoblivion.in/author/ajay/\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:locale\" content=\"en_US\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:type\" content=\"profile\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:title\" content=\"Ajay Chaturvedi, Author at tech.oblivion\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:url\" content=\"https://techoblivion.in/author/ajay/\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:site_name\" content=\"tech.oblivion\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:image\" content=\"https://secure.gravatar.com/avatar/7e94d8f36741f82a1c9be76928056db746d2c7f9466e32c2f378e29231cfa4ef?s=500&d=mm&r=g\" class=\"yoast-seo-meta-tag\" />\n<meta name=\"twitter:card\" content=\"summary_large_image\" class=\"yoast-seo-meta-tag\" />\n<script type=\"application/ld+json\" class=\"yoast-schema-graph\">{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"ProfilePage\",\"@id\":\"https://techoblivion.in/author/ajay/\",\"url\":\"https://techoblivion.in/author/ajay/\",\"name\":\"Ajay Chaturvedi, Author at tech.oblivion\",\"isPartOf\":{\"@id\":\"https://techoblivion.in/#website\"},\"breadcrumb\":{\"@id\":\"https://techoblivion.in/author/ajay/#breadcrumb\"},\"inLanguage\":\"en-US\",\"potentialAction\":[{\"@type\":\"ReadAction\",\"target\":[\"https://techoblivion.in/author/ajay/\"]}]},{\"@type\":\"BreadcrumbList\",\"@id\":\"https://techoblivion.in/author/ajay/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://techoblivion.in/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Archives for Ajay Chaturvedi\"}]},{\"@type\":\"WebSite\",\"@id\":\"https://techoblivion.in/#website\",\"url\":\"https://techoblivion.in/\",\"name\":\"tech.oblivion\",\"description\":\"Technology with Purpose\",\"publisher\":{\"@id\":\"https://techoblivion.in/#organization\"},\"alternateName\":\"Tech Oblivion\",\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https://techoblivion.in/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"en-US\"},{\"@type\":\"Organization\",\"@id\":\"https://techoblivion.in/#organization\",\"name\":\"tech.oblivion\",\"url\":\"https://techoblivion.in/\",\"logo\":{\"@type\":\"ImageObject\",\"inLanguage\":\"en-US\",\"@id\":\"https://techoblivion.in/#/schema/logo/image/\",\"url\":\"https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png\",\"contentUrl\":\"https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png\",\"width\":512,\"height\":512,\"caption\":\"tech.oblivion\"},\"image\":{\"@id\":\"https://techoblivion.in/#/schema/logo/image/\"},\"sameAs\":[\"https://www.youtube.com/@tech.oblivion\"]},{\"@type\":\"Person\",\"@id\":\"https://techoblivion.in/#/schema/person/870b63d011b5be90ba4e19d8cd806d8c\",\"name\":\"Ajay Chaturvedi\",\"description\":\"Tinkerer &amp; Engineer at heart, explorer at mind, blending code, cloud, and curiosity. I break and rebuild to push limits. Living on the edge where tech meets oblivion.\",\"sameAs\":[\"https://techoblivion.in\"],\"mainEntityOfPage\":{\"@id\":\"https://techoblivion.in/author/ajay/\"}}]}</script>\n<!-- / Yoast SEO plugin. -->",
+        "yoast_head_json": {
+            "title": "Ajay Chaturvedi, Author at tech.oblivion",
+            "robots": {
+                "index": "index",
+                "follow": "follow",
+                "max-snippet": "max-snippet:-1",
+                "max-image-preview": "max-image-preview:large",
+                "max-video-preview": "max-video-preview:-1"
+            },
+            "canonical": "https://techoblivion.in/author/ajay/",
+            "og_locale": "en_US",
+            "og_type": "profile",
+            "og_title": "Ajay Chaturvedi, Author at tech.oblivion",
+            "og_url": "https://techoblivion.in/author/ajay/",
+            "og_site_name": "tech.oblivion",
+            "og_image": [
+                {
+                    "url": "https://secure.gravatar.com/avatar/7e94d8f36741f82a1c9be76928056db746d2c7f9466e32c2f378e29231cfa4ef?s=500&d=mm&r=g",
+                    "type": "",
+                    "width": "",
+                    "height": ""
+                }
+            ],
+            "twitter_card": "summary_large_image",
+            "schema": {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "ProfilePage",
+                        "@id": "https://techoblivion.in/author/ajay/",
+                        "url": "https://techoblivion.in/author/ajay/",
+                        "name": "Ajay Chaturvedi, Author at tech.oblivion",
+                        "isPartOf": {
+                            "@id": "https://techoblivion.in/#website"
+                        },
+                        "breadcrumb": {
+                            "@id": "https://techoblivion.in/author/ajay/#breadcrumb"
+                        },
+                        "inLanguage": "en-US",
+                        "potentialAction": [
+                            {
+                                "@type": "ReadAction",
+                                "target": [
+                                    "https://techoblivion.in/author/ajay/"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "@id": "https://techoblivion.in/author/ajay/#breadcrumb",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://techoblivion.in/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "Archives for Ajay Chaturvedi"
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "WebSite",
+                        "@id": "https://techoblivion.in/#website",
+                        "url": "https://techoblivion.in/",
+                        "name": "tech.oblivion",
+                        "description": "Technology with Purpose",
+                        "publisher": {
+                            "@id": "https://techoblivion.in/#organization"
+                        },
+                        "alternateName": "Tech Oblivion",
+                        "potentialAction": [
+                            {
+                                "@type": "SearchAction",
+                                "target": {
+                                    "@type": "EntryPoint",
+                                    "urlTemplate": "https://techoblivion.in/?s={search_term_string}"
+                                },
+                                "query-input": {
+                                    "@type": "PropertyValueSpecification",
+                                    "valueRequired": true,
+                                    "valueName": "search_term_string"
+                                }
+                            }
+                        ],
+                        "inLanguage": "en-US"
+                    },
+                    {
+                        "@type": "Organization",
+                        "@id": "https://techoblivion.in/#organization",
+                        "name": "tech.oblivion",
+                        "url": "https://techoblivion.in/",
+                        "logo": {
+                            "@type": "ImageObject",
+                            "inLanguage": "en-US",
+                            "@id": "https://techoblivion.in/#/schema/logo/image/",
+                            "url": "https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png",
+                            "contentUrl": "https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png",
+                            "width": 512,
+                            "height": 512,
+                            "caption": "tech.oblivion"
+                        },
+                        "image": {
+                            "@id": "https://techoblivion.in/#/schema/logo/image/"
+                        },
+                        "sameAs": [
+                            "https://www.youtube.com/@tech.oblivion"
+                        ]
+                    },
+                    {
+                        "@type": "Person",
+                        "@id": "https://techoblivion.in/#/schema/person/870b63d011b5be90ba4e19d8cd806d8c",
+                        "name": "Ajay Chaturvedi",
+                        "description": "Tinkerer &amp; Engineer at heart, explorer at mind, blending code, cloud, and curiosity. I break and rebuild to push limits. Living on the edge where tech meets oblivion.",
+                        "sameAs": [
+                            "https://techoblivion.in"
+                        ],
+                        "mainEntityOfPage": {
+                            "@id": "https://techoblivion.in/author/ajay/"
+                        }
+                    }
+                ]
+            }
+        },
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/1",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 11,
+        "username": "Amaan",
+        "name": "Amaan",
+        "first_name": "",
+        "last_name": "",
+        "email": "amaanrasheed1248@gmail.com",
+        "url": "",
+        "description": "",
+        "link": "https://techoblivion.in/author/amaan/",
+        "locale": "en_US",
+        "nickname": "Amaan",
+        "slug": "amaan",
+        "roles": [
+            "subscriber"
+        ],
+        "registered_date": "2025-08-25T22:27:56+00:00",
+        "capabilities": {
+            "level_0": true,
+            "read": true,
+            "upload_files": true,
+            "subscriber": true
+        },
+        "extra_capabilities": {
+            "subscriber": true
+        },
+        "meta": {
+            "persisted_preferences": []
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": null,
+        "yoast_head_json": null,
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/11",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 4,
+        "username": "bhaisaab",
+        "name": "bhaisaab",
+        "first_name": "",
+        "last_name": "",
+        "email": "engeenier.ajay@gmail.com",
+        "url": "",
+        "description": "",
+        "link": "https://techoblivion.in/author/bhaisaab/",
+        "locale": "en_US",
+        "nickname": "bhaisaab",
+        "slug": "bhaisaab",
+        "roles": [
+            "subscriber"
+        ],
+        "registered_date": "2025-08-21T01:26:18+00:00",
+        "capabilities": {
+            "level_0": true,
+            "read": true,
+            "upload_files": true,
+            "subscriber": true
+        },
+        "extra_capabilities": {
+            "subscriber": true
+        },
+        "meta": {
+            "persisted_preferences": []
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": null,
+        "yoast_head_json": null,
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/4",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 10,
+        "username": "dhruv1323",
+        "name": "dhruv1323",
+        "first_name": "Dhruv",
+        "last_name": "Gupta",
+        "email": "dhruvgupta135790@gmail.com",
+        "url": "",
+        "description": "heyy it'z dg",
+        "link": "https://techoblivion.in/author/dhruv1323/",
+        "locale": "en_US",
+        "nickname": "dhruv1323",
+        "slug": "dhruv1323",
+        "roles": [
+            "subscriber"
+        ],
+        "registered_date": "2025-08-25T21:48:36+00:00",
+        "capabilities": {
+            "level_0": true,
+            "read": true,
+            "upload_files": true,
+            "subscriber": true
+        },
+        "extra_capabilities": {
+            "subscriber": true
+        },
+        "meta": {
+            "persisted_preferences": []
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": null,
+        "yoast_head_json": null,
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/10",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 9,
+        "username": "Diwanshu Chandra",
+        "name": "Diwanshu Chandra",
+        "first_name": "",
+        "last_name": "",
+        "email": "Diwanshu.chandra.in@gmail.com",
+        "url": "",
+        "description": "",
+        "link": "https://techoblivion.in/author/diwanshu-chandra/",
+        "locale": "en_US",
+        "nickname": "Diwanshu Chandra",
+        "slug": "diwanshu-chandra",
+        "roles": [
+            "contributor"
+        ],
+        "registered_date": "2025-08-22T20:04:28+00:00",
+        "capabilities": {
+            "delete_posts": true,
+            "edit_posts": true,
+            "level_0": true,
+            "level_1": true,
+            "read": true,
+            "upload_files": true,
+            "contributor": true
+        },
+        "extra_capabilities": {
+            "contributor": true
+        },
+        "meta": {
+            "persisted_preferences": {
+                "core": {
+                    "isComplementaryAreaVisible": true,
+                    "openPanels": [
+                        "post-status",
+                        "taxonomy-panel-category",
+                        "taxonomy-panel-post_tag"
+                    ]
+                },
+                "core/edit-post": {
+                    "welcomeGuide": false
+                },
+                "_modified": "2025-08-22T20:16:23.795Z"
+            }
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v25.9 - https://yoast.com/wordpress/plugins/seo/ -->\n<title>Diwanshu Chandra, Author at tech.oblivion</title>\n<!-- Admin only notice: this page does not show a meta description because it does not have one, either write it for this page specifically or go into the [Yoast SEO - Settings] menu and set up a template. -->\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"https://techoblivion.in/author/diwanshu-chandra/\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:locale\" content=\"en_US\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:type\" content=\"profile\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:title\" content=\"Diwanshu Chandra, Author at tech.oblivion\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:url\" content=\"https://techoblivion.in/author/diwanshu-chandra/\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:site_name\" content=\"tech.oblivion\" class=\"yoast-seo-meta-tag\" />\n<meta property=\"og:image\" content=\"https://techoblivion.in/wp-content/uploads/2025/08/woocommerce-placeholder.png\" class=\"yoast-seo-meta-tag\" />\n<meta name=\"twitter:card\" content=\"summary_large_image\" class=\"yoast-seo-meta-tag\" />\n<script type=\"application/ld+json\" class=\"yoast-schema-graph\">{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"ProfilePage\",\"@id\":\"https://techoblivion.in/author/diwanshu-chandra/\",\"url\":\"https://techoblivion.in/author/diwanshu-chandra/\",\"name\":\"Diwanshu Chandra, Author at tech.oblivion\",\"isPartOf\":{\"@id\":\"https://techoblivion.in/#website\"},\"breadcrumb\":{\"@id\":\"https://techoblivion.in/author/diwanshu-chandra/#breadcrumb\"},\"inLanguage\":\"en-US\",\"potentialAction\":[{\"@type\":\"ReadAction\",\"target\":[\"https://techoblivion.in/author/diwanshu-chandra/\"]}]},{\"@type\":\"BreadcrumbList\",\"@id\":\"https://techoblivion.in/author/diwanshu-chandra/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://techoblivion.in/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Archives for Diwanshu Chandra\"}]},{\"@type\":\"WebSite\",\"@id\":\"https://techoblivion.in/#website\",\"url\":\"https://techoblivion.in/\",\"name\":\"tech.oblivion\",\"description\":\"Technology with Purpose\",\"publisher\":{\"@id\":\"https://techoblivion.in/#organization\"},\"alternateName\":\"Tech Oblivion\",\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https://techoblivion.in/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"en-US\"},{\"@type\":\"Organization\",\"@id\":\"https://techoblivion.in/#organization\",\"name\":\"tech.oblivion\",\"url\":\"https://techoblivion.in/\",\"logo\":{\"@type\":\"ImageObject\",\"inLanguage\":\"en-US\",\"@id\":\"https://techoblivion.in/#/schema/logo/image/\",\"url\":\"https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png\",\"contentUrl\":\"https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png\",\"width\":512,\"height\":512,\"caption\":\"tech.oblivion\"},\"image\":{\"@id\":\"https://techoblivion.in/#/schema/logo/image/\"},\"sameAs\":[\"https://www.youtube.com/@tech.oblivion\"]},{\"@type\":\"Person\",\"@id\":\"https://techoblivion.in/#/schema/person/2415db56ee4bcdc34142d16d38dec7ea\",\"name\":\"Diwanshu Chandra\",\"mainEntityOfPage\":{\"@id\":\"https://techoblivion.in/author/diwanshu-chandra/\"}}]}</script>\n<!-- / Yoast SEO plugin. -->",
+        "yoast_head_json": {
+            "title": "Diwanshu Chandra, Author at tech.oblivion",
+            "robots": {
+                "index": "index",
+                "follow": "follow",
+                "max-snippet": "max-snippet:-1",
+                "max-image-preview": "max-image-preview:large",
+                "max-video-preview": "max-video-preview:-1"
+            },
+            "canonical": "https://techoblivion.in/author/diwanshu-chandra/",
+            "og_locale": "en_US",
+            "og_type": "profile",
+            "og_title": "Diwanshu Chandra, Author at tech.oblivion",
+            "og_url": "https://techoblivion.in/author/diwanshu-chandra/",
+            "og_site_name": "tech.oblivion",
+            "og_image": [
+                {
+                    "url": "https://techoblivion.in/wp-content/uploads/2025/08/woocommerce-placeholder.png",
+                    "type": "",
+                    "width": "",
+                    "height": ""
+                }
+            ],
+            "twitter_card": "summary_large_image",
+            "schema": {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "ProfilePage",
+                        "@id": "https://techoblivion.in/author/diwanshu-chandra/",
+                        "url": "https://techoblivion.in/author/diwanshu-chandra/",
+                        "name": "Diwanshu Chandra, Author at tech.oblivion",
+                        "isPartOf": {
+                            "@id": "https://techoblivion.in/#website"
+                        },
+                        "breadcrumb": {
+                            "@id": "https://techoblivion.in/author/diwanshu-chandra/#breadcrumb"
+                        },
+                        "inLanguage": "en-US",
+                        "potentialAction": [
+                            {
+                                "@type": "ReadAction",
+                                "target": [
+                                    "https://techoblivion.in/author/diwanshu-chandra/"
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "@id": "https://techoblivion.in/author/diwanshu-chandra/#breadcrumb",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://techoblivion.in/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "Archives for Diwanshu Chandra"
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "WebSite",
+                        "@id": "https://techoblivion.in/#website",
+                        "url": "https://techoblivion.in/",
+                        "name": "tech.oblivion",
+                        "description": "Technology with Purpose",
+                        "publisher": {
+                            "@id": "https://techoblivion.in/#organization"
+                        },
+                        "alternateName": "Tech Oblivion",
+                        "potentialAction": [
+                            {
+                                "@type": "SearchAction",
+                                "target": {
+                                    "@type": "EntryPoint",
+                                    "urlTemplate": "https://techoblivion.in/?s={search_term_string}"
+                                },
+                                "query-input": {
+                                    "@type": "PropertyValueSpecification",
+                                    "valueRequired": true,
+                                    "valueName": "search_term_string"
+                                }
+                            }
+                        ],
+                        "inLanguage": "en-US"
+                    },
+                    {
+                        "@type": "Organization",
+                        "@id": "https://techoblivion.in/#organization",
+                        "name": "tech.oblivion",
+                        "url": "https://techoblivion.in/",
+                        "logo": {
+                            "@type": "ImageObject",
+                            "inLanguage": "en-US",
+                            "@id": "https://techoblivion.in/#/schema/logo/image/",
+                            "url": "https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png",
+                            "contentUrl": "https://techoblivion.in/wp-content/uploads/2025/08/cropped-logo-3.png",
+                            "width": 512,
+                            "height": 512,
+                            "caption": "tech.oblivion"
+                        },
+                        "image": {
+                            "@id": "https://techoblivion.in/#/schema/logo/image/"
+                        },
+                        "sameAs": [
+                            "https://www.youtube.com/@tech.oblivion"
+                        ]
+                    },
+                    {
+                        "@type": "Person",
+                        "@id": "https://techoblivion.in/#/schema/person/2415db56ee4bcdc34142d16d38dec7ea",
+                        "name": "Diwanshu Chandra",
+                        "mainEntityOfPage": {
+                            "@id": "https://techoblivion.in/author/diwanshu-chandra/"
+                        }
+                    }
+                ]
+            }
+        },
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/9",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 7,
+        "username": "GDeepika1999",
+        "name": "GDeepika1999",
+        "first_name": "",
+        "last_name": "",
+        "email": "deepikagtm1999@gmail.com",
+        "url": "",
+        "description": "",
+        "link": "https://techoblivion.in/author/gdeepika1999/",
+        "locale": "en_US",
+        "nickname": "GDeepika1999",
+        "slug": "gdeepika1999",
+        "roles": [
+            "subscriber"
+        ],
+        "registered_date": "2025-08-21T14:46:19+00:00",
+        "capabilities": {
+            "level_0": true,
+            "read": true,
+            "upload_files": true,
+            "subscriber": true
+        },
+        "extra_capabilities": {
+            "subscriber": true
+        },
+        "meta": {
+            "persisted_preferences": []
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": null,
+        "yoast_head_json": null,
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/7",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    },
+    {
+        "id": 6,
+        "username": "Uttam Kumar Trivedi",
+        "name": "Uttam Kumar Trivedi",
+        "first_name": "",
+        "last_name": "",
+        "email": "uttamtrivedi7@icloud.com",
+        "url": "",
+        "description": "",
+        "link": "https://techoblivion.in/author/uttam-kumar-trivedi/",
+        "locale": "en_US",
+        "nickname": "Uttam Kumar Trivedi",
+        "slug": "uttam-kumar-trivedi",
+        "roles": [
+            "subscriber"
+        ],
+        "registered_date": "2025-08-21T12:13:20+00:00",
+        "capabilities": {
+            "level_0": true,
+            "read": true,
+            "upload_files": true,
+            "subscriber": true
+        },
+        "extra_capabilities": {
+            "subscriber": true
+        },
+        "meta": {
+            "persisted_preferences": []
+        },
+        "profile_fields": {},
+        "social": {
+            "twitter": null,
+            "linkedin": null,
+            "github": null
+        },
+        "yoast_head": null,
+        "yoast_head_json": null,
+        "_links": {
+            "self": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users/6",
+                    "targetHints": {
+                        "allow": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "PATCH",
+                            "DELETE"
+                        ]
+                    }
+                }
+            ],
+            "collection": [
+                {
+                    "href": "https://techoblivion.in/wp-json/wp/v2/users"
+                }
+            ]
+        }
+    }
+]

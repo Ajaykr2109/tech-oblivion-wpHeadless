@@ -134,7 +134,7 @@ export default function AdminLayout({
         </Link>
         <div className="ml-auto"><ThemeToggle /></div>
       </div>
-      <nav className="flex flex-col gap-4 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-4 flex-1 overflow-y-auto" role="navigation" aria-label="Admin sidebar">
         {filtered.map((group) => (
           <div key={group.label}>
             <div className="px-3 pb-2 text-xs font-medium uppercase text-muted-foreground tracking-wider">
@@ -161,6 +161,7 @@ export default function AdminLayout({
                             ? 'bg-primary text-primary-foreground shadow-md'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         )}
+                        aria-label={`Open ${link.label}`}
                       >
                         <link.icon className="h-4 w-4 flex-shrink-0" />
                         <span className="truncate">{link.label}</span>
@@ -179,7 +180,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-shrink-0 border-r bg-card/50 p-4 flex-col">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 border-r bg-card/50 p-4 flex-col" aria-label="Primary">
         <SidebarContent />
       </aside>
 
@@ -196,6 +197,7 @@ export default function AdminLayout({
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -220,6 +222,7 @@ export default function AdminLayout({
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="lg:hidden fixed left-0 top-0 z-50 h-full w-64 bg-card border-r p-4 flex flex-col pt-20"
+              role="navigation" aria-label="Admin sidebar"
             >
               <SidebarContent />
             </motion.aside>
@@ -227,8 +230,8 @@ export default function AdminLayout({
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto lg:ml-0 pt-16 lg:pt-0">
+      {/* Main Content: independent scroll, account for fixed sidebar */}
+      <main className="flex-1 h-screen overflow-y-auto pt-16 lg:pt-0 lg:ml-64" aria-live="polite">
         <div className="p-4 lg:p-8 max-w-7xl mx-auto">
           <ErrorBoundary>
             {children}

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 
 export type Row = { id: number; cells: React.ReactNode[] }
@@ -11,10 +12,15 @@ type Props = {
   rows: Row[]
   header: React.ReactNode[]
   onSelectionChange?: (ids: number[]) => void
+  maxHeight?: string | number
+  showKeyboardHints?: boolean
+  rowStates?: Record<number, 'normal' | 'trash'>
+  onRowActivate?: (id: number) => void
 }
 
-export default function SelectableTable({ rows, header, onSelectionChange }: Props) {
+export default function SelectableTable({ rows, header, onSelectionChange, maxHeight, showKeyboardHints = true, rowStates, onRowActivate }: Props) {
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [focused, setFocused] = useState(false)
 
   const allIds = useMemo(() => rows.map(r => r.id), [rows])
   const allChecked = selected.size > 0 && selected.size === rows.length
@@ -34,8 +40,18 @@ export default function SelectableTable({ rows, header, onSelectionChange }: Pro
     onSelectionChange?.(Array.from(next))
   }
 
+  const containerStyle = typeof maxHeight !== 'undefined' ? { maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight, overflowY: 'auto' as const } : undefined
+
   return (
-    <Table>
+    <div
+      className={cn('relative', containerStyle ? 'rounded-md border' : undefined)}
+      style={containerStyle}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocused(false)
+      }}
+    >
+    <Table role="table" aria-label="Items table">
       <TableHeader>
         <TableRow>
           <TableHead className="w-[40px]">
@@ -46,13 +62,37 @@ export default function SelectableTable({ rows, header, onSelectionChange }: Pro
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(r=> (
-          <TableRow key={r.id}>
-            <TableCell className="w-[40px]"><Checkbox checked={selected.has(r.id)} onCheckedChange={(v)=>toggleOne(r.id, !!v)} /></TableCell>
-            {r.cells.map((c,i)=>(<TableCell key={i}>{c}</TableCell>))}
-          </TableRow>
-        ))}
+        {rows.map(r=> {
+          const isTrash = rowStates?.[r.id] === 'trash'
+          return (
+            <TableRow
+              key={r.id}
+              tabIndex={0}
+              className={cn('outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2', isTrash && 'opacity-60')}
+              aria-label={`Row ${r.id}`}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.code === 'Space') {
+                  e.preventDefault()
+                  toggleOne(r.id, !selected.has(r.id))
+                } else if (e.key === 'Enter') {
+                  onRowActivate?.(r.id)
+                }
+              }}
+            >
+              <TableCell className="w-[40px]"><Checkbox aria-label={`Select row ${r.id}`} checked={selected.has(r.id)} onCheckedChange={(v)=>toggleOne(r.id, !!v)} /></TableCell>
+              {r.cells.map((c,i)=>(<TableCell key={i}>{c}</TableCell>))}
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
+    {showKeyboardHints && (
+      <div className={cn('pointer-events-none sticky bottom-0 w-full text-[11px] text-muted-foreground bg-background/80 backdrop-blur px-3 py-1 border-t', focused ? 'opacity-100' : 'opacity-0 md:opacity-50')}
+           aria-hidden={!focused}
+      >
+        Keyboard: Enter  open, Space  select
+      </div>
+    )}
+    </div>
   )
 }

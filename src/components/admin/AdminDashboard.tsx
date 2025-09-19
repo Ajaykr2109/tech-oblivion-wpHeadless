@@ -1,8 +1,9 @@
-'use client'
+"use client"
 import React, { useState, useMemo } from 'react'
+import NextImage from 'next/image'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  Users, FileText, Image, MessageSquare, TrendingUp, Eye, 
+import {
+  Users, FileText, Image, MessageSquare, TrendingUp, Eye,
   Globe, Clock
 } from 'lucide-react'
 
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { AuthLoadingPage } from '@/components/ui/auth-skeletons'
+import { ToastAction } from '@/components/ui/toast'
 
 import EnterpriseAnalyticsDashboard from '../analytics/EnterpriseAnalyticsDashboard'
 
@@ -23,6 +25,7 @@ import TagsManagement from './TagsManagement'
 import UsersManagement from './UsersManagement'
 // import ExtensiveAnalytics from './ExtensiveAnalytics' // Replaced with EnterpriseAnalyticsDashboard
 import PostsManagement from './PostsManagement'
+import TopControls from './TopControls'
 
 interface MediaItem {
   id: number
@@ -215,18 +218,28 @@ export default function AdminDashboard({ sectionKey }: { sectionKey?: SectionKey
               {validSectionKey === 'site-health' ? 'Site Health' : 
                validSectionKey.charAt(0).toUpperCase() + validSectionKey.slice(1)}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               {getSectionDescription(validSectionKey)}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="hidden sm:flex">
-              Export Data
-            </Button>
-            <Button size="sm">
-              Quick Action
-            </Button>
-          </div>
+          {(() => {
+            const sectionsWithOwnSearch: SectionKey[] = ['posts','media','comments','users','categories','tags']
+            const allowGlobalSearch = !sectionsWithOwnSearch.includes(validSectionKey as SectionKey)
+            return (
+              <TopControls
+                onSearch={allowGlobalSearch ? (q)=>{
+                  console.debug('Global search:', q)
+                } : undefined}
+                searchPlaceholder={`Search ${validSectionKey}…`}
+                onExport={()=>{
+                  console.debug('Export requested for', validSectionKey)
+                }}
+                onQuickAction={()=>{
+                  console.debug('Quick action for', validSectionKey)
+                }}
+              />
+            )
+          })()}
         </div>
         <div className="pb-8">
           {renderContent()}
@@ -747,27 +760,13 @@ function MediaManagement() {
                 <Card key={item.id} className="overflow-hidden group relative">
                   <div className="aspect-square bg-muted relative">
                     {item.media_type === 'image' ? (
-                      <>
-                        <img 
-                          src={`/api/image-proxy?url=${encodeURIComponent(item.source_url)}`}
-                          alt={item.alt_text || 'Media'}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            // Try direct URL as fallback
-                            if (target.src.includes('/api/image-proxy')) {
-                              target.src = item.source_url
-                            } else {
-                              target.style.display = 'none'
-                              const fallback = target.parentElement?.querySelector('.fallback-icon') as HTMLElement
-                              if (fallback) fallback.style.display = 'flex'
-                            }
-                          }}
-                        />
-                        <div className="fallback-icon w-full h-full flex items-center justify-center bg-muted absolute inset-0" style={{ display: 'none' }}>
-                          <FileText className="h-12 w-12 text-muted-foreground" />
-                        </div>
-                      </>
+                      <NextImage
+                        src={`/api/image-proxy?url=${encodeURIComponent(item.source_url)}`}
+                        alt={item.alt_text || 'Media'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-muted">
                         <FileText className="h-12 w-12 text-muted-foreground" />
@@ -818,9 +817,28 @@ function CommentsManagement() {
   const { data: comments, isLoading, refetch } = useQuery<CommentItem[]>({
     queryKey: ['admin-comments'],
     queryFn: async () => {
-      const response = await fetch('/api/wp/comments')
-      if (!response.ok) throw new Error('Failed to fetch comments')
-      return response.json()
+      // Fetch all comment types separately since WordPress status=all excludes spam/trash
+      const [approvedRes, holdRes, spamRes, trashRes] = await Promise.all([
+        fetch('/api/wp/comments?auth=basic&status=approved'),
+        fetch('/api/wp/comments?auth=basic&status=hold'),
+        fetch('/api/wp/comments?auth=basic&status=spam'),
+        fetch('/api/wp/comments?auth=basic&status=trash')
+      ])
+      
+      if (!approvedRes.ok || !holdRes.ok || !spamRes.ok || !trashRes.ok) {
+        throw new Error('Failed to fetch comments')
+      }
+      
+      const [approved, hold, spam, trash] = await Promise.all([
+        approvedRes.json(),
+        holdRes.json(),
+        spamRes.json(),
+        trashRes.json()
+      ])
+      
+      // Combine all comments and sort by date (newest first)
+      const allComments = [...approved, ...hold, ...spam, ...trash]
+      return allComments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     }
   })
 
@@ -924,11 +942,25 @@ function CommentsManagement() {
         restore: 'restored'
       } as const
       
-      toast({
-        title: "Success",
-        description: `Comment ${actionLabels[action as keyof typeof actionLabels] || 'updated'} successfully`,
-        variant: "default"
-      })
+      if (action === 'trash') {
+        toast({
+          title: 'Moved to Trash',
+          description: 'Comment moved to trash.',
+          action: (
+            <ToastAction altText="Undo" onClick={() => commentActionMutation.mutate({ commentId, action: 'restore' })}>
+              Undo
+            </ToastAction>
+          ),
+          duration: 5000,
+        })
+      } else {
+        toast({
+          title: 'Success',
+          description: `Comment ${actionLabels[action as keyof typeof actionLabels] || 'updated'} successfully`,
+          variant: 'default',
+          duration: 4000,
+        })
+      }
     },
     onSettled: () => {
       // Immediate invalidation for admin stats, delayed for comments list

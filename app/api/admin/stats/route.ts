@@ -15,75 +15,63 @@ export async function GET(req: NextRequest) {
   try {
     const incomingCookies = req.headers.get('cookie') || ''
     
+    // Prepare Basic Auth headers for admin privileged access
+    const basicUser = process.env.WP_USER
+    const basicPass = process.env.WP_APP_PASSWORD
+    let authHeaders: Record<string, string> = {}
+    if (basicUser && basicPass) {
+      const token = Buffer.from(`${basicUser}:${basicPass}`).toString('base64')
+      authHeaders = { Authorization: `Basic ${token}` }
+    }
+    
+    const createHeaders = () => ({
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(incomingCookies ? { cookie: incomingCookies } : {}),
+      ...authHeaders
+    })
+    
     // Fetch stats from WordPress in parallel
-    const [postsRes, pagesRes, usersRes, commentsRes, mediaRes, categoriesRes, tagsRes] = await Promise.all([
+    const [postsRes, pagesRes, usersRes, , mediaRes, categoriesRes, tagsRes] = await Promise.all([
       // Posts
       fetch(`${WP}/wp-json/wp/v2/posts?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Pages  
       fetch(`${WP}/wp-json/wp/v2/pages?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Users
       fetch(`${WP}/wp-json/wp/v2/users?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Comments
       fetch(`${WP}/wp-json/wp/v2/comments?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Media
       fetch(`${WP}/wp-json/wp/v2/media?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Categories
       fetch(`${WP}/wp-json/wp/v2/categories?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       
       // Tags
       fetch(`${WP}/wp-json/wp/v2/tags?per_page=1&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
     ])
@@ -97,7 +85,7 @@ export async function GET(req: NextRequest) {
     const postsTotal = extractTotal(postsRes)
     const pagesTotal = extractTotal(pagesRes)
     const usersTotal = extractTotal(usersRes)
-    const commentsTotal = extractTotal(commentsRes)
+    // commentsTotal not used, we calculate it from individual statuses
     const mediaTotal = extractTotal(mediaRes)
     const categoriesTotal = extractTotal(categoriesRes)
     const tagsTotal = extractTotal(tagsRes)
@@ -157,30 +145,22 @@ export async function GET(req: NextRequest) {
     const publishedPages = extractTotal(publishedPagesRes)
     const draftPages = extractTotal(draftPagesRes)
 
-    // Get comment status counts
-    const [approvedCommentsRes, pendingCommentsRes, spamCommentsRes] = await Promise.all([
+    // Get comment status counts (including trash)
+    const [approvedCommentsRes, pendingCommentsRes, spamCommentsRes, trashCommentsRes] = await Promise.all([
       fetch(`${WP}/wp-json/wp/v2/comments?per_page=1&status=approve&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       fetch(`${WP}/wp-json/wp/v2/comments?per_page=1&status=hold&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
         cache: 'no-store',
       }),
       fetch(`${WP}/wp-json/wp/v2/comments?per_page=1&status=spam&_fields=id`, {
-        headers: { 
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(incomingCookies ? { cookie: incomingCookies } : {}),
-        },
+        headers: createHeaders(),
+        cache: 'no-store',
+      }),
+      fetch(`${WP}/wp-json/wp/v2/comments?per_page=1&status=trash&_fields=id`, {
+        headers: createHeaders(),
         cache: 'no-store',
       }),
     ])
@@ -188,6 +168,10 @@ export async function GET(req: NextRequest) {
     const approvedComments = extractTotal(approvedCommentsRes)
     const pendingComments = extractTotal(pendingCommentsRes)
     const spamComments = extractTotal(spamCommentsRes)
+    const trashComments = extractTotal(trashCommentsRes)
+    
+    // Calculate total comments including all statuses
+    const totalComments = approvedComments + pendingComments + spamComments + trashComments
 
     const stats = {
       posts: {
@@ -208,10 +192,11 @@ export async function GET(req: NextRequest) {
         authors: 0,
       },
       comments: {
-        total: commentsTotal,
+        total: totalComments,
         approved: approvedComments,
         pending: pendingComments,
         spam: spamComments,
+        trash: trashComments,
       },
       media: {
         total: mediaTotal,

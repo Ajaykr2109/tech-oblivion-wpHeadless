@@ -9,6 +9,8 @@ import SelectableTable from '@/components/admin/SelectableTable'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToast } from '@/hooks/use-toast'
+import { ToastAction } from '@/components/ui/toast'
 
 interface WPComment {
   id: number
@@ -40,28 +42,63 @@ export default function CommentsClient() {
   const { data, isLoading } = useQuery<QueryResult>({
     queryKey: ['admin-comments', statusFilter, page, perPage],
     queryFn: async () => {
-      const url = new URL('/api/comments', window.location.origin)
-      if (statusFilter !== 'all') {
+      if (statusFilter === 'all') {
+        // For 'all', fetch all statuses separately since WordPress excludes spam/trash from status=all
+        const [approvedRes, holdRes, spamRes, trashRes] = await Promise.all([
+          fetch('/api/comments?auth=basic&status=approved&per_page=100&orderby=date&order=desc', { cache: 'no-store' }),
+          fetch('/api/comments?auth=basic&status=hold&per_page=100&orderby=date&order=desc', { cache: 'no-store' }),
+          fetch('/api/comments?auth=basic&status=spam&per_page=100&orderby=date&order=desc', { cache: 'no-store' }),
+          fetch('/api/comments?auth=basic&status=trash&per_page=100&orderby=date&order=desc', { cache: 'no-store' })
+        ])
+        
+        if (!approvedRes.ok || !holdRes.ok || !spamRes.ok || !trashRes.ok) {
+          throw new Error('Failed to fetch comments')
+        }
+        
+        const [approved, hold, spam, trash] = await Promise.all([
+          approvedRes.json(),
+          holdRes.json(),
+          spamRes.json(),
+          trashRes.json()
+        ])
+        
+        // Combine and sort all comments
+        const allComments = [...approved, ...hold, ...spam, ...trash]
+        const sortedComments = allComments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        
+        // Implement client-side pagination
+        const total = sortedComments.length
+        const totalPages = Math.ceil(total / perPage)
+        const startIndex = (page - 1) * perPage
+        const items = sortedComments.slice(startIndex, startIndex + perPage)
+        
+        return { items, total, totalPages }
+      } else {
+        // For specific status, use normal API
+        const url = new URL('/api/comments', window.location.origin)
         // Map UI to WP REST status values
         const map: Record<string, string> = { approved: 'approve', unapproved: 'hold', hold: 'hold', spam: 'spam', trash: 'trash' }
         url.searchParams.set('status', map[statusFilter] || statusFilter)
-      }
-      url.searchParams.set('page', String(page))
-      url.searchParams.set('per_page', String(perPage))
-      url.searchParams.set('orderby', 'date')
-      url.searchParams.set('order', 'desc')
+        url.searchParams.set('page', String(page))
+        url.searchParams.set('per_page', String(perPage))
+        url.searchParams.set('orderby', 'date')
+        url.searchParams.set('order', 'desc')
+        // Add auth=basic to ensure we get privileged content
+        url.searchParams.set('auth', 'basic')
 
-      const response = await fetch(url.toString(), { cache: 'no-store' })
-      if (!response.ok) throw new Error('Failed to fetch comments')
-      const total = parseInt(response.headers.get('X-WP-Total') || '0', 10)
-      const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10)
-      const items = await response.json() as WPComment[]
-      return { items, total, totalPages }
+        const response = await fetch(url.toString(), { cache: 'no-store' })
+        if (!response.ok) throw new Error('Failed to fetch comments')
+        const total = parseInt(response.headers.get('X-WP-Total') || '0', 10)
+        const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10)
+        const items = await response.json() as WPComment[]
+        return { items, total, totalPages }
+      }
     }
   })
 
   const comments = useMemo<WPComment[]>(() => data?.items || [], [data])
   const totalPages = data?.totalPages || 1
+  const { toast } = useToast()
 
   const moderateComment = useCallback(async (commentId: number, action: 'approve'|'unapprove'|'spam'|'trash') => {
     try {
@@ -85,10 +122,23 @@ export default function CommentsClient() {
       if (!response.ok) throw new Error('Failed to moderate comment')
       // Optionally refetch to sync counts/pages
       queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
+
+      if (action === 'trash') {
+        toast({
+          title: 'Moved to Trash',
+          description: 'Comment moved to trash.',
+          action: (
+            <ToastAction altText="Undo" onClick={() => moderateComment(commentId, 'unapprove')}>
+              Undo
+            </ToastAction>
+          ),
+          duration: 5000,
+        })
+      }
     } catch (error) {
       console.error('Error moderating comment:', error)
     }
-  }, [queryClient, statusFilter, page, perPage])
+  }, [queryClient, statusFilter, page, perPage, toast])
   
   const header = useMemo(()=>[
     'Author', 'Comment', 'Post', 'Status', 'Date', 'Actions'
@@ -199,11 +249,7 @@ export default function CommentsClient() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold mb-2">Comments Management</h2>
-        <p className="text-muted-foreground">Manage and moderate user comments across your site.</p>
-      </div>
+    <div className="flex flex-col min-h-[calc(100vh-160px)]">
 
       <Tabs value={statusFilter} onValueChange={(v)=>{ setStatusFilter(v); setPage(1) }} className="mb-6">
         <TabsList>
@@ -216,7 +262,14 @@ export default function CommentsClient() {
       </Tabs>
 
       <BulkActionsBar onAction={onAction} disabled={selected.length===0} actions={['approve', 'unapprove', 'spam', 'trash']} />
-      <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
+      <SelectableTable
+        rows={rows}
+        header={header}
+        onSelectionChange={setSelected}
+        maxHeight={`calc(100vh - 320px)`}
+        rowStates={Object.fromEntries(comments.map(c => [c.id, c.status === 'trash' ? 'trash' : 'normal']))}
+        onRowActivate={(id) => console.debug('Open comment', id)}
+      />
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
