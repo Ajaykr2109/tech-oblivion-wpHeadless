@@ -128,13 +128,16 @@ export default function UsersClient() {
 
   const onAction = async (action: BulkAction) => {
     if (selected.length === 0) return
-    const mapBulk: Record<BulkAction, UserAction> = {
+    const mapBulk: Partial<Record<BulkAction, UserAction>> = {
       approve: 'activate',
-      disapprove: 'deactivate',
+      unapprove: 'deactivate',
       spam: 'demote_subscriber',
+      trash: 'delete',
       delete: 'delete',
     }
-    await onActionInternal(mapBulk[action], selected)
+    const userAction = mapBulk[action]
+    if (!userAction) return
+    await onActionInternal(userAction, selected)
   }
 
   if (isLoading) {

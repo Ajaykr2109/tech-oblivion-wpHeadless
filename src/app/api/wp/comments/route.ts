@@ -21,11 +21,19 @@ export async function GET(req: NextRequest) {
   if (!search.has('orderby')) search.set('orderby', 'date')
   if (!search.has('order')) search.set('order', 'desc')
 
+  // For admin requests, include all comment statuses if not specifically filtered
+  const isAdminRequest = req.headers.get('referer')?.includes('/admin/')
+  if (isAdminRequest && !search.has('status')) {
+    // Include all statuses for admin interface
+    search.set('status', 'all')
+  }
+
   // Debug: Log the post parameter
   const postParam = search.get('post')
   const authorParam = search.get('author')
   console.log('Comments API: post parameter received:', postParam)
   console.log('Comments API: author parameter received:', authorParam)
+  console.log('Comments API: admin request detected:', isAdminRequest)
   console.log('Comments API: full search params:', search.toString())
   
   // For WordPress REST API comments endpoint:

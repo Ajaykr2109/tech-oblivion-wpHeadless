@@ -57,7 +57,7 @@ export default function UsersClient() {
   })), [])
 
   const onAction = async (action: BulkAction) => {
-    if (action !== 'delete' || selected.length === 0) return
+    if (action === 'delete' && selected.length === 0) return
     const res = await fetch('/api/wp/users/bulk-delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -95,7 +95,7 @@ export default function UsersClient() {
           </div>
         </CardHeader>
         <CardContent>
-          <BulkActionsBar onAction={onAction} disabled={selected.length===0} />
+          <BulkActionsBar onAction={onAction} disabled={selected.length===0} actions={['delete']} />
           <SelectableTable rows={rows} header={header} onSelectionChange={setSelected} />
         </CardContent>
       </Card>
