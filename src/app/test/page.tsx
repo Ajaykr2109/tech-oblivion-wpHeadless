@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
-import type { WordPressPost } from '@/lib/wordpress-client'
+import type { WPPost } from '@/lib/wp'
 
 export default function TestPage() {
-  const [posts, setPosts] = useState<WordPressPost[]>([]);
+  const [posts, setPosts] = useState<WPPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,7 +16,7 @@ export default function TestPage() {
         setLoading(true)
         const res = await fetch('/api/wp/posts?per_page=3&_embed=1')
         if (!res.ok) throw new Error(`Failed: ${res.status}`)
-        const items: WordPressPost[] = await res.json()
+        const items: WPPost[] = await res.json()
         setPosts(items)
         setError(null)
       } catch (err) {
@@ -69,8 +69,8 @@ export default function TestPage() {
             {post._embedded?.['wp:featuredmedia']?.[0] && (
               <div className="mt-2">
                 <Image 
-                  src={post._embedded['wp:featuredmedia'][0].source_url}
-                  alt={post._embedded['wp:featuredmedia'][0].alt_text || post.title.rendered}
+                  src={post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico'}
+                  alt={post.title.rendered}
                   width={128}
                   height={128}
                   className="w-32 h-32 object-cover rounded"

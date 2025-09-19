@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { htmlToText } from '@/lib/text'
 // Use internal API to avoid direct browser calls to WordPress
-import type { WordPressPost } from '@/lib/wordpress-client'
+import type { WPPost } from '@/lib/wp'
 
 import { PostCard } from './post-card'
 
@@ -32,14 +32,14 @@ export function ClientFeed({ layout = 'list', perPage = 4 }: { layout?: 'list' |
       const params = new URLSearchParams({ page: String(p), per_page: String(perPage), _embed: '1' })
       const res = await fetch(`/api/wp/posts?${params.toString()}`)
       if (!res.ok) throw new Error(`Failed to load posts: ${res.status}`)
-      const posts: WordPressPost[] = await res.json()
-      const mapped = posts.map((post: WordPressPost) => ({
+      const posts: WPPost[] = await res.json()
+      const mapped = posts.map((post: WPPost) => ({
         id: String(post.id),
         title: post.title.rendered,
         author: 'Tech Oblivion',
         avatar: '/favicon.ico',
         imageUrl: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || '/favicon.ico',
-        imageHint: post._embedded?.['wp:featuredmedia']?.[0]?.alt_text || post.title.rendered,
+        imageHint: post.title.rendered,
         excerpt: htmlToText(post.excerpt.rendered).slice(0,240),
         slug: post.slug,
         date: post.date,
