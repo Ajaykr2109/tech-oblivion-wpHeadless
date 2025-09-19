@@ -31,14 +31,23 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
       })
     }
 
+    // For spam reporting, allow authenticated users to report comments
+    // For other moderation actions, require higher permissions
+    const isSpamReport = action === 'spam'
+
     const base = WP.replace(/\/$/, '')
     const proxy = new URL('/wp-json/fe-auth/v1/proxy', base)
     proxy.searchParams.set('path', `wp/v2/comments/${encodeURIComponent(commentId)}`)
-    // WP supports updating comment status via POST/PATCH with {status}
+    
+    // Add context parameter for spam reports to indicate user report vs admin action
+    const updateData = isSpamReport 
+      ? { status, meta: { user_reported: true } }
+      : { status }
+    
     return fetchWithAuth(req, proxy.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify(updateData),
     })
   } catch (error) {
     console.error('Comment moderation error:', error)

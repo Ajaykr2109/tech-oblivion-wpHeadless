@@ -51,31 +51,29 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   if (layout === 'simple') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
-        <Link href={`/blog/${post.slug}`} className="block">
-          <Card className="card-premium cursor-pointer p-3 h-[120px] flex flex-col justify-between transition-all duration-200 hover:shadow-md">
-            <div className="flex-1 min-h-0">
-              <CardTitle id={`post-title-${post.id}`} className="text-sm leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2">
-                {post.title}
-              </CardTitle>
-              <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                {post.excerpt}
-              </p>
+        <Card className="card-premium p-3 h-[120px] flex flex-col justify-between transition-all duration-200 hover:shadow-md">
+          <Link href={`/blog/${post.slug}`} className="flex-1 min-h-0 block">
+            <CardTitle id={`post-title-${post.id}`} className="text-sm leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2 cursor-pointer">
+              {post.title}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer">
+              {post.excerpt}
+            </p>
+          </Link>
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-              </div>
-              {post.authorSlug ? (
-                <Link href={`/profile/${post.authorSlug}`} className="text-xs font-medium text-right hover:text-primary transition-colors">
-                  {post.author}
-                </Link>
-              ) : (
-                <p className="text-xs font-medium text-right">{post.author}</p>
-              )}
-            </div>
-          </Card>
-        </Link>
+            {post.authorSlug ? (
+              <Link href={`/profile/${post.authorSlug}`} className="text-xs font-medium text-right hover:text-primary transition-colors">
+                {post.author}
+              </Link>
+            ) : (
+              <p className="text-xs font-medium text-right">{post.author}</p>
+            )}
+          </div>
+        </Card>
       </article>
     );
   }
@@ -83,9 +81,9 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   if (layout === 'list') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
-        <Link href={`/blog/${post.slug}`} className="block">
-          <Card className="card-premium flex flex-col sm:flex-row overflow-hidden items-start cursor-pointer p-4">
-            <div className="relative aspect-video sm:aspect-square h-32 w-full sm:w-32 flex-shrink-0 overflow-hidden rounded-xl">
+        <Card className="card-premium flex flex-col sm:flex-row overflow-hidden items-start p-4">
+          <Link href={`/blog/${post.slug}`} className="block sm:flex-shrink-0">
+            <div className="relative aspect-video sm:aspect-square h-32 w-full sm:w-32 flex-shrink-0 overflow-hidden rounded-xl cursor-pointer">
               <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
@@ -103,54 +101,56 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
-            <div className="flex flex-col justify-between p-4 flex-grow">
-              <div>
-                {showFeatured && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                      Featured
-                    </Badge>
-                    {viewsText && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Eye className="h-3 w-3" />
-                        <span>{viewsText}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <CardTitle id={`post-title-${post.id}`} className="text-lg leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2">
+          </Link>
+          <div className="flex flex-col justify-between p-4 flex-grow">
+            <div>
+              {showFeatured && (
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                    Featured
+                  </Badge>
+                  {viewsText && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Eye className="h-3 w-3" />
+                      <span>{viewsText}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <Link href={`/blog/${post.slug}`} className="block">
+                <CardTitle id={`post-title-${post.id}`} className="text-lg leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 cursor-pointer">
                   {post.title}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed cursor-pointer">
                   {post.excerpt}
                 </p>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                </div>
-                {post.authorSlug ? (
-                  <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
-                    {post.author}
-                  </Link>
-                ) : (
-                  <p className="text-sm font-medium">{post.author}</p>
-                )}
-              </div>
+              </Link>
             </div>
-          </Card>
-        </Link>
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              {post.authorSlug ? (
+                <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
+                  {post.author}
+                </Link>
+              ) : (
+                <p className="text-sm font-medium">{post.author}</p>
+              )}
+            </div>
+          </div>
+        </Card>
       </article>
     );
   }
 
   return (
     <article aria-labelledby={`post-title-${post.id}`} className="group">
-      <Link href={`/blog/${post.slug}`} className="block h-full">
-        <Card className="card-premium flex h-full flex-col overflow-hidden cursor-pointer">
-          <CardHeader className="p-0 relative overflow-hidden">
-            <div className="relative aspect-[3/2] w-full overflow-hidden">
+      <Card className="card-premium flex h-full flex-col overflow-hidden">
+        <CardHeader className="p-0 relative overflow-hidden">
+          <Link href={`/blog/${post.slug}`} className="block">
+            <div className="relative aspect-[3/2] w-full overflow-hidden cursor-pointer">
               <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${post.title}`}
@@ -183,50 +183,52 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 <span className="text-xs text-white">{readingTimeText}</span>
               </div>
             </div>
-          </CardHeader>
-          
-          <CardContent className="flex-grow p-6">
-            <div className="flex items-center gap-2 mb-3">
-              {viewsText && (
-                <>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Eye className="h-3 w-3" />
-                    <span>{viewsText}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">•</span>
-                </>
-              )}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-              </div>
+          </Link>
+        </CardHeader>
+        
+        <CardContent className="flex-grow p-6">
+          <div className="flex items-center gap-2 mb-3">
+            {viewsText && (
+              <>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Eye className="h-3 w-3" />
+                  <span>{viewsText}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">•</span>
+              </>
+            )}
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
-            
-            <CardTitle id={`post-title-${post.id}`} className="text-xl line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-3 leading-tight">
+          </div>
+          
+          <Link href={`/blog/${post.slug}`} className="block">
+            <CardTitle id={`post-title-${post.id}`} className="text-xl line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-3 leading-tight cursor-pointer">
               {post.title}
             </CardTitle>
-            <CardDescription className="line-clamp-3 leading-relaxed text-muted-foreground">
+            <CardDescription className="line-clamp-3 leading-relaxed text-muted-foreground cursor-pointer">
               {post.excerpt}
             </CardDescription>
-          </CardContent>
-          
-          <CardFooter className="p-6 pt-0">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-              </div>
-              {post.authorSlug ? (
-                <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
-                  {post.author}
-                </Link>
-              ) : (
-                <p className="text-sm font-medium">{post.author}</p>
-              )}
+          </Link>
+        </CardContent>
+        
+        <CardFooter className="p-6 pt-0">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
-          </CardFooter>
-        </Card>
-      </Link>
+            {post.authorSlug ? (
+              <Link href={`/profile/${post.authorSlug}`} className="text-sm font-medium hover:text-primary transition-colors">
+                {post.author}
+              </Link>
+            ) : (
+              <p className="text-sm font-medium">{post.author}</p>
+            )}
+          </div>
+        </CardFooter>
+      </Card>
     </article>
   );
 }
