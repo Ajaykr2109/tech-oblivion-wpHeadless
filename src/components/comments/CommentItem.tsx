@@ -59,12 +59,8 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
 
   const initials = (comment.author.name || 'A').split(' ').map(s => s[0]).join('').slice(0, 2)
   const isPending = comment.status && (comment.status === 'hold' || comment.status === 'unapproved')
-  const muted = comment.status && (comment.status === 'spam' || isPending)
-
-  // Hide unapproved from non-admins per requirement
-  if (isPending && !isAdmin) {
-    return null
-  }
+  const isSpam = comment.status === 'spam'
+  const muted = Boolean(comment.status && (isSpam || isPending))
 
   return (
     <div className="flex items-start gap-3" role="article" aria-label="Comment">
@@ -86,7 +82,12 @@ export default function CommentItem({ comment, depth = 0 }: Props) {
           <Link href={`/profile/${encodeURIComponent(comment.author.slug || comment.author.name || 'user')}`} className="hover:underline">{comment.author.name || 'Anonymous'}</Link>
           <span className="text-xs text-muted-foreground">· {new Date(comment.createdAt).toLocaleString()}</span>
           {comment.edited ? <span className="text-xs text-muted-foreground">(edited)</span> : null}
-          {isPending && isAdmin ? <span className="text-xs text-amber-600">pending</span> : null}
+          {isPending ? (
+            <span className="text-xs rounded px-1.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-200">pending</span>
+          ) : null}
+          {isSpam ? (
+            <span className="text-xs rounded px-1.5 py-0.5 bg-red-100 text-red-800 border border-red-200">spam</span>
+          ) : null}
         </div>
 
         <div className={`prose prose-sm dark:prose-invert mt-1 max-w-none ${muted ? 'opacity-70' : ''}`}>

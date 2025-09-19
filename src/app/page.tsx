@@ -44,12 +44,12 @@ export default function Home() {
       </Head>
       <main className="min-h-screen" id="main-content">
         {/* TOP SECTION - VIDEO AND BLOGS */}
-        <section className="py-8 lg:py-12">
+        <section className="py-6 lg:py-10">
           <div className="container mx-auto px-4">
             <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 items-stretch">
               {/* Left Column - Latest Video */}
               <div id="latest-video" className="flex flex-col h-[400px] lg:h-[600px] overflow-hidden">
-                <div className="flex items-center gap-3 mb-4 lg:mb-6 flex-shrink-0">
+                <div className="flex items-center gap-3 mb-3 lg:mb-4 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-semibold">Latest Video</h2>
                     <p className="text-muted-foreground text-sm">Watch our newest content</p>
@@ -62,7 +62,7 @@ export default function Home() {
               
               {/* Right Column - Recent Articles */}
               <div className="flex flex-col h-[400px] lg:h-[600px] overflow-hidden">
-                <div className="flex items-center gap-3 mb-4 lg:mb-6 flex-shrink-0">
+                <div className="flex items-center gap-3 mb-3 lg:mb-4 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-semibold">Recent Articles</h2>
                     <p className="text-muted-foreground text-sm">Latest posts from our community</p>

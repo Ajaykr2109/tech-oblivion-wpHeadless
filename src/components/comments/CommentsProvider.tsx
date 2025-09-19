@@ -16,8 +16,10 @@ function mapWp(c: unknown): CommentModel {
   const avatar = String(avatars['48'] || avatars[48] || avatars['96'] || avatars[96] || '')
   const contentField = (obj['content'] && typeof obj['content'] === 'object') ? (obj['content'] as Record<string, unknown>)['rendered'] : obj['content']
   const contentHtml = typeof contentField === 'string' ? contentField : ''
-  const parent = typeof obj['parent'] === 'number' ? (obj['parent'] as number) : undefined
-  const statusVal = typeof obj['status'] === 'string' ? (obj['status'] as string) : 'approved'
+  const parent = (typeof obj['parent'] === 'number' && (obj['parent'] as number) > 0) ? (obj['parent'] as number) : undefined
+  // Normalize WP REST status values to our CommentModel
+  const rawStatus = typeof obj['status'] === 'string' ? (obj['status'] as string) : 'approve'
+  const statusVal = (rawStatus === 'approve') ? 'approved' : rawStatus
   return {
     id: (obj['id'] as number | string | undefined) ?? Math.random().toString(36).slice(2),
     postId: Number(obj['post'] ?? obj['post_id'] ?? 0),
@@ -170,7 +172,8 @@ export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderPr
       author: { name: user ? 'You' : 'Anonymous', slug: undefined, avatar: '' },
       content,
       createdAt: new Date().toISOString(),
-      status: 'approved',
+      // Newly submitted comments should default to pending moderation unless auto-approve is active upstream
+      status: 'hold',
       replies: [],
     }
     if (!parentId) {
@@ -230,7 +233,17 @@ export function CommentsProvider({ children, postId, pageSize = 10 }: ProviderPr
     try {
       const map: Record<string, string> = { approve: 'approve', unapprove: 'unapprove', restore: 'restore', trash: 'trash' }
       const r = await fetch(`/api/wp/comments/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: map[action] }) })
-      if (r.ok) return true
+      if (r.ok) {
+        // reflect local status immediately
+        const newStatus: Record<typeof action, CommentModel['status']> = {
+          approve: 'approved',
+          unapprove: 'hold',
+          restore: 'approved',
+          trash: 'trash',
+        } as const
+        setState(s => ({ ...s, items: s.items.map(it => it.id === id ? { ...it, status: newStatus[action] } : { ...it, replies: (it.replies||[]).map(rp => rp.id === id ? { ...rp, status: newStatus[action] } : rp) }) }))
+        return true
+      }
       return false
     } catch { return false }
   }, [])

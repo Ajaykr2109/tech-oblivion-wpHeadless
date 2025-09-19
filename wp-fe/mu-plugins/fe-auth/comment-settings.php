@@ -18,7 +18,8 @@ add_action('rest_api_init', function () {
       if ($request->get_method() === 'GET') {
         // Get current comment settings
         $settings = [
-          'autoApprove' => get_option('default_comment_status') === 'approved',
+          // Auto-approve when comment_moderation is disabled (0)
+          'autoApprove' => get_option('comment_moderation') === '0',
           'moderationRequired' => get_option('comment_moderation') === '1',
           'requireName' => get_option('require_name_email') === '1',
           'requireEmail' => get_option('require_name_email') === '1',
@@ -28,16 +29,17 @@ add_action('rest_api_init', function () {
       } else {
         // Update comment settings
         $data = $request->get_json_params();
-        $auto_approve = isset($data['autoApprove']) ? (bool)$data['autoApprove'] : false;
+  $auto_approve = isset($data['autoApprove']) ? (bool)$data['autoApprove'] : false;
         
-        // Update WordPress options
-        update_option('default_comment_status', $auto_approve ? 'approved' : 'hold');
-        update_option('comment_moderation', $auto_approve ? '0' : '1');
+  // Update WordPress options
+  // default_comment_status controls open/closed for posts, not moderation state
+  // Auto-approve is governed by comment_moderation (0 = auto-approve, 1 = require approval)
+  update_option('comment_moderation', $auto_approve ? '0' : '1');
         
         // Return updated settings
         $updated_settings = [
           'success' => true,
-          'autoApprove' => get_option('default_comment_status') === 'approved',
+          'autoApprove' => get_option('comment_moderation') === '0',
           'moderationRequired' => get_option('comment_moderation') === '1',
         ];
         
@@ -62,13 +64,15 @@ add_action('rest_api_init', function () {
       }
       
       $results = [];
+      // Map incoming actions to wp_set_comment_status() values
+      // wp_set_comment_status expects: 'hold', 'approve', 'spam', 'trash', or use wp_delete_comment for permanent deletion
       $action_map = [
-        'approve' => 'approved',
+        'approve' => 'approve',
         'unapprove' => 'hold',
         'spam' => 'spam',
-        'unspam' => 'approved',
+        'unspam' => 'approve',
         'trash' => 'trash',
-        'restore' => 'approved',
+        'restore' => 'approve',
         'delete' => 'delete'
       ];
       

@@ -15,6 +15,19 @@ export async function GET(req: NextRequest) {
   const incoming = new URL(req.url)
   const id = incoming.searchParams.get('id')
   
+  // If the user has a WP token in session, forward it so authorized statuses (e.g., hold/spam) can be fetched for admins
+  let wpToken: string | undefined
+  try {
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+    if (sessionCookie?.value) {
+      const claims = await verifySession(sessionCookie.value) as { wpToken?: string }
+      wpToken = claims?.wpToken
+    }
+  } catch {
+    // no session / not authenticated; proceed without Authorization
+  }
+  
   // Build query with sensible defaults
   const search = new URLSearchParams(incoming.search)
   if (!search.has('per_page')) search.set('per_page', '20')
@@ -26,6 +39,27 @@ export async function GET(req: NextRequest) {
   if (isAdminRequest && !search.has('status')) {
     // Include all statuses for admin interface
     search.set('status', 'all')
+  }
+
+  // Normalize status filter values to WordPress REST conventions
+  if (search.has('status')) {
+    const status = (search.get('status') || '').toLowerCase()
+    // WP REST accepts 'approve', 'hold', 'spam', 'trash' for filtering
+    const map: Record<string, string> = {
+      approved: 'approve',
+      unapproved: 'hold',
+      pending: 'hold',
+      spam: 'spam',
+      trash: 'trash',
+      all: 'all',
+    }
+    const normalized = map[status]
+    if (normalized) {
+      search.set('status', normalized)
+    } else {
+      // Unknown value: drop to avoid upstream 400s
+      search.delete('status')
+    }
   }
 
   // Debug: Log the post parameter
@@ -59,7 +93,9 @@ export async function GET(req: NextRequest) {
     const base = `GET\n${path}\n${ts}\n`
     const sign = createHmac('sha256', secret).update(base).digest('base64')
     console.log('Comments API: Using proxy with URL:', proxy.toString())
-    const res = await fetch(proxy.toString(), { headers: { 'x-fe-ts': ts, 'x-fe-sign': sign }, cache: 'no-store' })
+    const proxyHeaders: Record<string, string> = { 'x-fe-ts': ts, 'x-fe-sign': sign }
+    if (wpToken) proxyHeaders['Authorization'] = `Bearer ${wpToken}`
+    const res = await fetch(proxy.toString(), { headers: proxyHeaders, cache: 'no-store' })
     if (res.ok) {
       const text = await res.text()
       console.log('Comments API: Proxy response length:', text.length)
@@ -82,8 +118,11 @@ export async function GET(req: NextRequest) {
   const out = id ? new URL(`/wp-json/wp/v2/comments/${id}`, WP) : new URL('/wp-json/wp/v2/comments', WP)
   if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
   console.log('Comments API: Final WordPress URL:', out.toString())
-  const authHeader = req.headers.get('authorization')
-  const res = await fetch(out.toString(), { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
+  // Prefer session-derived token; fall back to any inbound Authorization header if present
+  const authHeader = wpToken ? `Bearer ${wpToken}` : (req.headers.get('authorization') || '')
+  const headers: Record<string, string> = {}
+  if (authHeader) headers['Authorization'] = authHeader
+  const res = await fetch(out.toString(), { cache: 'no-store', headers })
   if (!res.ok) {
     console.log('Comments API: WordPress response not OK:', res.status, res.statusText)
     if (res.status === 404 || res.status === 400) {

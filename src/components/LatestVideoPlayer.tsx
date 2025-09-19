@@ -79,7 +79,7 @@ export default function LatestVideoPlayer() {
           />
         )}
       </div>
-      <div className="mt-3">
+      <div className="mt-2 md:mt-3">
         <a 
           href={`https://www.youtube.com/watch?v=${video.id}`}
           target="_blank"
