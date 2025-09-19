@@ -19,12 +19,11 @@ type Props = { comment: CommentModel, depth?: number }
 
 export default function CommentItem({ comment, depth = 0 }: Props) {
   const { toggleExpand, prefetchReplies, editComment, deleteOwnComment, markSpam, vote, expanded, moderate, selected, toggleSelect } = useComments()
-  const { user, can, isLoading } = useAuth()
+  const { user, can } = useAuth()
   const [replying, setReplying] = useState(false)
   const [editing, setEditing] = useState(false)
   const isExpanded = useMemo(() => expanded.has(comment.id), [expanded, comment.id])
 
-  const canComment = can('comment')
   const isAdmin = can('moderateComments')
 
   // Show loading skeleton for auth-dependent content while loading

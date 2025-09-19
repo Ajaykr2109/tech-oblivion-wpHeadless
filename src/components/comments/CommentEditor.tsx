@@ -13,7 +13,7 @@ type Props = { parentId?: number, autoFocus?: boolean, onSubmitted?: () => void 
 export default function CommentEditor({ parentId, autoFocus, onSubmitted }: Props) {
   const [value, setValue] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { can, isLoading } = useAuth()
+  const { isLoading } = useAuth()
   const { submitComment } = useComments()
 
   async function handleSubmit(e: React.FormEvent) {
