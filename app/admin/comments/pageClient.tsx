@@ -100,44 +100,94 @@ export default function CommentsClient() {
   const totalPages = data?.totalPages || 1
   const { toast } = useToast()
 
-  const moderateComment = useCallback(async (commentId: number, action: 'approve'|'unapprove'|'spam'|'trash') => {
+  const moderateComment = useCallback(async (commentId: number, action: 'approve'|'unapprove'|'spam'|'unspam'|'trash') => {
     // Snapshot previous data for rollback
     const queryKey = ['admin-comments', statusFilter, page, perPage] as const
     const prev = queryClient.getQueryData<QueryResult>(queryKey)
+    
     try {
       // Optimistic UI update
       const nextStatus: Record<typeof action, WPComment['status']> = {
         approve: 'approved',
         unapprove: 'hold',
         spam: 'spam',
+        unspam: 'approved', // "Not Spam" should show as approved
         trash: 'trash'
       }
+      
       queryClient.setQueryData<QueryResult>(queryKey, (old) => {
         if (!old) return old as unknown as QueryResult
         return { ...old, items: old.items.map(c => c.id === commentId ? { ...c, status: nextStatus[action] } : c) }
       })
 
-      const statusMap: Record<typeof action, string> = { approve: 'approve', unapprove: 'hold', spam: 'spam', trash: 'trash' }
+      const statusMap: Record<typeof action, string> = { 
+        approve: 'approve', 
+        unapprove: 'hold', 
+        spam: 'spam', 
+        unspam: 'unspam', // Send "unspam" to API which maps to 'approve'
+        trash: 'trash' 
+      }
+      
       const response = await fetch(`/api/comments/${commentId}/moderate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: statusMap[action] })
       })
-      if (!response.ok) throw new Error('Failed to moderate comment')
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Failed to moderate comment: ${response.status} ${errorText}`)
+      }
 
-      // Refetch to ensure backend state is synced (counts, pagination)
-      await queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
+      // Get the updated comment data from the response
+      const updatedComment = await response.json()
+      
+      // Update the cache with the actual response data to ensure consistency
+      queryClient.setQueryData<QueryResult>(queryKey, (old) => {
+        if (!old) return old as unknown as QueryResult
+        return { 
+          ...old, 
+          items: old.items.map(c => c.id === commentId ? { 
+            ...c, 
+            status: updatedComment.status === 'approved' ? 'approved' : updatedComment.status 
+          } : c) 
+        }
+      })
+
+      // Small delay to ensure cache update is processed before invalidation
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Invalidate all admin-comments queries to refresh counts and other tabs
+      await queryClient.invalidateQueries({ 
+        queryKey: ['admin-comments'], 
+        exact: false // This will invalidate all queries starting with ['admin-comments']
+      })
+
+      // Show success toast
+      const actionMessages = {
+        approve: 'Comment approved successfully',
+        unapprove: 'Comment moved to pending',
+        spam: 'Comment marked as spam',
+        unspam: 'Comment unmarked as spam',
+        trash: 'Comment moved to trash'
+      }
 
       if (action === 'trash') {
         toast({
           title: 'Moved to Trash',
-          description: 'Comment moved to trash.',
+          description: actionMessages[action],
           action: (
             <ToastAction altText="Undo" onClick={() => moderateComment(commentId, 'unapprove')}>
               Undo
             </ToastAction>
           ),
           duration: 5000,
+        })
+      } else {
+        toast({
+          title: 'Success',
+          description: actionMessages[action],
+          duration: 3000,
         })
       }
     } catch (error) {
@@ -199,6 +249,15 @@ export default function CommentsClient() {
               onClick={() => moderateComment(c.id, 'unapprove')}
             >
               <X className="mr-2 h-4 w-4" /> Unapprove
+            </Button>
+          )}
+          {c.status === 'spam' && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => moderateComment(c.id, 'unspam')}
+            >
+              <Check className="mr-2 h-4 w-4" /> Not Spam
             </Button>
           )}
           {c.status !== 'spam' && (

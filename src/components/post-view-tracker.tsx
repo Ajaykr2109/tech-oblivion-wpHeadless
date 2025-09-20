@@ -25,17 +25,16 @@ export default function PostViewTracker({ postId }: PostViewTrackerProps) {
         })
 
         if (!response.ok) {
-          console.warn('Failed to track post view:', response.status, response.statusText)
           // Don't throw here, just log the warning
         } else {
           // Optionally log successful tracking in development
           if (process.env.NODE_ENV === 'development') {
-            const data = await response.json()
-            console.log('Post view tracked successfully:', { postId, views_total: data.views_total })
+            await response.json()
+            // Post view tracked successfully
           }
         }
-      } catch (error) {
-        console.warn('Error tracking post view:', error)
+      } catch {
+        // Error tracking post view
       }
     }
 

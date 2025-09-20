@@ -13,8 +13,18 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   let body: unknown
   try { body = await req.json() } catch { body = {} }
   const status = typeof (body as Record<string, unknown>)?.status === 'string' ? String((body as Record<string, unknown>).status) : ''
-  const allowed = new Set(['approve', 'hold', 'spam', 'trash'])
-  if (!allowed.has(status)) {
+  
+  // Map frontend actions to WordPress status values
+  const statusMap: Record<string, string> = {
+    'approve': 'approve',
+    'hold': 'hold', 
+    'spam': 'spam',
+    'trash': 'trash',
+    'unspam': 'approve' // Map "Not Spam" action to approve status
+  }
+  
+  const wpStatus = statusMap[status]
+  if (!wpStatus) {
     return new Response(JSON.stringify({ error: 'Invalid status' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
   }
 
@@ -24,7 +34,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   const res = await fetch(url.toString(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Basic ${token}` },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status: wpStatus }),
     cache: 'no-store',
   })
 

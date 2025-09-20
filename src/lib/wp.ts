@@ -285,7 +285,6 @@ export async function getPostsByIds(ids: number[]): Promise<PostSummary[]> {
     const body = await res.text()
     logWPError('getPostsByIds', { status: res.status, statusText: res.statusText, body: body.slice(0, 2000) })
     // Return empty array instead of throwing to avoid breaking the homepage
-    console.warn(`Failed to fetch editor picks posts: ${res.status}`)
     return []
   }
   

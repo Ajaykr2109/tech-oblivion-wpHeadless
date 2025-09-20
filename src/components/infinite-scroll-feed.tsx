@@ -98,7 +98,6 @@ export default function InfiniteScrollFeed({
     }
 
     const data = await response.json()
-    console.log('Posts API Response:', JSON.stringify(data, null, 2))
     
     // The API may return one of:
     // 1) Raw WP array of posts
@@ -106,15 +105,6 @@ export default function InfiniteScrollFeed({
     // Normalize to our Post[] shape.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapWPPost = (p: any): Post => {
-    console.log('Mapping post:', {
-      id: p.id,
-      title: p?.title?.rendered || p?.title,
-      hasEmbedded: !!p._embedded,
-      embedKeys: p._embedded ? Object.keys(p._embedded) : [],
-      author: p._embedded?.author?.[0],
-      featuredMedia: p._embedded?.['wp:featuredmedia']?.[0]
-    })
-    
     const mapped = {
       id: Number(p.id),
       title: p?.title?.rendered || p?.title || '',
@@ -146,7 +136,6 @@ export default function InfiniteScrollFeed({
         undefined,
     }
     
-    console.log('Mapped result:', mapped)
     return mapped
   }
 
@@ -183,7 +172,6 @@ export default function InfiniteScrollFeed({
       setHasMore(moreAvailable)
       setCurrentPage(nextPage)
     } catch (err) {
-      console.error('Failed to load more posts:', err)
       setError(err instanceof Error ? err.message : 'Failed to load more posts')
     } finally {
       setLoadingMore(false)
@@ -219,7 +207,6 @@ export default function InfiniteScrollFeed({
         setHasMore(moreAvailable)
         setCurrentPage(nextPage)
       } catch (err) {
-        console.error('Failed to load posts:', err)
         setError(err instanceof Error ? err.message : 'Failed to load posts')
       } finally {
         setLoading(false)

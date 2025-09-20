@@ -18,8 +18,6 @@ export async function GET(req: NextRequest) {
   const WP = process.env.WP_URL
   if (!WP) return new Response('WP_URL env required', { status: 500 })
   
-  console.log('Posts API - WP_URL:', WP)
-  
   const incoming = new URL(req.url);
   
   // Prepare defaults and normalized params
@@ -37,7 +35,6 @@ export async function GET(req: NextRequest) {
   if (authorParam && !search.has('author[]')) {
     search.delete('author')
     search.append('author[]', authorParam)
-    console.log('Posts API: Converted author param to array format')
   }
 
   // Try MU proxy first if configured (helps on locked-down sites)
@@ -62,8 +59,6 @@ export async function GET(req: NextRequest) {
   const out = id ? new URL(`/wp-json/wp/v2/posts/${id}`, WP) : new URL('/wp-json/wp/v2/posts', WP)
   if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
   
-  console.log('Posts API - Final upstream URL:', out.toString())
-  console.log('Posts API - Search params:', Object.fromEntries(search.entries()))
   // Forward Authorization header if present
   let authHeader = req.headers.get('authorization') || undefined
   // If fetching a single post without Authorization, attempt to use session wpToken (to allow drafts access)
@@ -88,14 +83,12 @@ export async function GET(req: NextRequest) {
     } 
   })
   if (!res.ok) {
-    console.log('Posts API - Upstream error:', res.status, await res.text())
     if (res.status === 404 || res.status === 400) {
       return Response.json([], { status: 200, headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
     }
     return new Response('Upstream error', { status: res.status })
   }
   const jsonData = await res.json()
-  console.log('Posts API - Upstream response sample:', Array.isArray(jsonData) ? jsonData[0] : jsonData)
   return Response.json(jsonData, { 
     headers: { 
       'Cache-Control': 'no-cache, no-store, must-revalidate', 

@@ -20,18 +20,12 @@ export async function getLatestByAuthor(authorId: number, excludeId?: number, pe
     })
     
     if (!r.ok) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(`Failed to fetch author posts: ${r.status} ${r.statusText}`)
-      }
       return []
     }
     
     const j = await r.json().catch(() => [])
     return Array.isArray(j) ? j : []
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('Error fetching author posts:', error)
-    }
+  } catch {
     return []
   }
 }
@@ -63,10 +57,7 @@ export async function getEditorPicks() {
       featuredImage: p.featuredImage,
       author: p.authorId,
     }))
-  } catch (error) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('Error fetching editor picks:', error)
-    }
+  } catch {
     return []
   }
 }

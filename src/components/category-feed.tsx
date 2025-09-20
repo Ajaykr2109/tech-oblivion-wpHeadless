@@ -54,9 +54,9 @@ export default async function CategoryFeed({
         posts = Array.isArray(data) ? data : [];
       }
     }
-  } catch (error) {
+  } catch {
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('CategoryFeed: fetch error suppressed in production:', error);
+      // CategoryFeed: fetch error suppressed in production
     }
   }
 

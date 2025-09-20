@@ -40,26 +40,23 @@ function write(file: string | null, entry: unknown) {
     fs.appendFileSync(file, JSON.stringify(entry) + '\n')
   } catch {
     // swallow logging errors - console.warn could be added for debugging
-    console.warn('Failed to write log')
   }
 }
 
 export const logger = {
   debug: (context: string, data: unknown) => {
     const entry = { ts: new Date().toISOString(), level: 'debug', context, data }
-    // console.debug can be noisy; keep for local visibility
-    // eslint-disable-next-line no-console
-    console.debug('[DEBUG]', JSON.stringify(entry))
+    // Disable console output to reduce noise
     write(DEBUG_FILE, entry)
   },
   info: (context: string, data: unknown) => {
     const entry = { ts: new Date().toISOString(), level: 'info', context, data }
-    // eslint-disable-next-line no-console
-    console.log('[LOG]', JSON.stringify(entry))
+    // Disable console output to reduce noise
     write(INFO_FILE, entry)
   },
   error: (context: string, data: unknown) => {
     const entry = { ts: new Date().toISOString(), level: 'error', context, data }
+    // Keep error console output for critical issues
     // eslint-disable-next-line no-console
     console.error('[ERROR]', JSON.stringify(entry))
     write(ERROR_FILE, entry)

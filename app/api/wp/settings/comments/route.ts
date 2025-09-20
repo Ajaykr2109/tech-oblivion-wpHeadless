@@ -12,17 +12,77 @@ export async function GET(_request: NextRequest) {
   }
 
   try {
+    // Try to get authentication from session first
+    let authHeader = ''
+    try {
+      const cookieStore = await cookies()
+      const sessionCookie = cookieStore.get(process.env.SESSION_COOKIE_NAME ?? 'session')
+      if (sessionCookie?.value) {
+        const claims = await verifySession(sessionCookie.value) as { wpToken?: string }
+        if (claims?.wpToken) {
+          authHeader = `Bearer ${claims.wpToken}`
+        }
+      }
+    } catch {
+      // Session verification failed, try Basic Auth fallback
+    }
+
+    // Fallback to Basic Auth if no session token
+    if (!authHeader) {
+      const basicUser = process.env.WP_USER || process.env.WP_API_USER
+      const basicPass = process.env.WP_APP_PASSWORD || process.env.WP_API_APP_PASSWORD
+      if (basicUser && basicPass) {
+        const token = Buffer.from(`${basicUser}:${basicPass}`).toString('base64')
+        authHeader = `Basic ${token}`
+      }
+    }
+
     // Fetch comment settings from WordPress backend
     const settingsUrl = new URL('/wp-json/fe-auth/v1/comment-settings', WP_BASE)
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    }
+    
+    if (authHeader) {
+      headers['Authorization'] = authHeader
+    }
+
     const response = await fetch(settingsUrl, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      headers,
       cache: 'no-store'
     })
 
     if (!response.ok) {
+      // If authentication fails, return default settings instead of erroring
+      if (response.status === 401 || response.status === 403) {
+        const defaultSettings = {
+          comment_registration: false,
+          require_name_email: true,
+          comment_moderation: false,
+          comment_whitelist: false,
+          comment_max_links: 2,
+          moderation_notify: true,
+          comments_notify: true,
+          close_comments_for_old_posts: false,
+          close_comments_days_old: 14,
+          thread_comments: true,
+          thread_comments_depth: 5,
+          page_comments: false,
+          comments_per_page: 50,
+          default_comments_page: 'newest',
+          comment_order: 'asc',
+          show_avatars: true,
+          avatar_default: 'mystery',
+          avatar_rating: 'G'
+        }
+        
+        return new Response(JSON.stringify(defaultSettings), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      
       throw new Error(`WordPress API error: ${response.status} ${response.statusText}`)
     }
 
