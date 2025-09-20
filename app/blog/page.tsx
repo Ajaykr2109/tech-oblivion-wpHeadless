@@ -1,8 +1,8 @@
 
-'use client'
+ 'use client'
 
 import React, { Suspense, useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, Clock, Flame, Filter, Grid3X3, List, TrendingUp } from 'lucide-react'
 
 import FeedSkeleton from '@/components/feed-skeleton'
@@ -11,6 +11,7 @@ import EnhancedBlogSearch from '@/components/enhanced-blog-search'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { decodeEntities } from '@/lib/entities'
 
 type ViewMode = 'grid' | 'list'
 type SortBy = 'latest' | 'popular' | 'trending'
@@ -29,6 +30,7 @@ interface Author {
 
 export default function BlogIndexPage() {
   const urlSearchParams = useSearchParams()
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState<string>(urlSearchParams?.get('q') || '')
   // Store filter values as WordPress numeric IDs (stringified)
@@ -39,7 +41,9 @@ export default function BlogIndexPage() {
   const [authors, setAuthors] = useState<Array<{ id: string, name: string, slug: string }>>([])
   const [popularCategories, setPopularCategories] = useState<Array<{ id: string, name: string, slug: string }>>([])
 
-  const hasSearchQuery = searchQuery && searchQuery.trim()
+  // Only treat as "submitted search" when URL contains q; typing alone won't flip UI
+  const urlQ = urlSearchParams?.get('q') || ''
+  const hasSearchQuery = !!(urlQ && urlQ.trim())
 
   // Fetch categories and authors for filters
   useEffect(() => {
@@ -49,7 +53,7 @@ export default function BlogIndexPage() {
         const categoriesRes = await fetch('/api/wp/categories?per_page=50&hide_empty=true')
         if (categoriesRes.ok) {
           const categoriesData: Category[] = await categoriesRes.json()
-          const mapped = categoriesData.map((cat) => ({ id: cat.id.toString(), name: cat.name, slug: cat.slug }))
+          const mapped = categoriesData.map((cat) => ({ id: cat.id.toString(), name: decodeEntities(cat.name), slug: cat.slug }))
           setCategories(mapped)
           // Initialize category from URL if present (supports id or slug)
           const urlCat = urlSearchParams?.get('categoryId') || urlSearchParams?.get('category') || ''
@@ -88,7 +92,7 @@ export default function BlogIndexPage() {
           if (popRes.ok) {
             const pop = await popRes.json()
             const cats = Array.isArray(pop?.categories) ? pop.categories : []
-            setPopularCategories(cats.map((c: { id: number; name: string; slug: string }) => ({ id: String(c.id), name: c.name, slug: c.slug })))
+            setPopularCategories(cats.map((c: { id: number; name: string; slug: string }) => ({ id: String(c.id), name: decodeEntities(c.name), slug: c.slug })))
           }
         } catch (e) {
           // Non-fatal
@@ -112,6 +116,14 @@ export default function BlogIndexPage() {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
+  }
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (q.length) {
+      router.push(`/blog?q=${encodeURIComponent(q)}`)
+    }
   }
 
   // Quick tag click handler removed; using dynamic categories instead
@@ -159,7 +171,7 @@ export default function BlogIndexPage() {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
               {/* Search */}
-              <div className="lg:col-span-2 relative">
+              <form className="lg:col-span-2 relative" onSubmit={handleSearchSubmit}>
                 <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   aria-label="Search articles" 
@@ -168,7 +180,9 @@ export default function BlogIndexPage() {
                   value={searchQuery}
                   onChange={handleSearchChange}
                 />
-              </div>
+              {/* Hidden submit button so Enter triggers search */}
+              <button type="submit" className="hidden" aria-hidden="true" />
+              </form>
               
               {/* Category filter */}
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>

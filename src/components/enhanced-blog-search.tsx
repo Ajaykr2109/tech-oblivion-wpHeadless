@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { PostCard } from '@/components/post-card'
 import { calculatePostReadingTime, formatReadingTime } from '@/lib/reading-time'
 import { htmlToText } from '@/lib/text'
+import { decodeEntities } from '@/lib/entities'
 
 type SearchResult = {
   type: 'post' | 'user' | 'profile'
@@ -65,8 +66,17 @@ export default function EnhancedBlogSearch() {
       const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&limit=20`)
       if (response.ok) {
         const data: SearchResponse = await response.json()
-        setResults(data.results.filter(r => r.type === 'post'))
-        setUserResults(data.results.filter(r => r.type === 'user' || r.type === 'profile'))
+        const posts = data.results.filter(r => r.type === 'post').map(r => ({
+          ...r,
+          title: decodeEntities(r.title || ''),
+          excerpt: r.excerpt ? decodeEntities(r.excerpt) : r.excerpt,
+        }))
+        const users = data.results.filter(r => r.type === 'user' || r.type === 'profile').map(r => ({
+          ...r,
+          title: decodeEntities(r.title || ''),
+        }))
+        setResults(posts)
+        setUserResults(users)
         setTotalResults(data.total)
       }
     } catch (error) {
@@ -217,7 +227,8 @@ export default function EnhancedBlogSearch() {
           )}
 
           {/* No Results */}
-          {!loading && results.length === 0 && query && (
+          {/* Avoid premature empty-state while user is still typing short queries */}
+          {!loading && query.length >= 2 && results.length === 0 && (
             <div className="text-center py-12">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
                 <Search className="h-6 w-6 text-muted-foreground" />

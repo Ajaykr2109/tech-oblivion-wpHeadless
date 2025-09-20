@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { decodeEntities } from '@/lib/entities'
 
 type SearchResult = {
   type: 'post' | 'user' | 'profile'
@@ -28,6 +29,8 @@ type SearchResponse = {
 }
 
 export default function NavbarSearch() {
+  // Toggle whether inline suggestions are shown while typing. We prefetch regardless to warm cache.
+  const SHOW_INLINE_RESULTS = false
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -42,6 +45,7 @@ export default function NavbarSearch() {
   const searchFunction = useCallback(async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 2) {
       setResults([])
+      // Don't show the results panel or "no results" until the user submits or has enough chars
       setShowResults(false)
       setLoading(false)
       return
@@ -52,7 +56,13 @@ export default function NavbarSearch() {
       const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&limit=8`)
       if (response.ok) {
         const data: SearchResponse = await response.json()
-        setResults(data.results)
+        // Soft-decode entities for nicer display
+        const normalized = (data.results || []).map(r => ({
+          ...r,
+          title: decodeEntities(r.title || ''),
+          excerpt: r.excerpt ? decodeEntities(r.excerpt) : r.excerpt,
+        }))
+        setResults(normalized)
         setShowResults(true)
       }
     } catch (error) {
@@ -65,9 +75,10 @@ export default function NavbarSearch() {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (query) {
+      if (query && query.length >= 2) {
+        // Only fetch suggestions after 2+ chars, but still don't redirect.
         searchFunction(query)
-      } else {
+      } else if (!query) {
         setResults([])
         setShowResults(false)
       }
@@ -197,7 +208,7 @@ export default function NavbarSearch() {
 
               {/* Search Results */}
               <AnimatePresence>
-                {showResults && results.length > 0 && (
+                {SHOW_INLINE_RESULTS && showResults && results.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -265,8 +276,8 @@ export default function NavbarSearch() {
                 )}
               </AnimatePresence>
 
-              {/* No results message */}
-              {showResults && results.length === 0 && !loading && query && (
+              {/* No premature empty-state: only after 2+ chars AND a completed fetch */}
+              {SHOW_INLINE_RESULTS && showResults && query.length >= 2 && results.length === 0 && !loading && (
                 <div className="p-4 text-center text-sm text-muted-foreground">
                   No results found for "{query}"
                 </div>

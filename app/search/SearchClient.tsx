@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PostCard } from '@/components/post-card'
 import { htmlToText } from '@/lib/text'
 import { calculatePostReadingTime, formatReadingTime } from '@/lib/reading-time'
+import { decodeEntities } from '@/lib/entities'
 
 type SearchResult = {
   type: 'post' | 'user' | 'profile'
@@ -36,7 +37,12 @@ export default function SearchClient({ q }: { q: string }) {
 
   // ESC to go back
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') router.back() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Always send user back to articles page explicitly for consistency
+        router.push('/blog')
+      }
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [router])
@@ -44,12 +50,19 @@ export default function SearchClient({ q }: { q: string }) {
   const enabled = qTrim.length >= 2
   const query = useQuery({ queryKey: ['enhanced-search', qTrim], queryFn: () => fetchSearch(qTrim), enabled })
   const data = useMemo(() => (query.data || { results: [], total: 0, query: qTrim }) as EnhancedResponse, [query.data, qTrim])
-  const posts = useMemo(() => data.results.filter(r => r.type === 'post'), [data.results])
-  const users = useMemo(() => data.results.filter(r => r.type !== 'post'), [data.results])
+  const posts = useMemo(() => data.results
+    .filter(r => r.type === 'post')
+    .map(r => ({ ...r, title: decodeEntities(r.title || ''), excerpt: r.excerpt ? decodeEntities(r.excerpt) : r.excerpt })), [data.results])
+  const users = useMemo(() => data.results
+    .filter(r => r.type !== 'post')
+    .map(r => ({ ...r, title: decodeEntities(r.title || '') })), [data.results])
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">Search</h1>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-bold">Search</h1>
+        <Link href="/blog" className="text-sm text-primary hover:underline">All Articles</Link>
+      </div>
       {qTrim ? (
         <p>
           Searching for: <span className="font-medium">{qTrim}</span>

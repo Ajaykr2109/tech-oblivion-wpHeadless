@@ -14,6 +14,7 @@ import {
 // Removed unused Avatar imports since we no longer show avatars
 import { Badge } from "@/components/ui/badge";
 import { calculateReadingTime, formatReadingTime } from "@/lib/reading-time";
+import { decodeEntities } from "@/lib/entities";
 
 export type Post = {
   id: string;
@@ -42,6 +43,9 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   const readingTimeText = post.readingTime || formatReadingTime(
     calculateReadingTime(post.content || post.excerpt || post.title)
   );
+  // Decode any HTML entities in title/excerpt coming from WP
+  const safeTitle = decodeEntities(post.title || '');
+  const safeExcerpt = decodeEntities(post.excerpt || '');
   
   // Format view count
   const viewsText = post.views !== undefined 
@@ -54,10 +58,10 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
         <Card className="card-premium p-3 h-[120px] flex flex-col justify-between transition-all duration-200 hover:shadow-md">
           <Link href={`/blog/${post.slug}`} className="flex-1 min-h-0 block">
             <CardTitle id={`post-title-${post.id}`} className="text-sm leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2 cursor-pointer">
-              {post.title}
+              {safeTitle}
             </CardTitle>
             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer">
-              {post.excerpt}
+              {safeExcerpt}
             </p>
           </Link>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
@@ -86,7 +90,7 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
             <div className="relative aspect-video sm:aspect-square h-32 w-full sm:w-32 flex-shrink-0 overflow-hidden rounded-xl cursor-pointer">
               <ClientImage
                 src={post.imageUrl}
-                alt={`Image for ${post.title}`}
+                alt={`Image for ${safeTitle}`}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 640px) 100vw, 128px"
@@ -100,6 +104,8 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* Soft bottom-to-top blend to remove sharp seam */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-card/95 via-card/70 via-40% to-transparent backdrop-blur-[2px]"></div>
             </div>
           </Link>
           <div className="flex flex-col justify-between p-4 flex-grow">
@@ -119,10 +125,10 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
               )}
               <Link href={`/blog/${post.slug}`} className="block">
                 <CardTitle id={`post-title-${post.id}`} className="text-lg leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 cursor-pointer">
-                  {post.title}
+                  {safeTitle}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed cursor-pointer">
-                  {post.excerpt}
+                  {safeExcerpt}
                 </p>
               </Link>
             </div>
@@ -153,7 +159,7 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
             <div className="relative aspect-[3/2] w-full overflow-hidden cursor-pointer">
               <ClientImage
                 src={post.imageUrl}
-                alt={`Image for ${post.title}`}
+                alt={`Image for ${safeTitle}`}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -167,6 +173,8 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* Soft bottom-to-top blend to remove sharp seam */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-card/95 via-card/70 via-40% to-transparent backdrop-blur-[2px]"></div>
               
               {/* Floating badges */}
               {showFeatured && (
@@ -205,10 +213,10 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
           
           <Link href={`/blog/${post.slug}`} className="block">
             <CardTitle id={`post-title-${post.id}`} className="text-xl line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-3 leading-tight cursor-pointer">
-              {post.title}
+              {safeTitle}
             </CardTitle>
             <CardDescription className="line-clamp-3 leading-relaxed text-muted-foreground cursor-pointer">
-              {post.excerpt}
+              {safeExcerpt}
             </CardDescription>
           </Link>
         </CardContent>

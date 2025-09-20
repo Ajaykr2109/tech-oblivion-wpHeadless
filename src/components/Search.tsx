@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+ 
+import { decodeEntities } from '@/lib/entities';
 
 const Search: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,7 +10,8 @@ const Search: React.FC = () => {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = event.target.value;
-    setSearchTerm(inputValue);
+    // Ensure pasted content with HTML entities renders nicely
+    setSearchTerm(decodeEntities(inputValue));
   };
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
