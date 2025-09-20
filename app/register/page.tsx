@@ -41,6 +41,11 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-6 left-6">
+        <Button variant="ghost" asChild>
+          <Link href="/" aria-label="Back to tech.oblivion">← Back to tech.oblivion</Link>
+        </Button>
+      </div>
        <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create an account</CardTitle>

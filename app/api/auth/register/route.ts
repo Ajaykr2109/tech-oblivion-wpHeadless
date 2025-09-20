@@ -6,7 +6,14 @@ import { wpFetch } from '../../../../src/lib/fetcher'
 import { logWPError } from '../../../../src/lib/log'
 import { CSRF_COOKIE } from '../../../../src/lib/csrf'
 
-const bodySchema = z.object({ email: z.string().email(), password: z.string().min(6), username: z.string().optional() })
+const bodySchema = z.object({ 
+  email: z.string().email(), 
+  password: z.string().min(6), 
+  username: z.string().optional(),
+  display_name: z.string().optional(),
+  gender: z.string().optional(),
+  date_of_birth: z.string().optional()
+})
 
 export async function POST(req: Request) {
   const origin = req.headers.get('origin')

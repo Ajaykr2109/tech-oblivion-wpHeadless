@@ -9,11 +9,15 @@ import { ReactQueryProvider } from '@/components/providers/react-query'
 
 /**
  * RouteChrome: Shows global Header/Footer on public pages, hides them on routes
- * like /login and /admin where a custom chrome is preferred.
+ * like /login, /signup, /register, /forgot-password, and /admin where a custom chrome is preferred.
  */
 export default function RouteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ''
-  const hideChrome = pathname === '/login' || pathname.startsWith('/admin')
+  const hideChrome = pathname === '/login' || 
+                     pathname === '/signup' || 
+                     pathname === '/register' || 
+                     pathname === '/forgot-password' || 
+                     pathname.startsWith('/admin')
 
   return (
     <div className="flex min-h-screen flex-col">

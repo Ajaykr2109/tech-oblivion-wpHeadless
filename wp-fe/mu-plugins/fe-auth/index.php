@@ -16,3 +16,4 @@ require_once __DIR__ . '/public-user.php';
 require_once __DIR__ . '/bookmarks.php';
 require_once __DIR__ . '/rest-fields.php';
 require_once __DIR__ . '/comment-settings.php';
+require_once __DIR__ . '/register.php';
