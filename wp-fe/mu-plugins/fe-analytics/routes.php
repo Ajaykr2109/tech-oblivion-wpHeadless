@@ -39,6 +39,7 @@ add_action('rest_api_init', function () {
             $period = $req->get_param('period') ?: 'month';
             $from   = $req->get_param('from');
             $to     = $req->get_param('to');
+            $post_id = absint($req->get_param('post_id'));
 
             $interval = match ($period) {
                 'day'   => '1 DAY',
@@ -56,11 +57,30 @@ add_action('rest_api_init', function () {
                 $where .= $wpdb->prepare(' AND v.viewed_at <= %s', $to . ' 23:59:59');
             }
 
-        $sql = "SELECT DATE(v.viewed_at) as day, COUNT(*) as views
-            FROM {$prefix}post_views v
-            WHERE $where
+            // Optional per-post filter
+            $where_posts = $where;
+            $where_pages = $where;
+            if ($post_id) {
+                $where_posts .= $wpdb->prepare(' AND v.post_id = %d', $post_id);
+                $where_pages .= $wpdb->prepare(' AND v.post_id = %d', $post_id);
+            }
+
+        // Combine legacy post_views table and new page_views table
+        $sql = "
+            SELECT day, SUM(views) as views FROM (
+                SELECT DATE(v.viewed_at) as day, COUNT(*) as views
+                FROM {$prefix}post_views v
+                WHERE $where_posts
+                GROUP BY DATE(v.viewed_at)
+                UNION ALL
+                SELECT DATE(v.viewed_at) as day, COUNT(*) as views
+                FROM {$prefix}page_views v
+                WHERE $where_pages
+                GROUP BY DATE(v.viewed_at)
+            ) t
             GROUP BY day
-            ORDER BY day ASC";
+            ORDER BY day ASC
+        ";
         $rows = $wpdb->get_results($sql);
         if ($wpdb->last_error) error_log('FE Analytics /views SQL error: ' . $wpdb->last_error);
         return $rows ?: [];

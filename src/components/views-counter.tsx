@@ -7,13 +7,22 @@ export default function ViewsCounter({ postId }: { postId: number }) {
     let cancelled = false
     const run = async () => {
       try {
-        // Read-only: fetch current aggregated views for the post from analytics API
-        type ViewsRow = { views?: string | number }
-        const current = await fetch(`/api/analytics/views?postId=${postId}&period=day`, { cache: 'no-store' })
-          .then(r => r.ok ? r.json() : null)
-          .catch(() => null) as ViewsRow[] | null
-        const v = Array.isArray(current) && current.length > 0 ? parseInt(String((current[0] as ViewsRow).views || 0), 10) : null
-        if (!cancelled && typeof v === 'number') setViews(v)
+        // Fetch total views directly from WordPress post meta
+        interface PostViewsResponse {
+          post_id: number
+          views_total: number
+          timestamp: string
+        }
+        
+        const response = await fetch(`/api/wp/post-views/${postId}`, { cache: 'no-store' })
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        
+        const data: PostViewsResponse = await response.json()
+        if (!cancelled && typeof data.views_total === 'number') {
+          setViews(data.views_total)
+        }
       } catch {
         // Ignore view tracking errors
       }

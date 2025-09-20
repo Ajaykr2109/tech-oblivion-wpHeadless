@@ -68,6 +68,22 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
   }, [])
   // Keep nearby range small so only the truly in-view section remains highlighted
   const state = useScrollSpy(ids, { rootMargin, nearbyRange: 0, adjacentRange: 1 })
+  // Manual active override when user clicks a TOC item; clears once heading is in view
+  const [manualActive, setManualActive] = useState<string | null>(null)
+  useEffect(() => {
+    if (!manualActive) return
+    const el = document.getElementById(manualActive)
+    if (!el) return
+    const off = () => {
+      const rect = el.getBoundingClientRect()
+      const styles = getComputedStyle(document.documentElement)
+      const header = parseInt(styles.getPropertyValue('--header-height') || '64', 10)
+      const topOffset = (isNaN(header) ? 64 : header) + 24
+      if (rect.top <= topOffset + 4) setManualActive(null)
+    }
+    const t = setInterval(off, 100)
+    return () => clearInterval(t)
+  }, [manualActive])
   const _hierarchy = useMemo(() => toHierarchy(_items), [_items])
   // Sync a class on the active heading in the document to avoid flicker
   // Sync content heading highlight strictly to the single activeId
@@ -95,7 +111,23 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
       if (e.key === 'Enter') {
         const id = ids[focusedIndex]
         const t = document.getElementById(id)
-        t?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        if (t) {
+          const styles = getComputedStyle(document.documentElement)
+          const header = parseInt(styles.getPropertyValue('--header-height') || '64', 10)
+          const topOffset = (isNaN(header) ? 64 : header) + 16
+          const rect = t.getBoundingClientRect()
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+          const targetY = scrollTop + rect.top - topOffset
+          const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          window.scrollTo({ top: Math.max(0, targetY), behavior: prefersReduced ? 'auto' : 'smooth' })
+          try {
+            const url = new URL(window.location.href)
+            url.hash = `#${id}`
+            history.replaceState({}, '', url)
+          } catch {
+            // no-op
+          }
+        }
       }
     }
     el.addEventListener('keydown', onKey)
@@ -150,7 +182,8 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
       <div className="toc-scroll max-h-[60vh] overflow-auto focus:outline-none" ref={listRef} tabIndex={0}>
         <div className="py-2">
           {_items.map((i, idx) => {
-            const st = i.id === state.activeId
+            const activeId = manualActive ?? state.activeId
+            const st = i.id === activeId
               ? 'active'
               : state.nearbyIds.has(i.id) ? 'nearby'
               : state.adjacentIds.has(i.id) ? 'adjacent'
@@ -162,7 +195,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
                 value={i.value}
                 depth={i.depth}
                 state={st as ItemState}
-                onClick={() => setFocusedIndex(idx)}
+                onClick={() => { setFocusedIndex(idx); setManualActive(i.id) }}
                 _minutes={sectionTimes[i.id]}
               />
             )
@@ -174,10 +207,11 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
 
   // Keep active TOC item in view when list overflows
   useEffect(() => {
-    if (!state.activeId) return
+    const targetId = manualActive ?? state.activeId
+    if (!targetId) return
     const container = listRef.current
     if (!container) return
-    const el = container.querySelector(`a[href="#${CSS.escape(state.activeId)}"]`) as HTMLElement | null
+    const el = container.querySelector(`a[href="#${CSS.escape(targetId)}"]`) as HTMLElement | null
     if (!el) return
     
     // Check if element is visible in container
@@ -195,7 +229,7 @@ export default function TableOfContents({ items }: { items: FlatItem[] }) {
         behavior: hasReducedMotion ? 'auto' : 'smooth' 
       })
     }
-  }, [state.activeId])
+  }, [state.activeId, manualActive])
 
   return (
     <div className="relative">

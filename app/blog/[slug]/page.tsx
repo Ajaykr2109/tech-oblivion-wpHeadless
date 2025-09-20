@@ -27,6 +27,7 @@ import ReadingProgress from '@/components/reading-progress'
 import ContentDecorators from '@/components/content-decorators'
 import ReaderToolbarPortal from '@/components/reader-toolbar-portal'
 import ViewsCounter from '@/components/views-counter'
+import PostViewTracker from '@/components/post-view-tracker'
 import ErrorBoundary from '@/components/error-boundary'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
 import FloatingActions from '@/components/floating-actions'
@@ -245,6 +246,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                     dangerouslySetInnerHTML={{ __html: JSON.stringify(getBreadcrumbSchema(post as unknown)) }}
                 />
             </Head>
+            {/* Post View Tracker - Track this specific post view */}
+            <PostViewTracker postId={Number(post.id)} />
+            
             {/* Enhanced Reader Toolbar - positioned respecting header */}
             <ReaderToolbarPortal />
             

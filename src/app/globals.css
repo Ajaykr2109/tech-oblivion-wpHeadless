@@ -213,6 +213,8 @@ main#main-content.article {
 .wp-content h5[id],
 .wp-content h6[id] {
   position: relative;
+  /* Reserve space for sticky header when scrolling to anchors */
+  scroll-margin-top: calc(var(--header-height) + 16px);
 }
 
 .wp-content h1[id]::before,

@@ -65,6 +65,7 @@ export const apiMap = {
   },
   mu: {
     trackView: `${WP_BASE}/wp-json/fe-auth/v1/track-view`,
+    postViews: (postId: number) => `${WP_BASE}/wp-json/fe-auth/v1/post-views/${postId}`,
     bookmarks: `${WP_BASE}/wp-json/fe-auth/v1/bookmarks`,
     bookmarkCheck: (postId: number) => `${WP_BASE}/wp-json/fe-auth/v1/bookmarks/check?post_id=${postId}`,
     bookmarkToggle: `${WP_BASE}/wp-json/fe-auth/v1/bookmarks/toggle`,

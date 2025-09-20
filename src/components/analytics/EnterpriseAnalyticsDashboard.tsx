@@ -453,6 +453,9 @@ export default function EnterpriseAnalyticsDashboard() {
                       <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                         <span>Bounce: {formatPercentage(page?.bounceRate)}</span>
                         <span>Time: {formatDuration(page?.avgTimeOnPage)}</span>
+                        {typeof (page as unknown as { avgScrollDepth?: number })?.avgScrollDepth === 'number' && (
+                          <span>Scroll: {Math.round((page as unknown as { avgScrollDepth?: number }).avgScrollDepth || 0)}%</span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
