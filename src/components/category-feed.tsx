@@ -3,6 +3,7 @@ import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { htmlToText } from "@/lib/text";
 import { calculatePostReadingTime, formatReadingTime } from "@/lib/reading-time";
+import { safeFetchJSON } from "@/lib/safe-fetch";
 
 import { PostCard } from "./post-card";
 
@@ -28,30 +29,29 @@ export default async function CategoryFeed({
       
       // If we only have slug, resolve it to ID
       if (!finalCategoryId && categorySlug) {
-        const categoriesRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/categories`, {
-          next: { revalidate: 3600 } // Cache categories for 1 hour
-        });
-        if (categoriesRes.ok) {
-          const categories = await categoriesRes.json();
-          const category = categories.find((cat: { slug: string; id: number }) => cat.slug === categorySlug);
-          if (category) {
-            finalCategoryId = category.id;
-          }
+        const categories = await safeFetchJSON<Array<{ slug: string; id: number }>>(
+          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/categories`,
+          { next: { revalidate: 3600 } }
+        );
+        const category = (categories || []).find((cat) => cat.slug === categorySlug);
+        if (category) {
+          finalCategoryId = category.id;
         }
       }
       
       // Fetch posts for the category
       if (finalCategoryId) {
-        const postsRes = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/posts?categories=${finalCategoryId}&per_page=${postCount}&_embed=1`, {
-          next: { revalidate: 300 } // Cache posts for 5 minutes
-        });
-        if (postsRes.ok) {
-          posts = await postsRes.json();
-        }
+        const data = await safeFetchJSON<unknown[]>(
+          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/posts?categories=${finalCategoryId}&per_page=${postCount}&_embed=1`,
+          { next: { revalidate: 300 } }
+        );
+        posts = Array.isArray(data) ? data : [];
       }
     }
   } catch (error) {
-    console.error('Failed to fetch category posts:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('CategoryFeed: fetch error suppressed in production:', error);
+    }
   }
 
   const wrapperClass = cn(

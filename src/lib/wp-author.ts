@@ -21,14 +21,18 @@ export async function getLatestByAuthor(authorId: number, excludeId?: number, pe
     })
     
     if (!r.ok) {
-      console.warn(`Failed to fetch author posts: ${r.status} ${r.statusText}`)
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`Failed to fetch author posts: ${r.status} ${r.statusText}`)
+      }
       return []
     }
     
     const j = await r.json().catch(() => [])
     return Array.isArray(j) ? j : []
   } catch (error) {
-    console.warn('Error fetching author posts:', error)
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Error fetching author posts:', error)
+    }
     return []
   }
 }
@@ -61,7 +65,9 @@ export async function getEditorPicks() {
       author: p.authorId,
     }))
   } catch (error) {
-    console.warn('Error fetching editor picks:', error)
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Error fetching editor picks:', error)
+    }
     return []
   }
 }

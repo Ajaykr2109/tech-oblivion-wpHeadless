@@ -86,7 +86,53 @@ export default function InfiniteScrollFeed({
     }
 
     const data = await response.json()
-    const posts: Post[] = data.posts || data.items || []
+    // The API may return one of:
+    // 1) Raw WP array of posts
+    // 2) Object with `posts` or `items`
+    // Normalize to our Post[] shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapWPPost = (p: any): Post => ({
+      id: Number(p.id),
+      title: p?.title?.rendered || p?.title || '',
+      slug: p?.slug || '',
+      date: p?.date || new Date().toISOString(),
+      contentHtml: p?.content?.rendered || p?.contentHtml,
+      excerptHtml: p?.excerpt?.rendered || p?.excerptHtml,
+      featuredImage:
+        p?.featuredImage ||
+        p?.featured_media_url ||
+        p?.jetpack_featured_media_url ||
+        p?._embedded?.['wp:featuredmedia']?.[0]?.source_url ||
+        undefined,
+      authorName:
+        p?.authorName ||
+        p?._embedded?.author?.[0]?.name ||
+        p?.author_info?.display_name ||
+        undefined,
+      authorSlug:
+        p?.authorSlug ||
+        p?._embedded?.author?.[0]?.slug ||
+        p?.author_info?.user_nicename ||
+        undefined,
+      authorAvatar:
+        p?.authorAvatar ||
+        p?._embedded?.author?.[0]?.avatar_urls?.['48'] ||
+        p?._embedded?.author?.[0]?.avatar_urls?.['96'] ||
+        p?.author_info?.avatar ||
+        undefined,
+    })
+
+    let posts: Post[] = []
+    if (Array.isArray(data)) {
+      posts = data.map(mapWPPost)
+    } else if (Array.isArray(data?.posts)) {
+      // Might already be in our simplified shape; map defensively
+      posts = data.posts.map(mapWPPost)
+    } else if (Array.isArray(data?.items)) {
+      posts = data.items.map(mapWPPost)
+    } else {
+      posts = []
+    }
     
     return {
       items: posts,

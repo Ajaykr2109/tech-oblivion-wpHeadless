@@ -179,7 +179,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
                 }
             }
         } catch (error) {
-            console.warn('Failed to fetch author profile:', error)
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Failed to fetch author profile:', error)
+            }
         }
     } else {
         // No author ID, fallback to editor picks
@@ -217,7 +219,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             })
         }
     } catch (error) {
-        console.warn('Failed to fetch recommendations:', error)
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn('Failed to fetch recommendations:', error)
+        }
         // Fallback recommendations could be hardcoded popular posts
     }
 
@@ -240,7 +244,9 @@ export default async function PostPage({ params, searchParams }: PageProps) {
             }))
         }
     } catch (e) {
-        console.warn('Failed to fetch popular posts:', e)
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn('Failed to fetch popular posts:', e)
+        }
     }
 
     // Recent posts (chronological) - REMOVED

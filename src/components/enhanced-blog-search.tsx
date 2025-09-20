@@ -32,6 +32,7 @@ type SearchResponse = {
 export default function EnhancedBlogSearch() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
+  const [userResults, setUserResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [totalResults, setTotalResults] = useState(0)
   
@@ -56,10 +57,12 @@ export default function EnhancedBlogSearch() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&limit=20&type=posts`)
+      // Ask API for all types so we can section the results
+      const response = await fetch(`/api/search/enhanced?q=${encodeURIComponent(searchQuery)}&limit=20`)
       if (response.ok) {
         const data: SearchResponse = await response.json()
-        setResults(data.results.filter(r => r.type === 'post')) // Only show posts in blog search
+        setResults(data.results.filter(r => r.type === 'post'))
+        setUserResults(data.results.filter(r => r.type === 'user' || r.type === 'profile'))
         setTotalResults(data.total)
       }
     } catch (error) {
@@ -82,7 +85,8 @@ export default function EnhancedBlogSearch() {
 
   const handleClear = () => {
     setQuery('')
-    setResults([])
+  setResults([])
+  setUserResults([])
     setTotalResults(0)
     router.push('/blog')
   }
@@ -156,7 +160,7 @@ export default function EnhancedBlogSearch() {
             </div>
           )}
 
-          {/* Results Grid */}
+          {/* Articles section */}
           {!loading && results.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {results.map((result) => {
@@ -184,6 +188,28 @@ export default function EnhancedBlogSearch() {
                   />
                 )
               })}
+            </div>
+          )}
+
+          {/* Users/Authors section */}
+          {!loading && userResults.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-base font-semibold mb-3">Authors</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {userResults.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => router.push(u.url)}
+                    className="flex items-center gap-3 rounded-lg border p-4 text-left hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-secondary" />
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{u.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">Author Profile</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

@@ -2,6 +2,7 @@
 'use client'
 
 import React, { Suspense, useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, Clock, Flame, Filter, Grid3X3, List, TrendingUp } from 'lucide-react'
 
 import FeedSkeleton from '@/components/feed-skeleton'
@@ -26,13 +27,10 @@ interface Author {
   slug: string
 }
 
-export default function BlogIndexPage({ 
-  searchParams 
-}: { 
-  searchParams?: { q?: string } 
-}) {
+export default function BlogIndexPage() {
+  const urlSearchParams = useSearchParams()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [searchQuery, setSearchQuery] = useState(searchParams?.q || '')
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearchParams?.get('q') || '')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<SortBy>('latest')
   const [selectedAuthor, setSelectedAuthor] = useState('all')
