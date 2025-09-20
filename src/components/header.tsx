@@ -135,9 +135,11 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/bookmarks">Bookmarks</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/account">Account Center</Link>
-                </DropdownMenuItem>
+                {isUserAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/account">Account Center</Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <button onClick={handleLogout}>Logout</button>
                 </DropdownMenuItem>
@@ -221,7 +223,9 @@ export function Header() {
                         return "Hi, User";
                       })()}
                     </div>
-                    <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
+                    {isUserAdmin && (
+                      <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
+                    )}
                     <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
                     {userSlug && (
                       <Link href={`/profile/${userSlug}`} className="text-muted-foreground hover:text-foreground">Profile</Link>

@@ -47,6 +47,59 @@ A modern, high-performance headless WordPress frontend built with Next.js 15, fe
 - **ESLint** - Code quality and consistency
 - **React Query** - Powerful data fetching and caching
 
+## 📦 Installation & Development
+
+### Quick Start (Development)
+```bash
+# Clone the repository
+git clone https://github.com/Ajaykr2109/tech-oblivion-wpHeadless.git
+cd tech-oblivion-wpHeadless
+
+# Install dependencies
+npm install
+
+# Copy environment template
+cp .env.example .env.local
+
+# Configure your WordPress API endpoint
+# Edit .env.local with your WordPress site URL
+
+# Start development server
+npm run dev
+```
+
+### Production Build
+```bash
+# Build for production (includes automatic static asset copying)
+npm run build
+
+# Start production server
+npm run start:prod
+```
+
+### Available Scripts
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production with static asset copying
+- `npm run build:quick` - Build without static asset copying
+- `npm run copy-static` - Copy static assets to standalone build
+- `npm run start` - Start production server (local env)
+- `npm run start:prod` - Start production server (production env)
+- `npm run typecheck` - Run TypeScript type checking
+- `npm run lint` - Run ESLint checks
+- `npm run test` - Run Jest tests
+
+## 🐧 Linux Production Deployment
+
+For detailed Linux server deployment instructions, see [LINUX_DEPLOYMENT_GUIDE.md](./LINUX_DEPLOYMENT_GUIDE.md)
+
+**Quick Production Setup:**
+1. Setup Node.js 18+ and PM2 on your Linux server
+2. Clone repository and install dependencies
+3. Configure `.env.production` with your settings
+4. Run `npm run build` (automatically copies static assets)
+5. Start with PM2 using the provided ecosystem config
+6. Configure Nginx reverse proxy and SSL
+
 ## 📦 Installation
 
 ### Prerequisites

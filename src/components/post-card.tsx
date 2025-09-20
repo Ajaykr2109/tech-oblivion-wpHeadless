@@ -55,20 +55,22 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   if (layout === 'simple') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
-        <Card className="card-premium p-3 h-[120px] flex flex-col justify-between transition-all duration-200 hover:shadow-md">
+        <Card className="card-premium p-4 h-[140px] flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
           <Link href={`/blog/${post.slug}`} className="flex-1 min-h-0 block">
-            <CardTitle id={`post-title-${post.id}`} className="text-sm leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2 cursor-pointer">
+            <CardTitle id={`post-title-${post.id}`} className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2 cursor-pointer">
               {safeTitle}
             </CardTitle>
-            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer">
+            <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed cursor-pointer">
               {safeExcerpt}
             </p>
           </Link>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30 flex-shrink-0">
+            {/* Date on bottom left */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              <span className="font-medium">{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
+            {/* Author on bottom right */}
             {post.authorSlug ? (
               <Link href={`/profile/${post.authorSlug}`} className="text-xs font-medium text-right hover:text-primary transition-colors">
                 {post.author}
@@ -85,62 +87,85 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   if (layout === 'list') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
-        <Card className="card-premium overflow-hidden">
-          <div className="relative">
-            <Link href={`/blog/${post.slug}`} className="block">
-              <div className="relative aspect-video w-full overflow-hidden cursor-pointer">
-                <ClientImage
-                  src={post.imageUrl}
-                  alt={`Image for ${safeTitle}`}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority={false}
-                  data-ai-hint={post.imageHint}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (target.src !== '/favicon.ico') {
-                      target.src = '/favicon.ico';
-                    }
-                  }}
-                />
-                {/* Subtle hover veil */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* Cinematic bottom gradient (~35%) with via stop; light/dark */}
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-white/80 via-white/30 to-transparent dark:from-black/70 dark:via-black/30 dark:to-transparent" />
-                {/* Content inside gradient zone (title/excerpt only to avoid nested links) */}
-                <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-1">
-                  <CardTitle id={`post-title-${post.id}`} className="text-white text-base sm:text-lg leading-tight line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+        <Card className="card-premium overflow-hidden transition-all duration-300 hover:shadow-lg">
+          <div className="flex flex-col sm:flex-row">
+            {/* Image section */}
+            <div className="relative sm:w-80 flex-shrink-0">
+              <Link href={`/blog/${post.slug}`} className="block">
+                <div className="relative aspect-video sm:aspect-[4/3] w-full overflow-hidden cursor-pointer">
+                  <ClientImage
+                    src={post.imageUrl}
+                    alt={`Image for ${safeTitle}`}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
+                    data-ai-hint={post.imageHint}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== '/favicon.ico') {
+                        target.src = '/favicon.ico';
+                      }
+                    }}
+                  />
+                  {/* Subtle hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+
+                  {/* Optional floating badges */}
+                  {showFeatured && (
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm text-xs">Featured</Badge>
+                    </div>
+                  )}
+
+                  {/* Reading time estimate */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-md px-2 py-1">
+                    <Clock className="h-3 w-3 text-white" />
+                    <span className="text-xs text-white font-medium">{readingTimeText}</span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Content section */}
+            <div className="flex-1 flex flex-col">
+              <CardContent className="p-4 flex-1">
+                <Link href={`/blog/${post.slug}`} className="block">
+                  <CardTitle id={`post-title-${post.id}`} className="text-xl font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-3">
                     {safeTitle}
                   </CardTitle>
-                  <CardDescription className="mt-1.5 text-white/90 text-[0.9rem] leading-snug line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                  <CardDescription className="text-muted-foreground leading-relaxed line-clamp-3">
                     {safeExcerpt}
                   </CardDescription>
-                </div>
+                </Link>
+              </CardContent>
 
-                {/* Optional floating badges for list too */}
-                {showFeatured && (
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm">Featured</Badge>
+              {/* Meta section at bottom */}
+              <CardFooter className="p-4 pt-0 mt-auto">
+                <div className="flex items-center justify-between w-full text-sm text-muted-foreground">
+                  {/* Date on bottom left */}
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span className="font-medium">{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    {viewsText && (
+                      <>
+                        <span className="text-muted-foreground/60">•</span>
+                        <span className="flex items-center gap-1"><Eye className="h-4 w-4" />{viewsText}</span>
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
-            </Link>
-            {/* Meta bar moved outside Link to prevent nested anchors */}
-            <div className="p-4 pt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-              </div>
-              <div className="truncate text-right">
-                {post.authorSlug ? (
-                  <Link href={`/profile/${post.authorSlug}`} className="hover:underline">
-                    {post.author}
-                  </Link>
-                ) : (
-                  <span>{post.author}</span>
-                )}
-              </div>
+                  {/* Author on bottom right */}
+                  <div className="text-right">
+                    {post.authorSlug ? (
+                      <Link href={`/profile/${post.authorSlug}`} className="font-medium hover:text-primary transition-colors duration-200">
+                        {post.author}
+                      </Link>
+                    ) : (
+                      <span className="font-medium">{post.author}</span>
+                    )}
+                  </div>
+                </div>
+              </CardFooter>
             </div>
           </div>
         </Card>
@@ -150,15 +175,15 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
 
   return (
     <article aria-labelledby={`post-title-${post.id}`} className="group">
-      <Card className="card-premium flex h-full flex-col overflow-hidden">
+      <Card className="card-premium flex h-full flex-col overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
         <CardHeader className="p-0 relative overflow-hidden">
           <Link href={`/blog/${post.slug}`} className="block">
-            <div className="relative aspect-[3/2] w-full overflow-hidden cursor-pointer">
+            <div className="relative aspect-[4/3] w-full overflow-hidden cursor-pointer">
               <ClientImage
                 src={post.imageUrl}
                 alt={`Image for ${safeTitle}`}
                 fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 priority={false}
                 data-ai-hint={post.imageHint}
@@ -169,61 +194,63 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
                   }
                 }}
               />
-              {/* Subtle hover veil */}
-              <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              {/* Cinematic bottom gradient (~35%) with via stop; light/dark */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[35%] bg-gradient-to-t from-white/80 via-white/30 to-transparent dark:from-black/70 dark:via-black/30 dark:to-transparent" />
-              {/* Text sits directly within gradient zone (title/excerpt only) */}
-              <div className="absolute inset-x-0 bottom-0 p-4 flex flex-col gap-1">
-                <CardTitle id={`post-title-${post.id}`} className="text-white text-lg sm:text-xl leading-tight line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                  {safeTitle}
-                </CardTitle>
-                <CardDescription className="mt-2 text-white/90 text-sm sm:text-[0.95rem] leading-snug line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
-                  {safeExcerpt}
-                </CardDescription>
-              </div>
+              {/* Subtle hover overlay */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
 
               {/* Floating badges */}
               {showFeatured && (
-                <div className="absolute top-4 left-4 flex items-center gap-2">
-                  <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm">Featured</Badge>
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <Badge className="bg-primary/90 text-white border-0 backdrop-blur-sm text-xs">Featured</Badge>
                 </div>
               )}
 
               {/* Reading time estimate */}
-              <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/30 backdrop-blur-sm rounded-full px-2 py-1">
+              <div className="absolute top-3 right-3 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-md px-2 py-1">
                 <Clock className="h-3 w-3 text-white" />
-                <span className="text-xs text-white">{readingTimeText}</span>
+                <span className="text-xs text-white font-medium">{readingTimeText}</span>
               </div>
             </div>
           </Link>
         </CardHeader>
 
-        {/* Meta section moved outside Link to avoid nested anchors */}
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
+        {/* Content section with consistent padding */}
+        <CardContent className="p-4 flex-1 flex flex-col">
+          <Link href={`/blog/${post.slug}`} className="flex-1">
+            <CardTitle id={`post-title-${post.id}`} className="text-lg font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors duration-200 mb-2">
+              {safeTitle}
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground leading-relaxed line-clamp-3 flex-1">
+              {safeExcerpt}
+            </CardDescription>
+          </Link>
+        </CardContent>
+
+        {/* Meta section at bottom with consistent spacing */}
+        <CardFooter className="p-4 pt-0 mt-auto">
+          <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
+            {/* Date on bottom left */}
+            <div className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5" />
-              <span>{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              <span className="font-medium">{new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
               {viewsText && (
                 <>
-                  <span>•</span>
+                  <span className="text-muted-foreground/60">•</span>
                   <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{viewsText}</span>
                 </>
               )}
             </div>
-            <div className="truncate text-right">
+            {/* Author on bottom right */}
+            <div className="text-right">
               {post.authorSlug ? (
-                <Link href={`/profile/${post.authorSlug}`} className="hover:underline">
+                <Link href={`/profile/${post.authorSlug}`} className="font-medium hover:text-primary transition-colors duration-200">
                   {post.author}
                 </Link>
               ) : (
-                <span>{post.author}</span>
+                <span className="font-medium">{post.author}</span>
               )}
             </div>
           </div>
-        </CardContent>
-        <CardFooter className="p-2 pt-0" />
+        </CardFooter>
       </Card>
     </article>
   );

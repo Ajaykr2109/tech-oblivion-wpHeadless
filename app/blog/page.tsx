@@ -33,6 +33,7 @@ export default function BlogIndexPage() {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState<string>(urlSearchParams?.get('q') || '')
+  const [searchSubmitted, setSearchSubmitted] = useState<boolean>(false)
   // Store filter values as WordPress numeric IDs (stringified)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<SortBy>('latest')
@@ -41,9 +42,30 @@ export default function BlogIndexPage() {
   const [authors, setAuthors] = useState<Array<{ id: string, name: string, slug: string }>>([])
   const [popularCategories, setPopularCategories] = useState<Array<{ id: string, name: string, slug: string }>>([])
 
-  // Only treat as "submitted search" when URL contains q; typing alone won't flip UI
+  // Only treat as "submitted search" when URL contains q AND user has submitted
   const urlQ = urlSearchParams?.get('q') || ''
-  const hasSearchQuery = !!(urlQ && urlQ.trim())
+  const hasSearchQuery = !!(urlQ && urlQ.trim() && searchSubmitted)
+
+  // Initialize from URL and set submitted state
+  useEffect(() => {
+    const urlQuery = urlSearchParams?.get('q') || ''
+    setSearchQuery(urlQuery)
+    setSearchSubmitted(!!(urlQuery && urlQuery.trim()))
+  }, [urlSearchParams])
+
+  // ESC key handler to close search results
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && hasSearchQuery) {
+        setSearchQuery('')
+        setSearchSubmitted(false)
+        router.push('/blog')
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [hasSearchQuery, router])
 
   // Fetch categories and authors for filters
   useEffect(() => {
@@ -122,8 +144,15 @@ export default function BlogIndexPage() {
     e.preventDefault()
     const q = searchQuery.trim()
     if (q.length) {
+      setSearchSubmitted(true)
       router.push(`/blog?q=${encodeURIComponent(q)}`)
     }
+  }
+
+  const handleCloseSearch = () => {
+    setSearchQuery('')
+    setSearchSubmitted(false)
+    router.push('/blog')
   }
 
   // Quick tag click handler removed; using dynamic categories instead
@@ -153,14 +182,14 @@ export default function BlogIndexPage() {
 
         {/* Enhanced Search with Results */}
         {hasSearchQuery ? (
-          <EnhancedBlogSearch />
+          <EnhancedBlogSearch onClose={handleCloseSearch} />
         ) : (
           <>
             {/* Clean Filters Section (Find Content) */}
-            <div className="bg-card border rounded-xl p-6 mb-8 sticky top-20 z-30">
+            <div className="bg-card border rounded-xl p-6 mb-8 sticky top-20 z-30 transition-all duration-300 ease-out">
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center transition-colors duration-200">
                     <Filter className="h-4 w-4 text-primary" />
                   </div>
                   <div>
@@ -172,11 +201,11 @@ export default function BlogIndexPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
               {/* Search */}
               <form className="lg:col-span-2 relative" onSubmit={handleSearchSubmit}>
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors duration-200" />
                 <Input 
                   aria-label="Search articles" 
                   placeholder="Search articles, topics..." 
-                  className="pl-9"
+                  className="pl-9 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                   value={searchQuery}
                   onChange={handleSearchChange}
                 />
@@ -184,12 +213,12 @@ export default function BlogIndexPage() {
               <button type="submit" className="hidden" aria-hidden="true" />
               </form>
               
-              {/* Category filter */}
+              {/* Category filter - Fixed width to prevent resizing */}
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger aria-label="Filter by category">
+                <SelectTrigger aria-label="Filter by category" className="min-w-[140px] transition-all duration-200 hover:border-primary/50">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="animate-in fade-in-0 zoom-in-95 duration-200">
                   <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
@@ -199,12 +228,12 @@ export default function BlogIndexPage() {
                 </SelectContent>
               </Select>
               
-              {/* Sort filter */}
+              {/* Sort filter - Fixed width */}
               <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
-                <SelectTrigger aria-label="Sort by">
+                <SelectTrigger aria-label="Sort by" className="min-w-[120px] transition-all duration-200 hover:border-primary/50">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="animate-in fade-in-0 zoom-in-95 duration-200">
                   <SelectItem value="latest">
                     <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Latest</span>
                   </SelectItem>
@@ -218,53 +247,69 @@ export default function BlogIndexPage() {
               </Select>
             </div>
             
-            {/* Author filter */}
-            {authors.length > 0 && (
-              <div className="mt-3">
-                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
-                  <SelectTrigger aria-label="Filter by author" className="w-48">
-                    <SelectValue placeholder="Filter by author" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Authors</SelectItem>
-                    {authors.map((author) => (
-                      <SelectItem key={author.id} value={author.id}>
-                        {author.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            {/* Author filter - Always render to prevent layout shift */}
+            <div className="mt-3">
+              <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                <SelectTrigger aria-label="Filter by author" className="w-48 min-w-[180px] transition-all duration-200 hover:border-primary/50">
+                  <SelectValue placeholder={authors.length > 0 ? "Filter by author" : "Loading authors..."} />
+                </SelectTrigger>
+                <SelectContent className="animate-in fade-in-0 zoom-in-95 duration-200">
+                  <SelectItem value="all">All Authors</SelectItem>
+                  {authors.map((author) => (
+                    <SelectItem key={author.id} value={author.id}>
+                      {author.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {/* Clear button moved to quick filters row to reduce layout shifts */}
           </div>
           
           {/* Quick filter categories (dynamic) + Clear button */}
-          <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
-            <span className="text-sm text-muted-foreground mr-2">Popular:</span>
-            {popularCategories.map((cat) => (
-              <Button
-                key={cat.id}
-                variant="outline"
-                size="sm"
-                className={`rounded-full text-xs h-7 ${selectedCategory !== 'all' && selectedCategory !== cat.id ? 'opacity-60' : ''}`}
-                onClick={() => {
-                  setSelectedCategory(cat.id)
-                  // Clear search when selecting a category quick filter
-                  setSearchQuery('')
-                }}
-                aria-pressed={selectedCategory === cat.id}
-              >
-                {cat.name}
-              </Button>
-            ))}
-            <div className="ml-auto">
+          <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t min-h-[44px]">
+            <span className="text-sm text-muted-foreground mr-2 flex-shrink-0">Popular:</span>
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              {popularCategories.length > 0 ? (
+                popularCategories.map((cat) => (
+                  <Button
+                    key={cat.id}
+                    variant="outline"
+                    size="sm"
+                    className={`rounded-full text-xs h-7 transition-all duration-200 ${selectedCategory !== 'all' && selectedCategory !== cat.id ? 'opacity-60' : ''}`}
+                    onClick={() => {
+                      setSelectedCategory(cat.id)
+                      // Clear search when selecting a category quick filter
+                      setSearchQuery('')
+                      setSearchSubmitted(false)
+                    }}
+                    aria-pressed={selectedCategory === cat.id}
+                  >
+                    {cat.name}
+                  </Button>
+                ))
+              ) : (
+                // Loading skeleton for popular categories
+                <div className="flex gap-2">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <div
+                      key={i}
+                      className="h-7 bg-muted/60 rounded-full animate-pulse"
+                      style={{ width: `${60 + Math.random() * 40}px` }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex-shrink-0">
               {activeFiltersCount > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
+                  className="transition-all duration-200"
                   onClick={() => {
                     setSearchQuery('')
+                    setSearchSubmitted(false)
                     setSelectedCategory('all')
                     setSortBy('latest')
                     setSelectedAuthor('all')
@@ -280,11 +325,11 @@ export default function BlogIndexPage() {
         {/* All Articles */}
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
-            <div>
+            <div className="transition-all duration-300 ease-out">
               <h2 className="text-2xl font-bold">
                 {getFilteredTitle()}
                 {activeFiltersCount > 0 && (
-                  <span className="ml-2 text-sm font-normal text-primary">
+                  <span className="ml-2 text-sm font-normal text-primary animate-in fade-in-0 slide-in-from-left-3 duration-300">
                     ({activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} active)
                   </span>
                 )}
@@ -295,11 +340,11 @@ export default function BlogIndexPage() {
             </div>
             
             {/* View toggle */}
-            <div className="hidden sm:flex items-center gap-1 bg-secondary rounded-lg p-1">
+            <div className="hidden sm:flex items-center gap-1 bg-secondary rounded-lg p-1 transition-all duration-200">
               <Button 
                 variant={viewMode === 'grid' ? 'default' : 'ghost'} 
                 size="sm" 
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 transition-all duration-200"
                 onClick={() => setViewMode('grid')}
                 aria-label="Grid view"
               >
@@ -308,7 +353,7 @@ export default function BlogIndexPage() {
               <Button 
                 variant={viewMode === 'list' ? 'default' : 'ghost'} 
                 size="sm" 
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 transition-all duration-200"
                 onClick={() => setViewMode('list')}
                 aria-label="List view"
               >
@@ -317,17 +362,19 @@ export default function BlogIndexPage() {
             </div>
           </div>
           
-          <Suspense fallback={<FeedSkeleton layout={viewMode} count={20} />}>
-            <InfiniteScrollFeed
-              layout={viewMode}
-              initialPostCount={20}
-              postsPerPage={10}
-              searchQuery={searchQuery.trim() || undefined}
-              categoryFilter={selectedCategory !== 'all' ? selectedCategory : undefined}
-              sortBy={sortBy}
-              authorFilter={selectedAuthor !== 'all' ? selectedAuthor : undefined}
-            />
-          </Suspense>
+          <div className="transition-all duration-500 ease-out">
+            <Suspense fallback={<FeedSkeleton layout={viewMode} count={20} />}>
+              <InfiniteScrollFeed
+                layout={viewMode}
+                initialPostCount={20}
+                postsPerPage={10}
+                searchQuery={searchQuery.trim() || undefined}
+                categoryFilter={selectedCategory !== 'all' ? selectedCategory : undefined}
+                sortBy={sortBy}
+                authorFilter={selectedAuthor !== 'all' ? selectedAuthor : undefined}
+              />
+            </Suspense>
+          </div>
         </div>
             </>
         )}

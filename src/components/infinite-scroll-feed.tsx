@@ -245,13 +245,13 @@ export default function InfiniteScrollFeed({
   }, [searchQuery, categoryFilter, sortBy, authorFilter, loading, posts.length])
 
   const wrapperClass = cn(
-    'grid',
-    // Show 5 cards per row on wide screens, downscale responsively
+    'grid w-full transition-all duration-300',
+    // Improved responsive grid with better breakpoints and larger gaps
     layout === 'grid'
-      ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6'
       : layout === 'simple'
-      ? 'grid-cols-1 gap-2'
-      : 'grid-cols-1 gap-4'
+      ? 'grid-cols-1 gap-3'
+      : 'grid-cols-1 gap-6'
   )
 
   if (loading) {

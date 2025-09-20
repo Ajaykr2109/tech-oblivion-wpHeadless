@@ -30,7 +30,11 @@ type SearchResponse = {
   query: string
 }
 
-export default function EnhancedBlogSearch() {
+type EnhancedBlogSearchProps = {
+  onClose?: () => void
+}
+
+export default function EnhancedBlogSearch({ onClose }: EnhancedBlogSearchProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [userResults, setUserResults] = useState<SearchResult[]>([])
@@ -52,6 +56,18 @@ export default function EnhancedBlogSearch() {
       setTotalResults(0)
     }
   }, [searchParams])
+
+  // ESC key handler
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onClose) {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery || searchQuery.length < 2) {
@@ -98,24 +114,26 @@ export default function EnhancedBlogSearch() {
 
   const handleClear = () => {
     setQuery('')
-  setResults([])
-  setUserResults([])
+    setResults([])
+    setUserResults([])
     setTotalResults(0)
-    router.push('/blog')
+    if (onClose) {
+      onClose()
+    }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in-0 slide-in-from-top-4 duration-500">
       {/* Enhanced Search Input */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors duration-200" />
           <Input
             type="text"
             placeholder="Search articles, topics, authors..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-10 pr-10"
+            className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
           />
           {query && (
             <Button
@@ -123,13 +141,13 @@ export default function EnhancedBlogSearch() {
               variant="ghost"
               size="icon"
               onClick={handleClear}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive"
             >
               <X className="h-4 w-4" />
             </Button>
           )}
         </div>
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} className="transition-all duration-200">
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -150,16 +168,29 @@ export default function EnhancedBlogSearch() {
                 {loading ? '...' : `${totalResults} result${totalResults !== 1 ? 's' : ''}`}
               </Badge>
             </div>
-            {query && (
-              <div className="text-sm text-muted-foreground">
-                for "<span className="font-medium">{query}</span>"
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {query && (
+                <div className="text-sm text-muted-foreground">
+                  for "<span className="font-medium">{query}</span>"
+                </div>
+              )}
+              {onClose && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="h-8 w-8 p-0"
+                  title="Close search (ESC)"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Loading State */}
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 animate-in fade-in-0 duration-300">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-secondary rounded-lg h-48 mb-4" />
@@ -175,7 +206,7 @@ export default function EnhancedBlogSearch() {
 
           {/* Articles section */}
           {!loading && results.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
               {results.map((result) => {
                 // Convert search result to PostCard format
                 const readingTime = calculatePostReadingTime(result.title, result.excerpt || '')
@@ -206,14 +237,14 @@ export default function EnhancedBlogSearch() {
 
           {/* Users/Authors section */}
           {!loading && userResults.length > 0 && (
-            <div className="mt-8">
+            <div className="mt-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-200">
               <h3 className="text-base font-semibold mb-3">Authors</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {userResults.map((u) => (
                   <button
                     key={u.id}
                     onClick={() => router.push(u.url)}
-                    className="flex items-center gap-3 rounded-lg border p-4 text-left hover:bg-secondary/50 transition-colors"
+                    className="flex items-center gap-3 rounded-lg border p-4 text-left hover:bg-secondary/50 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                   >
                     <div className="h-10 w-10 rounded-full bg-secondary" />
                     <div className="min-w-0">
