@@ -4,6 +4,8 @@ const isDev = process.env.NODE_ENV !== 'production'
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Build a Node server output (not static export) because the app uses API routes
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },

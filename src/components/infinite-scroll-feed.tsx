@@ -38,6 +38,15 @@ interface InfiniteScrollFeedProps {
   authorFilter?: string
 }
 
+// Module-level cache to avoid hook deps churn and share across instances
+interface GlobalWithCache {
+  __TO_FEED_CACHE__?: Map<string, PostsResponse>
+}
+
+const globalWithCache = globalThis as GlobalWithCache
+const FEED_CACHE: Map<string, PostsResponse> = globalWithCache.__TO_FEED_CACHE__ || new Map<string, PostsResponse>()
+globalWithCache.__TO_FEED_CACHE__ = FEED_CACHE
+
 export default function InfiniteScrollFeed({
   layout = 'grid',
   initialPostCount = 12,
@@ -53,6 +62,7 @@ export default function InfiniteScrollFeed({
   const [hasMore, setHasMore] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [error, setError] = useState<string | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   // Fetch posts function
   const fetchPosts = useCallback(async (page: number): Promise<PostsResponse> => {
@@ -86,6 +96,12 @@ export default function InfiniteScrollFeed({
   params.set('_embed', '1')
   // Force fresh data - no caching
   params.set('_t', Date.now().toString())
+  // Build a stable cache key
+  const cacheKey = JSON.stringify({ page, initialPostCount, postsPerPage, searchQuery: searchQuery || '', categoryFilter: categoryFilter || '', sortBy, authorFilter: authorFilter || '' })
+  if (FEED_CACHE.has(cacheKey)) {
+    return FEED_CACHE.get(cacheKey) as PostsResponse
+  }
+
   const response = await fetch(`/api/wp/posts?${params}`, {
     cache: 'no-store',
     headers: {
@@ -151,11 +167,13 @@ export default function InfiniteScrollFeed({
       posts = []
     }
     
-    return {
+    const normalized: PostsResponse = {
       items: posts,
       hasMore: posts.length === (page === 1 ? initialPostCount : postsPerPage),
       nextPage: page + 1
     }
+    FEED_CACHE.set(cacheKey, normalized)
+    return normalized
   }, [searchQuery, categoryFilter, sortBy, authorFilter, initialPostCount, postsPerPage])
 
   // Load more posts
@@ -216,6 +234,16 @@ export default function InfiniteScrollFeed({
     loadInitialPosts()
   }, [fetchPosts])
 
+  // When filters affecting fetch change, show a subtle overlay instead of bright skeletons
+  useEffect(() => {
+    const hasPosts = posts.length > 0
+    if (!loading && hasPosts) {
+      setIsTransitioning(true)
+      const t = setTimeout(() => setIsTransitioning(false), 200)
+      return () => clearTimeout(t)
+    }
+  }, [searchQuery, categoryFilter, sortBy, authorFilter, loading, posts.length])
+
   const wrapperClass = cn(
     'grid',
     // Show 5 cards per row on wide screens, downscale responsively
@@ -230,10 +258,10 @@ export default function InfiniteScrollFeed({
     return (
       <div className={wrapperClass}>
         {Array.from({ length: initialPostCount }, (_, i) => (
-          <div key={i} className="border rounded-md p-4 animate-pulse">
-            <div className="h-48 bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div key={i} className="border rounded-lg p-4">
+            <div className="h-48 w-full rounded-lg bg-muted/70 dark:bg-muted/50 relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)] dark:before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] mb-4"></div>
+            <div className="h-4 rounded bg-muted/70 dark:bg-muted/50 relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)] dark:before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)] mb-2"></div>
+            <div className="h-4 w-3/4 rounded bg-muted/70 dark:bg-muted/50 relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)] dark:before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)]"></div>
           </div>
         ))}
       </div>
@@ -270,7 +298,10 @@ export default function InfiniteScrollFeed({
 
   return (
     <>
-      <div className={wrapperClass}>
+      <div className={cn(wrapperClass, 'relative')}>
+        {isTransitioning && (
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-background/40 backdrop-blur-[1px] transition-opacity duration-200" />
+        )}
         {posts.map((post, index) => {
           // Calculate reading time from full content, fallback to excerpt
           const contentForReading = post.contentHtml || post.excerptHtml || ''

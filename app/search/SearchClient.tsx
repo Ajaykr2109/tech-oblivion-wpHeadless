@@ -88,7 +88,7 @@ export default function SearchClient({ q }: { q: string }) {
                 <TabsTrigger value="users">Authors ({users.length})</TabsTrigger>
               </TabsList>
               <TabsContent value="posts">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {posts.map((p) => {
                     const readingTime = calculatePostReadingTime(p.title, p.excerpt || '')
                     return (
@@ -115,7 +115,7 @@ export default function SearchClient({ q }: { q: string }) {
                 </div>
               </TabsContent>
               <TabsContent value="users">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {users.map((u) => (
                     <Link key={`u-${u.id}`} href={u.url} className="flex items-center gap-3 rounded-lg border p-4 hover:bg-secondary/50 transition-colors">
                       <div className="h-10 w-10 rounded-full bg-secondary" />

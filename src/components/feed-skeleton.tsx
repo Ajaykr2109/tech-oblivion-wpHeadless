@@ -7,7 +7,7 @@ import { PostCardSkeleton } from './post-card-skeleton'
 export default function FeedSkeleton({ layout = 'grid', count = 6 }: { layout?: 'grid' | 'list'; count?: number }) {
   const wrapperClass = cn(
     'grid gap-6',
-    layout === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'
+    layout === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' : 'grid-cols-1'
   )
 
   return (

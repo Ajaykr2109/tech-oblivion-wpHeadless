@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function ContactPage() {
+  // Ensure this page is rendered dynamically to avoid build-time prerender errors
+  // (uses client APIs like clipboard and window).
   const [copied, setCopied] = useState(false)
   const email = 'info@techoblivion.in'
   const copyEmail = async () => {

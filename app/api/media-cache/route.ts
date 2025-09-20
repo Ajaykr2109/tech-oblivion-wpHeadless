@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { cacheImage } from '@/lib/mediaCache'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('url')

@@ -40,7 +40,7 @@ export default function EnhancedBlogSearch() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // Initialize query from URL params
+  // Initialize query from URL params; only show results when URL has q (submit)
   useEffect(() => {
     const urlQuery = searchParams?.get('q') || ''
     setQuery(urlQuery)
@@ -159,7 +159,7 @@ export default function EnhancedBlogSearch() {
 
           {/* Loading State */}
           {loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="bg-secondary rounded-lg h-48 mb-4" />
@@ -175,7 +175,7 @@ export default function EnhancedBlogSearch() {
 
           {/* Articles section */}
           {!loading && results.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {results.map((result) => {
                 // Convert search result to PostCard format
                 const readingTime = calculatePostReadingTime(result.title, result.excerpt || '')
@@ -208,7 +208,7 @@ export default function EnhancedBlogSearch() {
           {!loading && userResults.length > 0 && (
             <div className="mt-8">
               <h3 className="text-base font-semibold mb-3">Authors</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {userResults.map((u) => (
                   <button
                     key={u.id}

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import React from 'react';
 
+import { decodeEntities } from '@/lib/entities';
+
 interface CategoryProps {
   category: {
     id: number;
@@ -10,9 +12,10 @@ interface CategoryProps {
 }
 
 const Category: React.FC<CategoryProps> = ({ category }) => {
+  const name = decodeEntities(category.name || '');
   return (
     <Link href={`/category/${category.slug}`}>
-      {category.name}
+      {name}
     </Link>
   );
 };
