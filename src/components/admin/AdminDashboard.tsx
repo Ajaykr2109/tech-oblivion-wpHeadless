@@ -847,7 +847,8 @@ function CommentsManagement() {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [autoApprove, setAutoApprove] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState<'all' | 'unapproved'>('all')
+  // Primary status filter for comments list
+  const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending' | 'spam' | 'trash'>('all')
   const [loadingComments, setLoadingComments] = useState<Set<number>>(new Set())
 
   // Load auto-approve setting
@@ -1114,34 +1115,38 @@ function CommentsManagement() {
 
   const filteredComments = useMemo(() => {
     if (!comments) return []
-    
-    const filtered = comments.filter(comment => {
-      const matchesSearch = !searchQuery || 
+
+    return comments.filter(comment => {
+      const matchesSearch = !searchQuery ||
         comment.author_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         comment.author_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (comment.content?.rendered || '').toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesStatus = filterStatus === 'all' || 
+
+      const matchesStatus = filterStatus === 'all' ||
         (filterStatus === 'approved' && comment.status === 'approved') ||
         (filterStatus === 'pending' && comment.status === 'hold') ||
         (filterStatus === 'spam' && comment.status === 'spam') ||
         (filterStatus === 'trash' && comment.status === 'trash')
-      
-      const matchesTab = activeTab === 'all' || 
-        (activeTab === 'unapproved' && (comment.status === 'hold' || comment.status === 'spam'))
-      
-      return matchesSearch && matchesStatus && matchesTab
-    })
-    
-    return filtered
-  }, [comments, searchQuery, filterStatus, activeTab])
 
-  const unapprovedComments = useMemo(() => {
-    return comments?.filter(comment => comment.status === 'hold' || comment.status === 'spam') || []
-  }, [comments])
+      // activeTab mirrors filterStatus now
+      return matchesSearch && matchesStatus
+    })
+  }, [comments, searchQuery, filterStatus])
 
   const approvedComments = useMemo(() => {
     return comments?.filter(comment => comment.status === 'approved') || []
+  }, [comments])
+
+  const pendingComments = useMemo(() => {
+    return comments?.filter(comment => comment.status === 'hold') || []
+  }, [comments])
+
+  const spamComments = useMemo(() => {
+    return comments?.filter(comment => comment.status === 'spam') || []
+  }, [comments])
+
+  const trashComments = useMemo(() => {
+    return comments?.filter(comment => comment.status === 'trash') || []
   }, [comments])
 
   if (isLoading) {
@@ -1228,19 +1233,22 @@ function CommentsManagement() {
         </Card>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2">
-        <Button 
-          variant={activeTab === 'all' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('all')}
-        >
-          All Comments ({comments?.length || 0})
+      {/* Status Filters */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant={activeTab === 'all' ? 'default' : 'outline'} onClick={() => { setActiveTab('all'); setFilterStatus('all') }}>
+          All ({comments?.length || 0})
         </Button>
-        <Button 
-          variant={activeTab === 'unapproved' ? 'default' : 'outline'}
-          onClick={() => setActiveTab('unapproved')}
-        >
-          Unapproved ({unapprovedComments.length})
+        <Button variant={activeTab === 'approved' ? 'default' : 'outline'} onClick={() => { setActiveTab('approved'); setFilterStatus('approved') }}>
+          Approved ({approvedComments.length})
+        </Button>
+        <Button variant={activeTab === 'pending' ? 'default' : 'outline'} onClick={() => { setActiveTab('pending'); setFilterStatus('pending') }}>
+          Pending ({pendingComments.length})
+        </Button>
+        <Button variant={activeTab === 'spam' ? 'default' : 'outline'} onClick={() => { setActiveTab('spam'); setFilterStatus('spam') }}>
+          Spam ({spamComments.length})
+        </Button>
+        <Button variant={activeTab === 'trash' ? 'default' : 'outline'} onClick={() => { setActiveTab('trash'); setFilterStatus('trash') }}>
+          Trash ({trashComments.length})
         </Button>
       </div>
 
@@ -1255,18 +1263,7 @@ function CommentsManagement() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Comments</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="spam">Spam</SelectItem>
-                <SelectItem value="trash">Trash</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Button filters above control status; dropdown removed for clarity */}
           </div>
         </CardContent>
       </Card>
@@ -1311,7 +1308,7 @@ function CommentsManagement() {
               className="rounded border-gray-300"
             />
             <CardTitle>
-              {activeTab === 'all' ? 'All Comments' : 'Unapproved Comments'} ({filteredComments?.length || 0})
+              {activeTab === 'all' ? 'All Comments' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} ({filteredComments?.length || 0})
             </CardTitle>
           </div>
         </CardHeader>
@@ -1454,12 +1451,7 @@ function CommentsManagement() {
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <MessageSquare className="mx-auto h-12 w-12 mb-4" />
-                <p>
-                  {activeTab === 'unapproved' ? 'No unapproved comments found' : 'No comments found'}
-                </p>
-                {activeTab === 'unapproved' && (
-                  <p className="text-sm">All comments are approved or in trash</p>
-                )}
+                <p>No comments found</p>
               </div>
             )}
           </div>

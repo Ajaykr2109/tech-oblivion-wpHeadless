@@ -113,11 +113,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="min-h-[calc(100vh-0px)] bg-gradient-to-b from-background to-background/80 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-6 left-6">
+        <Button variant="ghost" asChild>
+          <Link href="/" aria-label="Back to tech.oblivion">← Back to tech.oblivion</Link>
+        </Button>
+      </div>
+      <Card className="w-full max-w-md shadow-xl border bg-card/80 backdrop-blur">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Sign in to your account</CardTitle>
-          <CardDescription>Enter your WordPress credentials to continue.</CardDescription>
+          <CardTitle className="text-3xl font-extrabold tracking-tight">
+            <span className="gradient-text">oblivion</span>
+          </CardTitle>
+          <CardDescription className="mt-1">Sign in to continue</CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
@@ -145,7 +152,7 @@ export default function LoginPage() {
               {isLoading ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
-           <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up

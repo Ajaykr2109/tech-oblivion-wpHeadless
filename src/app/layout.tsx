@@ -3,11 +3,9 @@ import { Inter } from 'next/font/google';
 
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
-import { Header } from '@/components/header';
 import { Toaster } from '@/components/ui/toaster';
 import { getSettings } from '@/lib/settings'
-import Footer from '@/components/Footer';
-import { ReactQueryProvider } from '@/components/providers/react-query'
+import RouteChrome from '@/components/route-chrome'
 import { AuthProvider } from '@/contexts/auth-context'
 import SiteTracking from '@/components/site-tracking';
 
@@ -27,15 +25,7 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <SiteTracking />
-            <div className="flex min-h-screen flex-col">
-              {/* Skip link for keyboard users */}
-              <a href="#main-content" className="skip-link">Skip to content</a>
-              <Header />
-              <ReactQueryProvider>
-                <main id="main-content" className="flex-grow">{children}</main>
-              </ReactQueryProvider>
-              <Footer />
-            </div>
+            <RouteChrome>{children}</RouteChrome>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

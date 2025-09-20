@@ -46,9 +46,9 @@ export default function CommentList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        {/* Hide moderation selector for public users */}
-        <RoleGate action="moderateComments">
+      {/* Remove status selector from public UI entirely; keep available in admin screens */}
+      <RoleGate action="moderateComments" hideWhenUnauthorized={true}>
+        <div className="flex items-center justify-between">
           <Tabs value={status} onValueChange={(v)=>setStatus(v as typeof status)}>
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
@@ -58,8 +58,8 @@ export default function CommentList() {
               <TabsTrigger value="trash">Trash</TabsTrigger>
             </TabsList>
           </Tabs>
-        </RoleGate>
-      </div>
+        </div>
+      </RoleGate>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search comments" className="w-40 md:w-64" aria-label="Search comments" />
@@ -109,17 +109,19 @@ export default function CommentList() {
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <span className="text-xs text-muted-foreground">Per page</span>
-        <Select value={String(perPage)} onValueChange={(v)=>setPerPage(parseInt(v,10))}>
-          <SelectTrigger className="w-[100px]"><SelectValue placeholder="Per page" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="50">50</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {hasMore && (
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <span className="text-xs text-muted-foreground">Per page</span>
+          <Select value={String(perPage)} onValueChange={(v)=>setPerPage(parseInt(v,10))}>
+            <SelectTrigger className="w-[100px]"><SelectValue placeholder="Per page" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   )
 }

@@ -128,16 +128,16 @@ export default function AdminLayout({
 
   const SidebarContent = () => (
     <>
-      <div className="mb-8 flex items-center gap-2 px-2 font-bold">
+      <div className="mb-6 flex items-center gap-2 px-2 font-bold">
         <Link href="/" className="font-bold text-lg">
           tech.oblivion
         </Link>
         <div className="ml-auto"><ThemeToggle /></div>
       </div>
-      <nav className="flex flex-col gap-4 flex-1 overflow-y-auto" role="navigation" aria-label="Admin sidebar">
+      <nav className="flex flex-col gap-3 flex-1 overflow-y-auto" role="navigation" aria-label="Admin sidebar">
         {filtered.map((group) => (
           <div key={group.label}>
-            <div className="px-3 pb-2 text-xs font-medium uppercase text-muted-foreground tracking-wider">
+            <div className="px-3 pb-1 text-[10px] font-medium uppercase text-muted-foreground tracking-wider">
               {group.label}
             </div>
             <div className="flex flex-col gap-1">
@@ -156,9 +156,9 @@ export default function AdminLayout({
                         href={link.href}
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={cn(
-                          'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-[1.02]',
+                          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                           isActive
-                            ? 'bg-primary text-primary-foreground shadow-md'
+                            ? 'bg-primary text-primary-foreground shadow'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                         )}
                         aria-label={`Open ${link.label}`}
@@ -180,7 +180,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 border-r bg-card/50 p-4 flex-col" aria-label="Primary">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 p-4 flex-col bg-card/70 backdrop-blur border-r shadow-sm" aria-label="Primary">
         <SidebarContent />
       </aside>
 

@@ -212,14 +212,13 @@ class EnhancedAnalytics {
     this.isExiting = true
     
     const timeOnPage = Math.round((Date.now() - this.pageStartTime) / 1000)
-    
-    // Send final tracking data
-    this.trackPageView({
-      path: window.location.pathname,
-      title: document.title,
+
+    // Record exit metrics locally to be associated with next event/session if needed,
+    // but DO NOT send an extra network page-view on exit to avoid double-counting.
+    this.trackEvent('exit', {
+      type: 'beforeunload',
       timeOnPage,
       scrollDepth: this.lastScrollDepth,
-      pageExit: true
     })
   }
 
