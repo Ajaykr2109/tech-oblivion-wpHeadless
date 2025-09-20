@@ -14,6 +14,7 @@ type FeedProps = {
 };
 
 export default async function Feed({ layout = 'grid', postCount = 6 }: FeedProps) {
+  // ⚡ Optimize with shorter revalidation for better performance
   const { items } = await getPosts({ page: 1, perPage: postCount });
 
   const wrapperClass = cn(

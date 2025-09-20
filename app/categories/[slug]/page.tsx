@@ -1,11 +1,35 @@
 import React, { Suspense } from 'react'
 import { Search } from 'lucide-react'
 
-import Feed from '@/components/feed'
+import CategoryFeed from '@/components/category-feed'
 import FeedSkeleton from '@/components/feed-skeleton'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { safeFetchJSON } from '@/lib/safe-fetch'
+
+// ⚡ Performance optimizations: Enable ISR with 5-minute revalidation
+export const revalidate = 300
+export const dynamic = 'force-static'
+
+// ⚡ Generate static paths for popular categories at build time
+export async function generateStaticParams() {
+  try {
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000'
+  type Cat = { slug: string; count: number }
+  const categories = await safeFetchJSON<Cat[]>(`${origin}/api/wp/categories`, { next: { revalidate: 3600 } })
+    // Generate static paths for categories with at least 1 post
+    return (categories || [])
+      .filter((cat: { count: number }) => cat.count > 0)
+      .slice(0, 10) // Limit to top 10 categories
+      .map((cat: { slug: string }) => ({
+        slug: cat.slug,
+      }))
+  } catch (error) {
+    console.warn('Error generating static params for categories:', error)
+    return []
+  }
+}
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -42,7 +66,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       </div>
       
       <Suspense fallback={<FeedSkeleton layout="grid" count={6} />}>
-        <Feed layout="grid" postCount={6} />
+        <CategoryFeed layout="grid" postCount={12} categorySlug={slug} />
       </Suspense>
       
     </div>

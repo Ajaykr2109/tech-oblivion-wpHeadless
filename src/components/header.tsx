@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { UserMenuSkeleton, AuthButtonSkeleton, AdminMenuSkeleton } from "@/components/ui/auth-skeletons";
+import NavbarSearch from "@/components/navbar-search";
 
 import { ThemeToggle } from "./theme-toggle";
 import {
@@ -80,7 +81,10 @@ export function Header() {
           {/* Profile & Bookmarks moved into user dropdown */}
         </nav>
 
-        <div className="flex items-center gap-4">
+  <div className="flex items-center gap-4 relative">
+          {/* Search Component */}
+          <NavbarSearch />
+          
           {isLoading ? (
             <UserMenuSkeleton />
           ) : user ? (
@@ -92,15 +96,28 @@ export function Header() {
                   aria-label="User menu"
                 >
                   {(() => {
-                    const uname = user.username || "";
                     const dname = user.displayName || "";
-                    if (uname && uname.length <= 10) return uname;
+                    const uname = user.username || "";
+                    
+                    let firstName = "";
+                    
+                    // Try to get first name from displayName first
                     if (dname && dname.trim().includes(" ")) {
                       const parts = dname.trim().split(/\s+/);
-                      const first = parts[0];
-                      return first;
+                      firstName = parts[0];
+                    } else if (dname) {
+                      firstName = dname;
+                    } else if (uname) {
+                      firstName = uname;
                     }
-                    return (uname || dname).slice(0, 8);
+                    
+                    // Capitalize first letter and make rest lowercase
+                    if (firstName) {
+                      firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+                      return `Hi, ${firstName}`;
+                    }
+                    
+                    return "Hi, User";
                   })()}
                 </Button>
               </DropdownMenuTrigger>
@@ -178,7 +195,32 @@ export function Header() {
                   <AuthButtonSkeleton />
                 ) : user ? (
                   <>
-                    <div className="text-muted-foreground">Welcome, {user.username}</div>
+                    <div className="text-muted-foreground">
+                      {(() => {
+                        const dname = user.displayName || "";
+                        const uname = user.username || "";
+                        
+                        let firstName = "";
+                        
+                        // Try to get first name from displayName first
+                        if (dname && dname.trim().includes(" ")) {
+                          const parts = dname.trim().split(/\s+/);
+                          firstName = parts[0];
+                        } else if (dname) {
+                          firstName = dname;
+                        } else if (uname) {
+                          firstName = uname;
+                        }
+                        
+                        // Capitalize first letter and make rest lowercase
+                        if (firstName) {
+                          firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+                          return `Hi, ${firstName}`;
+                        }
+                        
+                        return "Hi, User";
+                      })()}
+                    </div>
                     <Link href="/account" className="text-muted-foreground hover:text-foreground">Account Center</Link>
                     <Link href="/bookmarks" className="text-muted-foreground hover:text-foreground">Bookmarks</Link>
                     {userSlug && (

@@ -16,6 +16,7 @@ import { sanitizeWP } from '@/lib/sanitize'
 import { getLatestByAuthor, getEditorPicks } from '@/lib/wp-author'
 import { extractTocFromMarkdown } from '@/lib/toc-md'
 import { decodeEntities } from '@/lib/entities'
+import { safeFetchJSON } from '@/lib/safe-fetch'
 import RelatedPostsSidebar from '@/components/RelatedPostsSidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -33,6 +34,10 @@ import MarkdownRenderer from '@/components/markdown/MarkdownRenderer'
 import FloatingActions from '@/components/floating-actions'
 import type { TocItem as HtmlTocItem } from '@/lib/toc'
 import type { TocItem as MdTocItem } from '@/lib/toc-md'
+
+// ⚡ Performance optimizations: Enable ISR with 5-minute revalidation
+export const revalidate = 300 // Revalidate every 5 minutes
+export const dynamic = 'force-static'
 
 // ToolbarPortal moved to component file
 
@@ -56,6 +61,23 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
     const post = await getPostBySlug(slug)
   if (!post) return { title: 'Post not found' }
   return { title: post.seo?.title || post.title, description: post.seo?.description }
+}
+
+// ⚡ Generate static paths for popular posts at build time
+export async function generateStaticParams() {
+    try {
+        // Fetch popular posts to pre-generate at build time
+        const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'http://localhost:3000'
+        type P = { slug: string }
+        const posts = await safeFetchJSON<P[]>(`${origin}/api/wp/posts?per_page=20&orderby=modified&order=desc`, { next: { revalidate: 3600 } })
+        if (!posts) return []
+        return posts.map((post) => ({
+      slug: post.slug,
+    }))
+  } catch (error) {
+    console.warn('Error generating static params for blog posts:', error)
+    return []
+  }
 }
 
 export default async function PostPage({ params, searchParams }: PageProps) {
@@ -145,12 +167,12 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         // Fetch author social information & description (profile bio)
         try {
             const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-            const authorResponse = await fetch(`${origin || ''}/api/wp/users/${post.authorSlug}`, {
+            type AuthorAPI = { social?: { twitter?: string | null; linkedin?: string | null; github?: string | null }; description?: string }
+            const authorData = await safeFetchJSON<AuthorAPI>(`${origin || ''}/api/wp/users/${post.authorSlug}`, {
                 headers: { Accept: 'application/json' },
                 cache: 'no-store'
             })
-            if (authorResponse.ok) {
-                const authorData = await authorResponse.json()
+            if (authorData) {
                 authorSocial = authorData.social || {}
                 if (authorData && typeof authorData.description === 'string') {
                     authorDescription = authorData.description.trim()
@@ -173,12 +195,8 @@ export default async function PostPage({ params, searchParams }: PageProps) {
         qs.set('per_page', '4') // Get one extra for better selection
         const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
         const url = `${origin || ''}/api/wp/related?${qs.toString()}`
-        const r = await fetch(url, { 
-            headers: { Accept: 'application/json' }, 
-            next: { revalidate: 300 } // Cache for 5 minutes
-        })
-        if (r.ok) {
-            const data = (await r.json()) as unknown[]
+        const data = await safeFetchJSON<unknown[]>(url, { headers: { Accept: 'application/json' }, next: { revalidate: 300 } })
+        if (data) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             recommended = (data || []).slice(0, 3).map((d: any) => {
                 // Calculate reading time for each recommendation
@@ -208,9 +226,8 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     try {
         const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
         const url = `${origin || ''}/api/wp/popular?limit=4`
-        const r = await fetch(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
-        if (r.ok) {
-            const data = (await r.json()) as unknown[]
+        const data = await safeFetchJSON<unknown[]>(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
+        if (data) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             popular = (data || []).map((d: any) => ({
                 id: d.id,

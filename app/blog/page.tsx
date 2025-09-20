@@ -1,50 +1,132 @@
 
-import React, { Suspense } from 'react'
-import { Search, Clock, Flame, Filter, Grid3X3, List, TrendingUp, BookOpen } from 'lucide-react'
+'use client'
 
-import Feed from '@/components/feed'
+import React, { Suspense, useState, useEffect } from 'react'
+import { Search, Clock, Flame, Filter, Grid3X3, List, TrendingUp } from 'lucide-react'
+
 import FeedSkeleton from '@/components/feed-skeleton'
+import InfiniteScrollFeed from '@/components/infinite-scroll-feed'
+import EnhancedBlogSearch from '@/components/enhanced-blog-search'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 
-export const dynamic = 'force-static'
+type ViewMode = 'grid' | 'list'
+type SortBy = 'latest' | 'popular' | 'trending'
 
-export default async function BlogIndexPage() {
+interface Category {
+  id: number
+  name: string
+  slug: string
+}
+
+interface Author {
+  id: number
+  name: string
+  slug: string
+}
+
+export default function BlogIndexPage({ 
+  searchParams 
+}: { 
+  searchParams?: { q?: string } 
+}) {
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [searchQuery, setSearchQuery] = useState(searchParams?.q || '')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [sortBy, setSortBy] = useState<SortBy>('latest')
+  const [selectedAuthor, setSelectedAuthor] = useState('all')
+  const [categories, setCategories] = useState<Array<{ id: string, name: string, slug: string }>>([])
+  const [authors, setAuthors] = useState<Array<{ id: string, name: string, slug: string }>>([])
+
+  const hasSearchQuery = searchQuery && searchQuery.trim()
+
+  // Fetch categories and authors for filters
+  useEffect(() => {
+    async function fetchFilterData() {
+      try {
+        // Fetch categories
+        const categoriesRes = await fetch('/api/wp/categories?per_page=20&hide_empty=true')
+        if (categoriesRes.ok) {
+          const categoriesData: Category[] = await categoriesRes.json()
+          setCategories(categoriesData.map((cat) => ({
+            id: cat.id.toString(),
+            name: cat.name,
+            slug: cat.slug
+          })))
+        }
+
+        // Fetch authors
+        const authorsRes = await fetch('/api/wp/users?per_page=20&has_published_posts[]=post')
+        if (authorsRes.ok) {
+          const authorsData: Author[] = await authorsRes.json()
+          setAuthors(authorsData.map((author) => ({
+            id: author.id.toString(),
+            name: author.name,
+            slug: author.slug
+          })))
+        }
+      } catch (error) {
+        console.error('Failed to fetch filter data:', error)
+        // Set fallback data
+        setCategories([
+          { id: 'ai', name: 'AI & Machine Learning', slug: 'ai' },
+          { id: 'web-dev', name: 'Web Development', slug: 'web-dev' },
+          { id: 'react', name: 'React & Frontend', slug: 'react' },
+          { id: 'backend', name: 'Backend & DevOps', slug: 'backend' },
+          { id: 'mobile', name: 'Mobile Development', slug: 'mobile' }
+        ])
+      }
+    }
+
+    fetchFilterData()
+  }, [])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }
+
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag)
+  }
+
+  // Show active filters status
+  const activeFiltersCount = [
+    searchQuery.trim(),
+    selectedCategory !== 'all' ? selectedCategory : '',
+    sortBy !== 'latest' ? sortBy : '',
+    selectedAuthor !== 'all' ? selectedAuthor : ''
+  ].filter(Boolean).length
+
+  const getFilteredTitle = () => {
+    if (searchQuery.trim()) return `Search results for "${searchQuery}"`
+    if (selectedCategory !== 'all') return `Articles in ${categories.find(c => c.slug === selectedCategory)?.name || selectedCategory}`
+    if (selectedAuthor !== 'all') return `Articles by ${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor}`
+    return 'All Articles'
+  }
+
   return (
     <div className="min-h-screen">
-      {/* Clean Hero Section */}
-      <section className="relative bg-gradient-to-br from-background to-secondary/20 pt-16 pb-12">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2 mb-6 text-sm font-medium text-primary">
-              <BookOpen className="h-4 w-4" />
-              Knowledge Library
-            </div>
-            
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Articles & <span className="gradient-text">Insights</span>
-            </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Explore in-depth tutorials, practical guides, and expert insights from our community of developers and tech enthusiasts.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <div className="container mx-auto px-4 py-8">
-        {/* Clean Filters Section */}
-        <div className="bg-card border rounded-xl p-6 mb-8 sticky top-20 z-30">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Filter className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm">Find Content</h3>
-                <p className="text-xs text-muted-foreground">Search and filter articles</p>
-              </div>
-            </div>
+        {/* Header removed per requirements: start directly with Find Content filters */}
+
+        {/* Enhanced Search with Results */}
+        {hasSearchQuery ? (
+          <EnhancedBlogSearch />
+        ) : (
+          <>
+            {/* Clean Filters Section (Find Content) */}
+            <div className="bg-card border rounded-xl p-6 mb-8 sticky top-20 z-30">
+              <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Filter className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Find Content</h3>
+                    <p className="text-xs text-muted-foreground">Search and filter articles</p>
+                  </div>
+                </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full lg:w-auto">
               {/* Search */}
@@ -53,27 +135,29 @@ export default async function BlogIndexPage() {
                 <Input 
                   aria-label="Search articles" 
                   placeholder="Search articles, topics..." 
-                  className="pl-9" 
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
                 />
               </div>
               
               {/* Category filter */}
-              <Select>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger aria-label="Filter by category">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="ai">AI & Machine Learning</SelectItem>
-                  <SelectItem value="web-dev">Web Development</SelectItem>
-                  <SelectItem value="react">React & Frontend</SelectItem>
-                  <SelectItem value="backend">Backend & DevOps</SelectItem>
-                  <SelectItem value="mobile">Mobile Development</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.slug}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
               {/* Sort filter */}
-              <Select>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortBy)}>
                 <SelectTrigger aria-label="Sort by">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -90,6 +174,43 @@ export default async function BlogIndexPage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Author filter */}
+            {authors.length > 0 && (
+              <div className="mt-3">
+                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                  <SelectTrigger aria-label="Filter by author" className="w-48">
+                    <SelectValue placeholder="Filter by author" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Authors</SelectItem>
+                    {authors.map((author) => (
+                      <SelectItem key={author.id} value={author.slug}>
+                        {author.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            {/* Clear filters button */}
+            {activeFiltersCount > 0 && (
+              <div className="mt-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('')
+                    setSelectedCategory('all')
+                    setSortBy('latest')
+                    setSelectedAuthor('all')
+                  }}
+                >
+                  Clear all filters ({activeFiltersCount})
+                </Button>
+              </div>
+            )}
           </div>
           
           {/* Quick filter tags */}
@@ -101,6 +222,7 @@ export default async function BlogIndexPage() {
                 variant="outline" 
                 size="sm" 
                 className="rounded-full text-xs h-7"
+                onClick={() => handleTagClick(tag)}
               >
                 {tag}
               </Button>
@@ -112,32 +234,56 @@ export default async function BlogIndexPage() {
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold">All Articles</h2>
-              <p className="text-muted-foreground">Browse our complete collection</p>
+              <h2 className="text-2xl font-bold">
+                {getFilteredTitle()}
+                {activeFiltersCount > 0 && (
+                  <span className="ml-2 text-sm font-normal text-primary">
+                    ({activeFiltersCount} filter{activeFiltersCount > 1 ? 's' : ''} active)
+                  </span>
+                )}
+              </h2>
+              <p className="text-muted-foreground">
+                {searchQuery.trim() ? 'Matching your search criteria' : 'Browse our complete collection'}
+              </p>
             </div>
             
             {/* View toggle */}
             <div className="hidden sm:flex items-center gap-1 bg-secondary rounded-lg p-1">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button 
+                variant={viewMode === 'grid' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setViewMode('grid')}
+                aria-label="Grid view"
+              >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <Button 
+                variant={viewMode === 'list' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={() => setViewMode('list')}
+                aria-label="List view"
+              >
                 <List className="h-4 w-4" />
               </Button>
             </div>
           </div>
           
-          <Suspense fallback={<FeedSkeleton layout="grid" count={12} />}>
-            <Feed layout="grid" postCount={12} />
+          <Suspense fallback={<FeedSkeleton layout={viewMode} count={12} />}>
+            <InfiniteScrollFeed
+              layout={viewMode}
+              initialPostCount={12}
+              postsPerPage={6}
+              searchQuery={searchQuery.trim() || undefined}
+              categoryFilter={selectedCategory !== 'all' ? selectedCategory : undefined}
+              sortBy={sortBy}
+              authorFilter={selectedAuthor !== 'all' ? selectedAuthor : undefined}
+            />
           </Suspense>
         </div>
-        
-        {/* Load More */}
-        <div className="text-center">
-          <Button size="lg" variant="outline">
-            Load More Articles
-          </Button>
-        </div>
+            </>
+        )}
       </div>
     </div>
   )

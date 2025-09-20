@@ -5,6 +5,7 @@ import { BookOpen, PenTool, TrendingUp, Star, Users, MessageCircle, ChevronRight
 import Feed from "@/components/feed"
 import EditorPicksFeed from "@/components/editor-picks-feed"
 import HomeLatestVideoSection from "@/components/HomeLatestVideoSection"
+import PopularCategories from "@/components/popular-categories"
 import { getWebSiteSchema, getFAQSchema } from "@/lib/generateSchema"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,16 +16,6 @@ export default function Home() {
   const faqs = [
     { question: "What is Tech.Oblivion?", answer: "A modern tech blog and community for web, AI, and engineering." },
     { question: "How can I contribute?", answer: "Join as an author or participate in the community Discord." }
-  ]
-
-  // Popular categories for the blog
-  const _popularCategories = [
-    { name: "Technology", count: 45, color: "bg-blue-100 text-blue-800" },
-    { name: "Programming", count: 38, color: "bg-purple-100 text-purple-800" },
-    { name: "Tutorials", count: 32, color: "bg-green-100 text-green-800" },
-    { name: "Reviews", count: 28, color: "bg-yellow-100 text-yellow-800" },
-    { name: "Tips & Tricks", count: 25, color: "bg-cyan-100 text-cyan-800" },
-    { name: "Industry News", count: 22, color: "bg-emerald-100 text-emerald-800" }
   ]
 
   return (
@@ -119,9 +110,25 @@ export default function Home() {
             <Feed layout="grid" postCount={6} />
           </section>
 
-         
-
-        
+          {/* POPULAR CATEGORIES SECTION */}
+          <section className="py-12">
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Popular Topics
+              </Badge>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                Explore by Category
+              </h2>
+              <p className="text-muted-foreground">
+                Discover our most popular content categories
+              </p>
+            </div>
+            
+            <div className="flex justify-center">
+              <PopularCategories limit={8} showCount={true} className="max-w-4xl" />
+            </div>
+          </section>
 
           {/* COMMUNITY CTA SECTION */}
           <section className="py-16">

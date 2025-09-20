@@ -1,0 +1,281 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Info, Loader2 } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { htmlToText } from '@/lib/text'
+import { calculatePostReadingTime, formatReadingTime } from '@/lib/reading-time'
+
+import { PostCard } from './post-card'
+
+interface Post {
+  id: number
+  title: string
+  slug: string
+  date: string
+  contentHtml?: string
+  excerptHtml?: string
+  featuredImage?: string
+  authorName?: string
+  authorSlug?: string
+  authorAvatar?: string
+}
+
+interface PostsResponse {
+  items: Post[]
+  hasMore: boolean
+  nextPage: number
+}
+
+interface InfiniteScrollFeedProps {
+  layout?: 'grid' | 'list' | 'simple'
+  initialPostCount?: number
+  postsPerPage?: number
+  searchQuery?: string
+  categoryFilter?: string
+  sortBy?: 'latest' | 'popular' | 'trending'
+  authorFilter?: string
+}
+
+export default function InfiniteScrollFeed({
+  layout = 'grid',
+  initialPostCount = 12,
+  postsPerPage = 6,
+  searchQuery,
+  categoryFilter,
+  sortBy = 'latest',
+  authorFilter
+}: InfiniteScrollFeedProps) {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch posts function
+  const fetchPosts = useCallback(async (page: number): Promise<PostsResponse> => {
+    const params = new URLSearchParams()
+    params.set('page', page.toString())
+    params.set('per_page', page === 1 ? initialPostCount.toString() : postsPerPage.toString())
+    
+    if (searchQuery) params.set('search', searchQuery)
+    if (categoryFilter) params.set('categories', categoryFilter)
+    if (authorFilter) params.set('author', authorFilter)
+    
+    // Map sortBy to API parameters
+    switch (sortBy) {
+      case 'popular':
+        params.set('orderby', 'meta_value_num')
+        params.set('meta_key', 'post_views_count')
+        params.set('order', 'desc')
+        break
+      case 'trending':
+        params.set('orderby', 'comment_count')
+        params.set('order', 'desc')
+        break
+      default: // latest
+        params.set('orderby', 'date')
+        params.set('order', 'desc')
+    }
+
+    const response = await fetch(`/api/wp/posts?${params}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch posts: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const posts: Post[] = data.posts || data.items || []
+    
+    return {
+      items: posts,
+      hasMore: posts.length === (page === 1 ? initialPostCount : postsPerPage),
+      nextPage: page + 1
+    }
+  }, [searchQuery, categoryFilter, sortBy, authorFilter, initialPostCount, postsPerPage])
+
+  // Load more posts
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+
+    try {
+      setLoadingMore(true)
+      setError(null)
+      
+      const { items, hasMore: moreAvailable, nextPage } = await fetchPosts(currentPage)
+      
+      setPosts(prev => [...prev, ...items])
+      setHasMore(moreAvailable)
+      setCurrentPage(nextPage)
+    } catch (err) {
+      console.error('Failed to load more posts:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load more posts')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadingMore, hasMore, currentPage, fetchPosts])
+
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const lastPostElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (loadingMore) return
+    if (observerRef.current) observerRef.current.disconnect()
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loadingMore) {
+        loadMorePosts()
+      }
+    }, {
+      threshold: 0.1,
+      rootMargin: '100px' // Start loading 100px before the element comes into view
+    })
+    
+    if (node) observerRef.current.observe(node)
+  }, [loadingMore, hasMore, loadMorePosts])
+
+  // Initial load
+  useEffect(() => {
+    async function loadInitialPosts() {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const { items, hasMore: moreAvailable, nextPage } = await fetchPosts(1)
+        setPosts(items)
+        setHasMore(moreAvailable)
+        setCurrentPage(nextPage)
+      } catch (err) {
+        console.error('Failed to load posts:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load posts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInitialPosts()
+  }, [fetchPosts])
+
+  const wrapperClass = cn(
+    'grid',
+    layout === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 
+    layout === 'simple' ? 'grid-cols-1 gap-2' : 
+    'grid-cols-1 gap-4'
+  )
+
+  if (loading) {
+    return (
+      <div className={wrapperClass}>
+        {Array.from({ length: initialPostCount }, (_, i) => (
+          <div key={i} className="border rounded-md p-4 animate-pulse">
+            <div className="h-48 bg-gray-200 rounded mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (error && posts.length === 0) {
+    return (
+      <div className="col-span-full border rounded-md p-6 text-center text-sm text-muted-foreground">
+        <div className="mx-auto mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+          <Info className="h-4 w-4" />
+        </div>
+        <p className="mb-1 font-medium text-foreground">Failed to load posts</p>
+        <p>{error}</p>
+      </div>
+    )
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="col-span-full border rounded-md p-6 text-center text-sm text-muted-foreground">
+        <div className="mx-auto mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+          <Info className="h-4 w-4" />
+        </div>
+        <p className="mb-1 font-medium text-foreground">No posts found</p>
+        <p>
+          {searchQuery ? `No posts match "${searchQuery}"` : 
+           categoryFilter ? `No posts in this category` :
+           'Posts will appear once published. Please check back soon.'}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className={wrapperClass}>
+        {posts.map((post, index) => {
+          // Calculate reading time from full content, fallback to excerpt
+          const contentForReading = post.contentHtml || post.excerptHtml || ''
+          const readingTime = calculatePostReadingTime(
+            post.title,
+            contentForReading
+          )
+          
+          const isLastPost = index === posts.length - 1
+          
+          return (
+            <div
+              key={post.id}
+              ref={isLastPost ? lastPostElementRef : null}
+            >
+              <PostCard
+                layout={layout}
+                showFeatured={false}
+                post={{
+                  id: String(post.id),
+                  title: post.title,
+                  author: post.authorName || 'Unknown',
+                  authorSlug: post.authorSlug || undefined,
+                  avatar: post.authorAvatar || '/favicon.ico',
+                  imageUrl: post.featuredImage || '/favicon.ico',
+                  imageHint: 'featured image',
+                  excerpt: htmlToText(post.excerptHtml || '').slice(0, 180),
+                  slug: post.slug,
+                  date: post.date,
+                  content: contentForReading,
+                  readingTime: formatReadingTime(readingTime),
+                }}
+              />
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Loading indicator */}
+      {loadingMore && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span className="text-sm text-muted-foreground">Loading more posts...</span>
+        </div>
+      )}
+
+      {/* Error indicator */}
+      {error && !loadingMore && (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <p className="text-sm text-red-600 mb-2">Failed to load more posts</p>
+            <button
+              onClick={loadMorePosts}
+              className="text-sm text-primary hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* End of posts indicator */}
+      {!hasMore && posts.length > 0 && (
+        <div className="flex items-center justify-center py-8">
+          <span className="text-sm text-muted-foreground">
+            You've reached the end of the posts
+          </span>
+        </div>
+      )}
+    </>
+  )
+}
