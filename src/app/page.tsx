@@ -51,14 +51,14 @@ export default function Home() {
               </div>
               
               {/* Right Column - Recent Articles */}
-              <div className="flex flex-col h-[400px] lg:h-[600px] overflow-hidden">
+              <div className="flex flex-col h-[400px] lg:h-[600px]">
                 <div className="flex items-center gap-3 mb-3 lg:mb-4 flex-shrink-0">
                   <div>
                     <h2 className="text-xl font-semibold">Recent Articles</h2>
                     <p className="text-muted-foreground text-sm">Latest posts from our community</p>
                   </div>
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 min-h-0">
                   <Feed layout="simple" postCount={4} />
                 </div>
               </div>

@@ -55,16 +55,16 @@ export function PostCard({ post, layout = 'grid', showFeatured = false }: PostCa
   if (layout === 'simple') {
     return (
       <article aria-labelledby={`post-title-${post.id}`} className="group">
-        <Card className="card-premium p-4 h-[140px] flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+        <Card className="card-premium p-3 h-[120px] flex flex-col justify-between transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
           <Link href={`/blog/${post.slug}`} className="flex-1 min-h-0 block">
-            <CardTitle id={`post-title-${post.id}`} className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2 cursor-pointer">
+            <CardTitle id={`post-title-${post.id}`} className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-1.5 cursor-pointer">
               {safeTitle}
             </CardTitle>
-            <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed cursor-pointer">
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed cursor-pointer">
               {safeExcerpt}
             </p>
           </Link>
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/30 flex-shrink-0">
+          <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30 flex-shrink-0">
             {/* Date on bottom left */}
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
