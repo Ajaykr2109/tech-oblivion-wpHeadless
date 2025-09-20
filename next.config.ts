@@ -1,5 +1,7 @@
 import type {NextConfig} from 'next';
 
+const isDev = process.env.NODE_ENV !== 'production'
+
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
@@ -31,6 +33,9 @@ const nextConfig: NextConfig = {
     ]
   },
   images: {
+    // In local/dev, avoid Next image optimizer fetching remote images (which can be blocked by hotlink protection);
+    // fall back to the browser loading them directly. You can force-enable via NEXT_IMAGE_UNOPTIMIZED=1
+    unoptimized: isDev || process.env.NEXT_IMAGE_UNOPTIMIZED === '1',
     remotePatterns: [
       {
         protocol: 'https',
@@ -38,8 +43,13 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Allow non-HTTPS images if upstream is misconfigured during dev
+      { protocol: 'http', hostname: 'techoblivion.in', port: '', pathname: '/**' },
   { protocol: 'https', hostname: 'secure.gravatar.com', port: '', pathname: '/**' },
   { protocol: 'https', hostname: 'www.gravatar.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: '0.gravatar.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: '1.gravatar.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: '2.gravatar.com', port: '', pathname: '/**' },
   { protocol: 'https', hostname: 's.w.org', port: '', pathname: '/**' },
       {
         protocol: 'https',

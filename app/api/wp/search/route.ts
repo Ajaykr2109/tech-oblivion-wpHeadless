@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   if (!q) return NextResponse.json([], { status: 200 })
 
   const url = new URL('/wp-json/wp/v2/posts', WP)
-  url.searchParams.set('_embed', '0')
+  // Include embeds so we can map featured image and author data on the client
+  url.searchParams.set('_embed', '1')
   url.searchParams.set('search', q)
   url.searchParams.set('per_page', '10')
   const res = await fetch(url.toString(), {

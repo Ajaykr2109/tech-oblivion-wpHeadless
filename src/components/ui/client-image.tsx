@@ -16,14 +16,31 @@ export default function ClientImage({ fallbackSrc = '/favicon.ico', placeholder 
   const initialSrc = (rest.src as string)
 
   // Simplified: don't attempt client-side caching; rely on direct URLs.
+  // Rewrite techoblivion.in media URLs through local proxy to bypass hotlink protection
+  const maybeProxied = useMemo(() => {
+    try {
+      const u = new URL(String(initialSrc))
+      const host = u.hostname.replace(/^www\./, '')
+      if (host === 'techoblivion.in') {
+        return `/api/wp/media${u.pathname}`
+      }
+      // Jetpack CDN might serve from i*.wp.com/techoblivion.in/... — allow as-is
+      return initialSrc
+    } catch {
+      return initialSrc
+    }
+  }, [initialSrc])
 
-  const src = failed ? fallbackSrc : (localSrc || initialSrc)
+  const src = failed ? fallbackSrc : (localSrc || maybeProxied)
+  const unoptimized = process.env.NODE_ENV !== 'production'
   return (
     <Image
       {...rest}
       src={src}
       placeholder={placeholder}
       blurDataURL={blur}
+      // Avoid Next image optimizer in dev; many WP hosts block hotlinked optimizer fetches
+      unoptimized={unoptimized}
       onError={() => setFailed(true)}
     />
   )

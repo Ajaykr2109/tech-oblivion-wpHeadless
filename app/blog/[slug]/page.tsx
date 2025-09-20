@@ -229,7 +229,7 @@ export default async function PostPage({ params, searchParams }: PageProps) {
     let popular: EnhancedRecommendation[] = []
     try {
         const origin = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''
-        const url = `${origin || ''}/api/wp/popular?limit=4`
+        const url = `${origin || ''}/api/wp/popular?limit=4&range=week`
         const data = await safeFetchJSON<unknown[]>(url, { headers: { Accept: 'application/json' }, next: { revalidate: 600 } })
         if (data) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

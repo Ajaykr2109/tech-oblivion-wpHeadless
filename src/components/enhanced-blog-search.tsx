@@ -43,8 +43,12 @@ export default function EnhancedBlogSearch() {
   useEffect(() => {
     const urlQuery = searchParams?.get('q') || ''
     setQuery(urlQuery)
-    if (urlQuery) {
+    if (urlQuery.length >= 2) {
       performSearch(urlQuery)
+    } else {
+      setResults([])
+      setUserResults([])
+      setTotalResults(0)
     }
   }, [searchParams])
 
@@ -76,8 +80,7 @@ export default function EnhancedBlogSearch() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedQuery = query.trim()
-    if (trimmedQuery) {
-      // Update URL
+    if (trimmedQuery.length >= 2) {
       router.push(`/blog?q=${encodeURIComponent(trimmedQuery)}`)
       performSearch(trimmedQuery)
     }

@@ -101,6 +101,9 @@ export default function CommentsClient() {
   const { toast } = useToast()
 
   const moderateComment = useCallback(async (commentId: number, action: 'approve'|'unapprove'|'spam'|'trash') => {
+    // Snapshot previous data for rollback
+    const queryKey = ['admin-comments', statusFilter, page, perPage] as const
+    const prev = queryClient.getQueryData<QueryResult>(queryKey)
     try {
       // Optimistic UI update
       const nextStatus: Record<typeof action, WPComment['status']> = {
@@ -109,10 +112,11 @@ export default function CommentsClient() {
         spam: 'spam',
         trash: 'trash'
       }
-      queryClient.setQueryData<QueryResult>(['admin-comments', statusFilter, page, perPage], (old) => {
-        if (!old) return undefined as unknown as QueryResult
+      queryClient.setQueryData<QueryResult>(queryKey, (old) => {
+        if (!old) return old as unknown as QueryResult
         return { ...old, items: old.items.map(c => c.id === commentId ? { ...c, status: nextStatus[action] } : c) }
       })
+
       const statusMap: Record<typeof action, string> = { approve: 'approve', unapprove: 'hold', spam: 'spam', trash: 'trash' }
       const response = await fetch(`/api/comments/${commentId}/moderate`, {
         method: 'POST',
@@ -120,8 +124,9 @@ export default function CommentsClient() {
         body: JSON.stringify({ status: statusMap[action] })
       })
       if (!response.ok) throw new Error('Failed to moderate comment')
-      // Optionally refetch to sync counts/pages
-      queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
+
+      // Refetch to ensure backend state is synced (counts, pagination)
+      await queryClient.invalidateQueries({ queryKey: ['admin-comments'] })
 
       if (action === 'trash') {
         toast({
@@ -137,6 +142,9 @@ export default function CommentsClient() {
       }
     } catch (error) {
       console.error('Error moderating comment:', error)
+      // Rollback UI to previous state
+      if (prev) queryClient.setQueryData<QueryResult>(queryKey, prev)
+      toast({ title: 'Action failed', description: 'Could not update comment. Please try again.', variant: 'destructive' })
     }
   }, [queryClient, statusFilter, page, perPage, toast])
   

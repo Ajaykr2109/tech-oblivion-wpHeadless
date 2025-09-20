@@ -31,11 +31,13 @@ export default function BlogIndexPage() {
   const urlSearchParams = useSearchParams()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [searchQuery, setSearchQuery] = useState<string>(urlSearchParams?.get('q') || '')
+  // Store filter values as WordPress numeric IDs (stringified)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<SortBy>('latest')
   const [selectedAuthor, setSelectedAuthor] = useState('all')
   const [categories, setCategories] = useState<Array<{ id: string, name: string, slug: string }>>([])
   const [authors, setAuthors] = useState<Array<{ id: string, name: string, slug: string }>>([])
+  const [popularCategories, setPopularCategories] = useState<Array<{ id: string, name: string, slug: string }>>([])
 
   const hasSearchQuery = searchQuery && searchQuery.trim()
 
@@ -44,25 +46,53 @@ export default function BlogIndexPage() {
     async function fetchFilterData() {
       try {
         // Fetch categories
-        const categoriesRes = await fetch('/api/wp/categories?per_page=20&hide_empty=true')
+        const categoriesRes = await fetch('/api/wp/categories?per_page=50&hide_empty=true')
         if (categoriesRes.ok) {
           const categoriesData: Category[] = await categoriesRes.json()
-          setCategories(categoriesData.map((cat) => ({
-            id: cat.id.toString(),
-            name: cat.name,
-            slug: cat.slug
-          })))
+          const mapped = categoriesData.map((cat) => ({ id: cat.id.toString(), name: cat.name, slug: cat.slug }))
+          setCategories(mapped)
+          // Initialize category from URL if present (supports id or slug)
+          const urlCat = urlSearchParams?.get('categoryId') || urlSearchParams?.get('category') || ''
+          if (urlCat) {
+            const byId = mapped.find(c => c.id === urlCat)
+            const bySlug = mapped.find(c => c.slug === urlCat)
+            if (byId) setSelectedCategory(byId.id)
+            else if (bySlug) setSelectedCategory(bySlug.id)
+          }
         }
 
         // Fetch authors
-        const authorsRes = await fetch('/api/wp/users?per_page=20&has_published_posts[]=post')
+        const authorsRes = await fetch('/api/wp/users?per_page=50&has_published_posts[]=post')
         if (authorsRes.ok) {
           const authorsData: Author[] = await authorsRes.json()
-          setAuthors(authorsData.map((author) => ({
-            id: author.id.toString(),
-            name: author.name,
-            slug: author.slug
-          })))
+          const mappedA = authorsData.map((author) => ({ id: author.id.toString(), name: author.name, slug: author.slug }))
+          setAuthors(mappedA)
+          const urlAuthor = urlSearchParams?.get('authorId') || urlSearchParams?.get('author') || ''
+          if (urlAuthor) {
+            const byId = mappedA.find(a => a.id === urlAuthor)
+            const bySlug = mappedA.find(a => a.slug === urlAuthor)
+            if (byId) setSelectedAuthor(byId.id)
+            else if (bySlug) setSelectedAuthor(bySlug.id)
+          }
+        }
+
+        // Fetch popular categories for quick filters
+        try {
+          const popRes = await fetch('/api/wp/categories/popular?limit=10', { 
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          })
+          if (popRes.ok) {
+            const pop = await popRes.json()
+            const cats = Array.isArray(pop?.categories) ? pop.categories : []
+            setPopularCategories(cats.map((c: { id: number; name: string; slug: string }) => ({ id: String(c.id), name: c.name, slug: c.slug })))
+          }
+        } catch (e) {
+          // Non-fatal
+          console.warn('Failed to load popular categories', e)
         }
       } catch (error) {
         console.error('Failed to fetch filter data:', error)
@@ -78,15 +108,13 @@ export default function BlogIndexPage() {
     }
 
     fetchFilterData()
-  }, [])
+  }, [urlSearchParams])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
   }
 
-  const handleTagClick = (tag: string) => {
-    setSearchQuery(tag)
-  }
+  // Quick tag click handler removed; using dynamic categories instead
 
   // Show active filters status
   const activeFiltersCount = [
@@ -98,7 +126,10 @@ export default function BlogIndexPage() {
 
   const getFilteredTitle = () => {
     if (searchQuery.trim()) return `Search results for "${searchQuery}"`
-    if (selectedCategory !== 'all') return `Articles in ${categories.find(c => c.slug === selectedCategory)?.name || selectedCategory}`
+    if (selectedCategory !== 'all') {
+      const cat = categories.find(c => c.id === selectedCategory || c.slug === selectedCategory)
+      return `Articles in ${cat?.name || selectedCategory}`
+    }
     if (selectedAuthor !== 'all') return `Articles by ${authors.find(a => a.slug === selectedAuthor)?.name || selectedAuthor}`
     return 'All Articles'
   }
@@ -147,7 +178,7 @@ export default function BlogIndexPage() {
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.slug}>
+                    <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
                   ))}
@@ -183,7 +214,7 @@ export default function BlogIndexPage() {
                   <SelectContent>
                     <SelectItem value="all">All Authors</SelectItem>
                     {authors.map((author) => (
-                      <SelectItem key={author.id} value={author.slug}>
+                      <SelectItem key={author.id} value={author.id}>
                         {author.name}
                       </SelectItem>
                     ))}
@@ -191,12 +222,32 @@ export default function BlogIndexPage() {
                 </Select>
               </div>
             )}
-            
-            {/* Clear filters button */}
-            {activeFiltersCount > 0 && (
-              <div className="mt-3">
-                <Button 
-                  variant="outline" 
+            {/* Clear button moved to quick filters row to reduce layout shifts */}
+          </div>
+          
+          {/* Quick filter categories (dynamic) + Clear button */}
+          <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
+            <span className="text-sm text-muted-foreground mr-2">Popular:</span>
+            {popularCategories.map((cat) => (
+              <Button
+                key={cat.id}
+                variant="outline"
+                size="sm"
+                className={`rounded-full text-xs h-7 ${selectedCategory !== 'all' && selectedCategory !== cat.id ? 'opacity-60' : ''}`}
+                onClick={() => {
+                  setSelectedCategory(cat.id)
+                  // Clear search when selecting a category quick filter
+                  setSearchQuery('')
+                }}
+                aria-pressed={selectedCategory === cat.id}
+              >
+                {cat.name}
+              </Button>
+            ))}
+            <div className="ml-auto">
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setSearchQuery('')
@@ -207,24 +258,8 @@ export default function BlogIndexPage() {
                 >
                   Clear all filters ({activeFiltersCount})
                 </Button>
-              </div>
-            )}
-          </div>
-          
-          {/* Quick filter tags */}
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-            <span className="text-sm text-muted-foreground mr-2">Popular:</span>
-            {['JavaScript', 'React', 'AI/ML', 'DevOps', 'UI/UX', 'Backend'].map((tag) => (
-              <Button 
-                key={tag} 
-                variant="outline" 
-                size="sm" 
-                className="rounded-full text-xs h-7"
-                onClick={() => handleTagClick(tag)}
-              >
-                {tag}
-              </Button>
-            ))}
+              )}
+            </div>
           </div>
         </div>
         
@@ -268,11 +303,11 @@ export default function BlogIndexPage() {
             </div>
           </div>
           
-          <Suspense fallback={<FeedSkeleton layout={viewMode} count={12} />}>
+          <Suspense fallback={<FeedSkeleton layout={viewMode} count={20} />}>
             <InfiniteScrollFeed
               layout={viewMode}
-              initialPostCount={12}
-              postsPerPage={6}
+              initialPostCount={20}
+              postsPerPage={10}
               searchQuery={searchQuery.trim() || undefined}
               categoryFilter={selectedCategory !== 'all' ? selectedCategory : undefined}
               sortBy={sortBy}

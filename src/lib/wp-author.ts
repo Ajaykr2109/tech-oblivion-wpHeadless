@@ -8,8 +8,7 @@ export async function getLatestByAuthor(authorId: number, excludeId?: number, pe
     const url = new URL('/api/wp/posts', baseUrl)
     url.searchParams.set('author', String(authorId))
     url.searchParams.set('per_page', String(perPage))
-    url.searchParams.set('orderby', 'meta_value_num')
-    url.searchParams.set('meta_key', 'views')
+    url.searchParams.set('orderby', 'date')
     url.searchParams.set('order', 'desc')
     if (excludeId) url.searchParams.set('exclude', String(excludeId))
     

@@ -17,6 +17,9 @@ type SessionClaims = {
 export async function GET(req: NextRequest) {
   const WP = process.env.WP_URL
   if (!WP) return new Response('WP_URL env required', { status: 500 })
+  
+  console.log('Posts API - WP_URL:', WP)
+  
   const incoming = new URL(req.url);
   
   // Prepare defaults and normalized params
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Try MU proxy first if configured (helps on locked-down sites)
-  const secret = process.env.FE_PROXY_SECRET || ''
+  const secret = '' // Temporarily disable proxy to test direct WordPress API
   const path = 'wp/v2/posts'
   if (secret) {
     const proxy = new URL('/wp-json/fe-auth/v1/proxy', WP)
@@ -58,6 +61,9 @@ export async function GET(req: NextRequest) {
 
   const out = id ? new URL(`/wp-json/wp/v2/posts/${id}`, WP) : new URL('/wp-json/wp/v2/posts', WP)
   if (!id) search.forEach((v, k) => out.searchParams.set(k, v))
+  
+  console.log('Posts API - Final upstream URL:', out.toString())
+  console.log('Posts API - Search params:', Object.fromEntries(search.entries()))
   // Forward Authorization header if present
   let authHeader = req.headers.get('authorization') || undefined
   // If fetching a single post without Authorization, attempt to use session wpToken (to allow drafts access)
@@ -73,14 +79,30 @@ export async function GET(req: NextRequest) {
       // TODO: implement better logging for session parse errors
     }
   }
-  const res = await fetch(out, { cache: 'no-store', headers: { ...(authHeader ? { Authorization: authHeader } : {}) } })
+  const res = await fetch(out, { 
+    cache: 'no-store', 
+    headers: { 
+      ...(authHeader ? { Authorization: authHeader } : {}),
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    } 
+  })
   if (!res.ok) {
+    console.log('Posts API - Upstream error:', res.status, await res.text())
     if (res.status === 404 || res.status === 400) {
-      return Response.json([], { status: 200, headers: { 'Cache-Control': 'public, max-age=30', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
+      return Response.json([], { status: 200, headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'X-Upstream-Status': String(res.status), 'X-Upstream-Url': out.toString() } })
     }
     return new Response('Upstream error', { status: res.status })
   }
-  return Response.json(await res.json(), { headers: { 'Cache-Control': 'public, max-age=60', 'X-Upstream-Url': out.toString() } })
+  const jsonData = await res.json()
+  console.log('Posts API - Upstream response sample:', Array.isArray(jsonData) ? jsonData[0] : jsonData)
+  return Response.json(jsonData, { 
+    headers: { 
+      'Cache-Control': 'no-cache, no-store, must-revalidate', 
+      'Pragma': 'no-cache',
+      'X-Upstream-Url': out.toString() 
+    } 
+  })
 }
 
 // Create a post (requires at least 'author' role)

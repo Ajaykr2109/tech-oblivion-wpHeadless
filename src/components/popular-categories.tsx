@@ -118,7 +118,7 @@ export default function PopularCategories({
         {categories.map((category, index) => (
           <Link
             key={category.id}
-            href={category.url}
+            href={{ pathname: '/blog', query: { category: category.slug, categoryId: String(category.id) } }}
             className={`inline-block px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ${getCategoryColor(index)}`}
             title={category.description || `Browse ${category.name} posts`}
           >

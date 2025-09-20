@@ -42,8 +42,14 @@ export default async function CategoryFeed({
       // Fetch posts for the category
       if (finalCategoryId) {
         const data = await safeFetchJSON<unknown[]>(
-          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/posts?categories=${finalCategoryId}&per_page=${postCount}&_embed=1`,
-          { next: { revalidate: 300 } }
+          `${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || ''}/api/wp/posts?categories=${finalCategoryId}&per_page=${postCount}&_embed=1&_t=${Date.now()}`,
+          { 
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          }
         );
         posts = Array.isArray(data) ? data : [];
       }

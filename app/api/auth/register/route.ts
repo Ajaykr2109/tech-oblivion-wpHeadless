@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic'
 import { z } from 'zod'
 
 import { wpFetch } from '../../../../src/lib/fetcher'

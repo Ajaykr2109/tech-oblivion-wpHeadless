@@ -123,13 +123,15 @@ export async function getPosts({ page = 1, perPage = 10, search = '' } = {}) {
   if (search) url.searchParams.set('search', search)
 
   const res = await fetch(url.toString(), {
-    // ISR w/ tags so we can surgically revalidate from /api/revalidate
-    next: { revalidate: DEFAULT_TTL, tags: [TAGS.posts] },
+    // Disable all caching for debugging
+    cache: 'no-store',
     // include polite headers so upstream doesn't block anonymous requests
     headers: {
       'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)',
       'Referer': WP,
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
     },
   })
 
@@ -176,8 +178,14 @@ export async function getPostBySlug(slug: string) {
   url.searchParams.set('_embed', '1')
 
   const res = await fetch(url.toString(), {
-    next: { revalidate: DEFAULT_TTL, tags: [TAGS.posts, TAGS.post(slug)] },
-    headers: { 'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 'Referer': WP, 'Accept': 'application/json' }
+    cache: 'no-store',
+    headers: { 
+      'User-Agent': 'techoblivion-proxy/1.0 (+https://techoblivion.in)', 
+      'Referer': WP, 
+      'Accept': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    }
   })
   if (!res.ok) {
     const body = await res.text()

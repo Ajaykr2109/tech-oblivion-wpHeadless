@@ -61,14 +61,16 @@ export default function InfiniteScrollFeed({
     params.set('per_page', page === 1 ? initialPostCount.toString() : postsPerPage.toString())
     
     if (searchQuery) params.set('search', searchQuery)
-    if (categoryFilter) params.set('categories', categoryFilter)
-    if (authorFilter) params.set('author', authorFilter)
+  // Filters expect numeric IDs; forward if provided
+  if (categoryFilter && categoryFilter !== 'all') params.set('categories', categoryFilter)
+  if (authorFilter && authorFilter !== 'all') params.set('author', authorFilter)
     
     // Map sortBy to API parameters
     switch (sortBy) {
       case 'popular':
-        params.set('orderby', 'meta_value_num')
-        params.set('meta_key', 'post_views_count')
+        // WordPress REST API doesn't support meta_value_num orderby
+        // Fall back to date ordering for now
+        params.set('orderby', 'date')
         params.set('order', 'desc')
         break
       case 'trending':
@@ -80,18 +82,40 @@ export default function InfiniteScrollFeed({
         params.set('order', 'desc')
     }
 
-    const response = await fetch(`/api/wp/posts?${params}`)
+  // Always embed related resources so we get author and featured media
+  params.set('_embed', '1')
+  // Force fresh data - no caching
+  params.set('_t', Date.now().toString())
+  const response = await fetch(`/api/wp/posts?${params}`, {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache'
+    }
+  })
     if (!response.ok) {
       throw new Error(`Failed to fetch posts: ${response.status}`)
     }
 
     const data = await response.json()
+    console.log('Posts API Response:', JSON.stringify(data, null, 2))
+    
     // The API may return one of:
     // 1) Raw WP array of posts
     // 2) Object with `posts` or `items`
     // Normalize to our Post[] shape.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapWPPost = (p: any): Post => ({
+  const mapWPPost = (p: any): Post => {
+    console.log('Mapping post:', {
+      id: p.id,
+      title: p?.title?.rendered || p?.title,
+      hasEmbedded: !!p._embedded,
+      embedKeys: p._embedded ? Object.keys(p._embedded) : [],
+      author: p._embedded?.author?.[0],
+      featuredMedia: p._embedded?.['wp:featuredmedia']?.[0]
+    })
+    
+    const mapped = {
       id: Number(p.id),
       title: p?.title?.rendered || p?.title || '',
       slug: p?.slug || '',
@@ -120,7 +144,11 @@ export default function InfiniteScrollFeed({
         p?._embedded?.author?.[0]?.avatar_urls?.['96'] ||
         p?.author_info?.avatar ||
         undefined,
-    })
+    }
+    
+    console.log('Mapped result:', mapped)
+    return mapped
+  }
 
     let posts: Post[] = []
     if (Array.isArray(data)) {
@@ -203,9 +231,12 @@ export default function InfiniteScrollFeed({
 
   const wrapperClass = cn(
     'grid',
-    layout === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 
-    layout === 'simple' ? 'grid-cols-1 gap-2' : 
-    'grid-cols-1 gap-4'
+    // Show 5 cards per row on wide screens, downscale responsively
+    layout === 'grid'
+      ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4'
+      : layout === 'simple'
+      ? 'grid-cols-1 gap-2'
+      : 'grid-cols-1 gap-4'
   )
 
   if (loading) {

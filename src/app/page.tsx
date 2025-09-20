@@ -5,7 +5,6 @@ import { BookOpen, PenTool, TrendingUp, Star, Users, MessageCircle, ChevronRight
 import Feed from "@/components/feed"
 import EditorPicksFeed from "@/components/editor-picks-feed"
 import HomeLatestVideoSection from "@/components/HomeLatestVideoSection"
-import PopularCategories from "@/components/popular-categories"
 import { getWebSiteSchema, getFAQSchema } from "@/lib/generateSchema"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -110,25 +109,7 @@ export default function Home() {
             <Feed layout="grid" postCount={6} />
           </section>
 
-          {/* POPULAR CATEGORIES SECTION */}
-          <section className="py-12">
-            <div className="text-center mb-8">
-              <Badge variant="secondary" className="mb-4">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                Popular Topics
-              </Badge>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                Explore by Category
-              </h2>
-              <p className="text-muted-foreground">
-                Discover our most popular content categories
-              </p>
-            </div>
-            
-            <div className="flex justify-center">
-              <PopularCategories limit={8} showCount={true} className="max-w-4xl" />
-            </div>
-          </section>
+          {/* Popular Categories section removed per requirements */}
 
           {/* COMMUNITY CTA SECTION */}
           <section className="py-16">
