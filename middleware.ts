@@ -7,6 +7,98 @@ import { getMinimumEditorRole } from './src/lib/permissions'
 const PROTECTED_ROUTES = ['/dashboard', '/account', '/admin']
 const EDITOR_ROUTES = ['/editor']
 
+// Production-ready Content Security Policy
+const CSP_DIRECTIVES = {
+  'default-src': ["'self'"],
+  'script-src': [
+    "'self'", 
+    'cdn.jsdelivr.net',
+    'www.googletagmanager.com',
+    'www.google-analytics.com',
+    'apis.google.com',
+    // Remove unsafe-inline and unsafe-eval for production
+    // "'nonce-{NONCE}'" // Use nonces instead of unsafe-inline
+  ],
+  'style-src': [
+    "'self'",
+    'fonts.googleapis.com',
+    'cdn.jsdelivr.net',
+    // "'nonce-{NONCE}'" // Use nonces instead of unsafe-inline
+  ],
+  'img-src': [
+    "'self'",
+    'data:',
+    'https:',
+    'blob:',
+    'techoblivion.in',
+    '*.techoblivion.in'
+  ],
+  'font-src': [
+    "'self'",
+    'fonts.gstatic.com',
+    'fonts.googleapis.com',
+    'data:'
+  ],
+  'connect-src': [
+    "'self'",
+    'https:',
+    'wss:',
+    'techoblivion.in',
+    '*.techoblivion.in',
+    'api.pwnedpasswords.com' // For password breach checking
+  ],
+  'frame-src': [
+    "'self'",
+    'www.youtube.com',
+    'youtube.com',
+    'player.vimeo.com'
+  ],
+  'media-src': [
+    "'self'",
+    'https:',
+    'blob:',
+    'data:'
+  ],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'"],
+  'frame-ancestors': ["'none'"], // Prevent clickjacking
+  'upgrade-insecure-requests': []
+}
+
+function buildCSP(): string {
+  return Object.entries(CSP_DIRECTIVES)
+    .map(([directive, sources]) => {
+      if (sources.length === 0) return directive
+      return `${directive} ${sources.join(' ')}`
+    })
+    .join('; ')
+}
+
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  // Content Security Policy
+  response.headers.set('Content-Security-Policy', buildCSP())
+  
+  // Other security headers
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  response.headers.set('X-DNS-Prefetch-Control', 'off')
+  response.headers.set('X-Download-Options', 'noopen')
+  response.headers.set('X-Permitted-Cross-Domain-Policies', 'none')
+  response.headers.set('Cross-Origin-Embedder-Policy', 'require-corp')
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin')
+  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin')
+  
+  // HSTS (HTTP Strict Transport Security) - only in production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+  
+  return response
+}
+
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname
   
@@ -27,7 +119,8 @@ export async function middleware(req: NextRequest) {
       // Not logged in - redirect to login
       const loginUrl = new URL('/login', req.url)
       loginUrl.searchParams.set('next', '/profile')
-      return NextResponse.redirect(loginUrl)
+      const response = NextResponse.redirect(loginUrl)
+      return addSecurityHeaders(response)
     }
     
     try {
@@ -42,19 +135,22 @@ export async function middleware(req: NextRequest) {
       const userSlug = claims.slug || claims.username || claims.user_nicename
       if (userSlug) {
         // Redirect to user's author page
-        return NextResponse.redirect(new URL(`/author/${userSlug}`, req.url))
+        const response = NextResponse.redirect(new URL(`/author/${userSlug}`, req.url))
+        return addSecurityHeaders(response)
       } else {
         // No user slug found - redirect to login
         const loginUrl = new URL('/login', req.url)
         loginUrl.searchParams.set('error', 'no_profile_slug')
-        return NextResponse.redirect(loginUrl)
+        const response = NextResponse.redirect(loginUrl)
+        return addSecurityHeaders(response)
       }
     } catch (error) {
       console.error('Profile redirect failed:', error)
       // Invalid session - redirect to login
       const loginUrl = new URL('/login', req.url)
       loginUrl.searchParams.set('next', '/profile')
-      return NextResponse.redirect(loginUrl)
+      const response = NextResponse.redirect(loginUrl)
+      return addSecurityHeaders(response)
     }
   }
   
@@ -63,7 +159,8 @@ export async function middleware(req: NextRequest) {
   const isEditor = EDITOR_ROUTES.some(route => pathname.startsWith(route))
   
   if (!isProtected && !isEditor) {
-    return NextResponse.next()
+    const response = NextResponse.next()
+    return addSecurityHeaders(response)
   }
   
   // Get session token
@@ -74,7 +171,8 @@ export async function middleware(req: NextRequest) {
     // No session - redirect to login
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('next', pathname)
-    return NextResponse.redirect(loginUrl)
+    const response = NextResponse.redirect(loginUrl)
+    return addSecurityHeaders(response)
   }
   
   try {
@@ -95,12 +193,14 @@ export async function middleware(req: NextRequest) {
         // User is logged in but lacks permissions - show 403
         const url = new URL('/403', req.url)
         url.searchParams.set('reason', 'insufficient_permissions')
-        return NextResponse.redirect(url)
+        const response = NextResponse.redirect(url)
+        return addSecurityHeaders(response)
       }
     }
     
-    // Session is valid, continue
-    return NextResponse.next()
+    // Session is valid, continue with security headers
+    const response = NextResponse.next()
+    return addSecurityHeaders(response)
     
   } catch (error) {
     console.error('Middleware session verification failed:', error)
@@ -108,7 +208,8 @@ export async function middleware(req: NextRequest) {
     // Invalid session - redirect to login
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('next', pathname)
-    return NextResponse.redirect(loginUrl)
+    const response = NextResponse.redirect(loginUrl)
+    return addSecurityHeaders(response)
   }
 }
 

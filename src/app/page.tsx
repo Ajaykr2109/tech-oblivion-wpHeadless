@@ -127,10 +127,10 @@ export default function Home() {
                 
                 <div className="flex justify-center gap-4 flex-wrap mb-8">
                   <Button size="lg" asChild>
-                    <Link href="/register" className="flex items-center">
+                    <a href="https://discord.gg/gMz8jgA9SC" target="_blank" rel="noopener noreferrer" className="flex items-center">
                       <Users className="mr-2 h-4 w-4" /> 
                       Join Community
-                    </Link>
+                    </a>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
                     <Link href="/contact" className="flex items-center">

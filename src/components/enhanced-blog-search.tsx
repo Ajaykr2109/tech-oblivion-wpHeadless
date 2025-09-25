@@ -17,6 +17,7 @@ type SearchResult = {
   id: number
   title: string
   excerpt?: string
+  contentHtml?: string
   slug: string
   url: string
   authorName?: string
@@ -209,7 +210,7 @@ export default function EnhancedBlogSearch({ onClose }: EnhancedBlogSearchProps)
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
               {results.map((result) => {
                 // Convert search result to PostCard format
-                const readingTime = calculatePostReadingTime(result.title, result.excerpt || '')
+                const readingTime = calculatePostReadingTime(result.title, result.contentHtml || result.excerpt || '')
                 return (
                   <PostCard
                     key={result.id}
@@ -226,7 +227,7 @@ export default function EnhancedBlogSearch({ onClose }: EnhancedBlogSearchProps)
                       excerpt: htmlToText(result.excerpt || '').slice(0, 180),
                       slug: result.slug,
                       date: result.date || '',
-                      content: result.excerpt || '',
+                      content: result.contentHtml || result.excerpt || '',
                       readingTime: formatReadingTime(readingTime),
                     }}
                   />

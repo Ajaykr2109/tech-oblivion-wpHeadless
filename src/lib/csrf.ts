@@ -15,6 +15,38 @@ function cryptoRandom() {
   }
 }
 
+// Create secure CSRF cookie with proper security flags
+export function createSecureCsrfCookie(token: string): string {
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  const cookieOptions = [
+    `${CSRF_COOKIE}=${token}`,
+    'Path=/',
+    'HttpOnly=false', // Must be accessible to client-side JavaScript for CSRF header
+    isProduction ? 'Secure' : '', // Secure only in production (HTTPS)
+    'SameSite=Strict', // Prevent CSRF attacks
+    'Max-Age=3600' // 1 hour expiry
+  ].filter(Boolean)
+  
+  return cookieOptions.join('; ')
+}
+
+// Create secure session cookie with proper security flags
+export function createSecureSessionCookie(token: string, name: string): string {
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  const cookieOptions = [
+    `${name}=${token}`,
+    'Path=/',
+    'HttpOnly=true', // Prevent XSS attacks
+    isProduction ? 'Secure' : '', // Secure only in production (HTTPS)
+    'SameSite=Strict', // Prevent CSRF attacks
+    'Max-Age=86400' // 24 hours expiry
+  ].filter(Boolean)
+  
+  return cookieOptions.join('; ')
+}
+
 export async function validateCsrf(headerToken?: string) {
   const cookieStore = await cookies()
   const cookie = cookieStore.get ? cookieStore.get(CSRF_COOKIE) : null
@@ -34,5 +66,38 @@ export function validateCsrfFromRequest(req: Request, headerToken?: string) {
     return value === headerToken
   } catch {
     return false
+  }
+}
+
+// Middleware to check CSRF tokens on state-changing requests
+export function requireCsrfToken() {
+  return async (req: Request): Promise<Response | null> => {
+    const method = req.method.toUpperCase()
+    
+    // Only check CSRF for state-changing methods
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      return null // Continue processing
+    }
+    
+    const csrfToken = req.headers.get('x-csrf-token') || 
+                      req.headers.get('X-CSRF-Token') ||
+                      req.headers.get('csrf-token')
+    
+    if (!validateCsrfFromRequest(req, csrfToken || undefined)) {
+      return new Response(
+        JSON.stringify({
+          error: 'CSRF Token Invalid',
+          message: 'Request must include valid CSRF token'
+        }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
+    
+    return null // Continue processing
   }
 }

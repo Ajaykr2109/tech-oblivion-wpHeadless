@@ -7,6 +7,7 @@ type SearchResult = {
   id: number
   title: string
   excerpt?: string
+  contentHtml?: string
   slug: string
   url: string
   authorName?: string
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
           id: number;
           title?: { rendered: string };
           excerpt?: { rendered: string };
+          content?: { rendered: string };
           slug: string;
           date: string;
           _embedded?: {
@@ -64,6 +66,7 @@ export async function GET(req: NextRequest) {
             id: post.id,
             title: post.title?.rendered || '',
             excerpt: post.excerpt?.rendered?.replace(/<[^>]+>/g, '').substring(0, 150) + '...' || '',
+            contentHtml: post.content?.rendered || '',
             slug: post.slug,
             url: `/blog/${post.slug}`,
             authorName: post._embedded?.author?.[0]?.name || '',

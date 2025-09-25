@@ -45,6 +45,8 @@ export default function BlogIndexPage() {
   // Only treat as "submitted search" when URL contains q AND user has submitted
   const urlQ = urlSearchParams?.get('q') || ''
   const hasSearchQuery = !!(urlQ && urlQ.trim() && searchSubmitted)
+  // Only feed should use the submitted URL query, never the live typed text
+  const feedSearchQuery = hasSearchQuery ? urlQ.trim() : undefined
 
   // Initialize from URL and set submitted state
   useEffect(() => {
@@ -159,14 +161,14 @@ export default function BlogIndexPage() {
 
   // Show active filters status
   const activeFiltersCount = [
-    searchQuery.trim(),
+    hasSearchQuery ? searchQuery.trim() : '',
     selectedCategory !== 'all' ? selectedCategory : '',
     sortBy !== 'latest' ? sortBy : '',
     selectedAuthor !== 'all' ? selectedAuthor : ''
   ].filter(Boolean).length
 
   const getFilteredTitle = () => {
-    if (searchQuery.trim()) return `Search results for "${searchQuery}"`
+    if (hasSearchQuery) return `Search results for "${searchQuery}"`
     if (selectedCategory !== 'all') {
       const cat = categories.find(c => c.id === selectedCategory || c.slug === selectedCategory)
       return `Articles in ${cat?.name || selectedCategory}`
@@ -335,7 +337,7 @@ export default function BlogIndexPage() {
                 )}
               </h2>
               <p className="text-muted-foreground">
-                {searchQuery.trim() ? 'Matching your search criteria' : 'Browse our complete collection'}
+                {hasSearchQuery ? 'Matching your search criteria' : 'Browse our complete collection'}
               </p>
             </div>
             
@@ -368,7 +370,7 @@ export default function BlogIndexPage() {
                 layout={viewMode}
                 initialPostCount={20}
                 postsPerPage={10}
-                searchQuery={searchQuery.trim() || undefined}
+                searchQuery={feedSearchQuery}
                 categoryFilter={selectedCategory !== 'all' ? selectedCategory : undefined}
                 sortBy={sortBy}
                 authorFilter={selectedAuthor !== 'all' ? selectedAuthor : undefined}
