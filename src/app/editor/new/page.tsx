@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Upload, Bold, Italic, Link as LinkIcon, List, ListOrdered, Code, Strikethrough, Quote, Image as ImageIcon, Type, Minus, Info, Bot } from "lucide-react";
@@ -21,6 +22,7 @@ type CategoryNode = {
   children?: CategoryNode[]
 }
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { EditorShell } from "@/components/editor/EditorShell";
 
 const EditorToolbar = () => (
     <div className="flex items-center gap-1 border-b p-2 flex-wrap">
@@ -178,6 +180,7 @@ export default function EditorNewPage() {
   const [newCat, setNewCat] = useState<{ name: string; slug: string; parent: string }>({ name: '', slug: '', parent: '' })
   const [creatingCat, setCreatingCat] = useState(false)
   const [catError, setCatError] = useState<string | null>(null)
+  const [sidebarItems, setSidebarItems] = useState<Array<{ id: number|string; title: string; status: 'Published'|'In Review'|'Draft'; pinned?: boolean }>>([])
 
   useEffect(() => {
     const words = post.content.trim().split(/\s+/).filter(Boolean);
@@ -202,6 +205,25 @@ export default function EditorNewPage() {
       } catch (e) {
         console.error('Failed to load tags', e)
       }
+    })()
+  }, [])
+
+  // Sidebar posts list (lightweight fetch of recent posts)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/wp/posts?per_page=20', { cache: 'no-store' })
+        if (res.ok) {
+          type PostLike = { id: number; title: string | { rendered?: string }; status?: string }
+          const arr: PostLike[] = await res.json()
+          const mapped = (Array.isArray(arr) ? arr : []).map((p: PostLike) => ({
+            id: p.id,
+            title: (typeof p.title === 'object' ? p.title?.rendered : p.title) || 'Untitled',
+            status: (p.status === 'publish' ? 'Published' : (p.status === 'pending' ? 'In Review' : 'Draft')) as 'Published'|'In Review'|'Draft',
+          }))
+          setSidebarItems(mapped)
+        }
+      } catch { /* non-blocking */ }
     })()
   }, [])
 
@@ -280,21 +302,20 @@ export default function EditorNewPage() {
     } finally { setSaving(false) }
   }
   
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Create New Post</h1>
-        <div className="flex gap-2">
-          <RoleGate action="draft" as="span">
-            <Button variant="outline" disabled={saving} onClick={() => createPost('draft')}>{saving ? 'Saving…' : 'Save Draft'}</Button>
-          </RoleGate>
-          <RoleGate action="publishOwn" as="span">
-            <Button disabled={saving} onClick={() => createPost('publish')}>{saving ? 'Saving…' : 'Publish'}</Button>
-          </RoleGate>
-        </div>
-      </div>
-    {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
-      
+  function onRibbonCommand(cmd: string) {
+    if (cmd === 'publish:save') createPost('draft')
+    if (cmd === 'new') window.location.href = '/editor/new'
+  }
+
+  const TitleNode = (
+    <div className="flex items-center gap-3 w-full">
+      <span className="text-sm text-muted-foreground">New Post</span>
+    </div>
+  )
+
+  const EditorNode = (
+    <div className="container mx-auto px-4 py-8">
+      {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-6">
           <Card>
@@ -307,8 +328,8 @@ export default function EditorNewPage() {
                     name="title"
                     value={post.title}
                     onChange={handleInputChange}
-                    placeholder="Post Title" 
-                    className="text-2xl font-bold h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none" 
+                    placeholder="Post Title"
+                    className="text-3xl font-extrabold tracking-tight h-auto p-4 border-none focus-visible:ring-0 shadow-none border-b rounded-none"
                   />
                 </div>
                 <EditorToolbar />
@@ -508,6 +529,17 @@ export default function EditorNewPage() {
         </aside>
       </div>
     </div>
+  )
+
+  return (
+    <EditorShell
+      title={TitleNode}
+      editor={EditorNode}
+      sidebarItems={sidebarItems}
+      onOpenItem={(id)=>{ window.location.href = `/editor/${id}` }}
+      onCommand={onRibbonCommand}
+      counters={{ words: wordCount, readingMins: readingTime, autosave: saving ? 'saving' : 'idle' }}
+    />
   )
 }
 

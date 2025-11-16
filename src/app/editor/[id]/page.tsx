@@ -17,6 +17,7 @@ import { CollapsibleCard } from "@/components/editor/CollapsibleCard";
 import { ZenModeToggle } from "@/components/editor/ZenModeToggle";
 import { SeoHints } from "@/components/editor/SeoHints";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { EditorShell } from "@/components/editor/EditorShell";
 
 // Helper function to decode HTML entities
 function decodeHtmlEntities(text: string): string {
@@ -143,6 +144,7 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTags, setLoadingTags] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [sidebarItems, setSidebarItems] = useState<Array<{ id: number|string; title: string; status: 'Published'|'In Review'|'Draft'; pinned?: boolean }>>([])
 
   // Fetch categories and tags on component mount - do this first
   useEffect(() => {
@@ -188,6 +190,25 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
     
     fetchCategoriesAndTags();
   }, []);
+
+  // Sidebar posts list fetch
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/wp/posts?per_page=20', { cache: 'no-store' })
+        if (res.ok) {
+          type PostLike = { id: number; title: string | { rendered?: string }; status?: string }
+          const arr: PostLike[] = await res.json()
+          const mapped = (Array.isArray(arr) ? arr : []).map((p: PostLike) => ({
+            id: p.id,
+            title: (typeof p.title === 'object' ? p.title?.rendered : p.title) || 'Untitled',
+            status: (p.status === 'publish' ? 'Published' : (p.status === 'pending' ? 'In Review' : 'Draft')) as 'Published'|'In Review'|'Draft',
+          }))
+          setSidebarItems(mapped)
+        }
+      } catch {/* non-blocking */}
+    })()
+  }, [])
 
   // Fetch post data on component mount - this happens after categories/tags are loaded
   useEffect(() => {
@@ -580,7 +601,18 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
     } finally { setSaving(false) }
   }
 
-  return (
+  function onRibbonCommand(cmd: string) {
+    if (cmd === 'publish:save') updatePost()
+    if (cmd === 'new') window.location.href = '/editor/new'
+  }
+
+  const TitleNode = (
+    <div>
+      <h1 className="text-xl sm:text-2xl font-bold">Edit Post</h1>
+    </div>
+  )
+
+  const EditorNode = (
     <div className="min-h-screen bg-background">
       {/* Floating Toolbar */}
       <FloatingToolbar onFormat={handleFormat} textareaRef={contentTextareaRef} />
@@ -1058,5 +1090,16 @@ export default function EditorEditPage({ params }: { params: Promise<{ id: strin
         </div>
       )}
     </div>
+  )
+
+  return (
+    <EditorShell
+      title={TitleNode}
+      editor={EditorNode}
+      sidebarItems={sidebarItems}
+      onOpenItem={(pid)=>{ window.location.href = `/editor/${pid}` }}
+      onCommand={onRibbonCommand}
+      counters={{ words: wordCount, readingMins: readingTime, autosave: saving ? 'saving' : 'idle' }}
+    />
   )
 }
